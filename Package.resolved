@@ -1,0 +1,34 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Kwift",
+        "repositoryURL": "https://github.com/kojirou1994/Kwift.git",
+        "state": {
+          "branch": null,
+          "revision": "cfbc170df45d256dc9e12a0d78ffdc48425a9df7",
+          "version": "0.8.9"
+        }
+      },
+      {
+        "package": "swift-system",
+        "repositoryURL": "https://github.com/apple/swift-system.git",
+        "state": {
+          "branch": null,
+          "revision": "ce8b4910730114fa1eb46967a031a04f7594f42d",
+          "version": "1.0.0"
+        }
+      },
+      {
+        "package": "SyscallValue",
+        "repositoryURL": "https://github.com/kojirou1994/SyscallValue.git",
+        "state": {
+          "branch": null,
+          "revision": "a2576782e2f360a9a28ed7b4378d68109b443fd9",
+          "version": "0.0.1"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
