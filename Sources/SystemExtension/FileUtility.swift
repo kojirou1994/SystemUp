@@ -15,6 +15,7 @@ public struct FileUtility {
 #if DEBUG && Xcode
     print(#function, path)
 #endif
+    assert(!path.isEmpty)
     try valueOrErrno(
       path.withPlatformString { str in
         mkdir(str, permissions.rawValue)
@@ -34,7 +35,7 @@ public struct FileUtility {
     } catch Errno.noSuchFileOrDirectory {
       // create parent
       var parent = path
-      if parent.removeLastComponent() {
+      if parent.removeLastComponent(), !parent.isEmpty {
         try createDirectoryIntermediately(parent)
       }
     }
@@ -46,6 +47,7 @@ public struct FileUtility {
 #if DEBUG && Xcode
     print(#function, self)
 #endif
+    assert(!path.isEmpty)
     let s = try fileStatus(path, resolveSymbolicLink: false)
     if s.fileType == .directory {
       try removeDirectoryRecursive(path)
@@ -59,6 +61,7 @@ public struct FileUtility {
 #if DEBUG && Xcode
     print(#function, self)
 #endif
+    assert(!path.isEmpty)
     try valueOrErrno(
       path.withPlatformString { str in
         unlink(str)
@@ -71,6 +74,7 @@ public struct FileUtility {
 #if DEBUG && Xcode
     print(#function, self)
 #endif
+    assert(!path.isEmpty)
     try valueOrErrno(
       path.withPlatformString { str in
         rmdir(str)
@@ -112,6 +116,7 @@ public struct FileUtility {
 
   @_alwaysEmitIntoClient
   public static func fileStatus(_ path: FilePath, resolveSymbolicLink: Bool) throws -> FileStatus {
+    assert(!path.isEmpty)
     var s = stat()
     try valueOrErrno(
       path.withPlatformString { path -> Int32 in
@@ -129,6 +134,7 @@ extension FileUtility {
 
   @_alwaysEmitIntoClient
   public static func symLink(_ path: FilePath, to dest: String) throws {
+    assert(!path.isEmpty)
     try valueOrErrno(
       path.withPlatformString { path in
         symlink(dest, path)
@@ -138,6 +144,7 @@ extension FileUtility {
 
   @_alwaysEmitIntoClient
   public static func symLink(_ path: FilePath, to dest: FilePath) throws {
+    assert(!path.isEmpty)
     try valueOrErrno(
       path.withPlatformString { path in
         dest.withPlatformString { dest in
@@ -149,6 +156,7 @@ extension FileUtility {
 
   @_alwaysEmitIntoClient
   public static func readLink(_ path: FilePath) throws -> String {
+    assert(!path.isEmpty)
     let count = Int(PATH_MAX) + 1
     return try .init(capacity: count) { ptr in
       try path.withPlatformString { path in
@@ -163,7 +171,8 @@ extension FileUtility {
 
   @_alwaysEmitIntoClient
   public static func realPath(_ path: FilePath) throws -> FilePath {
-    try .init(String(capacity: Int(PATH_MAX) + 1, { buffer in
+    assert(!path.isEmpty)
+    return try .init(String(capacity: Int(PATH_MAX) + 1, { buffer in
       try path.withPlatformString { path in
         let cstr = buffer.assumingMemoryBound(to: CChar.self)
         let ptr = realpath(path, cstr)
@@ -181,6 +190,7 @@ extension FileUtility {
 
   @_alwaysEmitIntoClient
   public static func changeMode(_ path: FilePath, permissions: FilePermissions) throws {
+    assert(!path.isEmpty)
     try valueOrErrno(
       path.withPlatformString { path in
         chmod(path, permissions.rawValue)
