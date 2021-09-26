@@ -9,6 +9,8 @@ import SyscallValue
 import KwiftC
 
 public struct FileUtility {
+
+  @_alwaysEmitIntoClient
   public static func createDirectory(_ path: FilePath, permissions: FilePermissions = .directoryDefault) throws {
 #if DEBUG && Xcode
     print(#function, path)
@@ -20,6 +22,7 @@ public struct FileUtility {
     )
   }
 
+  @_alwaysEmitIntoClient
   public static func createDirectoryIntermediately(_ path: FilePath) throws {
     do {
       let fileStat = try fileStatus(path, resolveSymbolicLink: true)
@@ -38,6 +41,7 @@ public struct FileUtility {
     try createDirectory(path, permissions: [.ownerReadWriteExecute, .groupReadWriteExecute, .otherReadWriteExecute])
   }
 
+  @_alwaysEmitIntoClient
   public static func remove(_ path: FilePath) throws {
 #if DEBUG && Xcode
     print(#function, self)
@@ -50,7 +54,7 @@ public struct FileUtility {
     }
   }
 
-
+  @_alwaysEmitIntoClient
   public static func unlinkFile(_ path: FilePath) throws {
 #if DEBUG && Xcode
     print(#function, self)
@@ -62,6 +66,7 @@ public struct FileUtility {
     )
   }
 
+  @_alwaysEmitIntoClient
   public static func removeDirectory(_ path: FilePath) throws {
 #if DEBUG && Xcode
     print(#function, self)
@@ -73,27 +78,30 @@ public struct FileUtility {
     )
   }
 
+  @_alwaysEmitIntoClient
   public static func removeDirectoryRecursive(_ path: FilePath) throws {
 #if DEBUG && Xcode
     print(#function, self)
 #endif
-//    try Directory.withOpenedDirectory(path) { rootPath, directory in
-//      var entry = Directory.Entry()
-//      while try directory.read(into: &entry) {
-//        let entryName = entry.name
-//        if entryName == "." || entryName == ".." {
-//          continue
-//        }
-//        let childItem = rootPath.appending(entryName)
-//        switch try fileStatus(childItem, resolveSymbolicLink: false).fileType {
-//        case .directory: try removeDirectoryRecursive(childItem)
-//        default: try unlinkFile(childItem)
-//        }
-//      }
-//    } // Directory open
+    try Directory.open(path)
+      .closeAfter { directory in
+        var entry = Directory.Entry()
+        while try directory.read(into: &entry) {
+          if entry.isInvalid {
+            continue
+          }
+          let entryName = entry.name
+          let childPath = path.appending(entryName)
+          switch entry.fileType {
+          case .directory: try removeDirectoryRecursive(childPath)
+          default: try unlinkFile(childPath)
+          }
+        }
+      } // Directory open
     try removeDirectory(path)
   }
 
+  @_alwaysEmitIntoClient
   public static func fileStatus(_ fd: FileDescriptor) throws -> FileStatus {
     var s = stat()
     try valueOrErrno(
@@ -119,6 +127,7 @@ public struct FileUtility {
 
 extension FileUtility {
 
+  @_alwaysEmitIntoClient
   public static func symLink(_ path: FilePath, to dest: String) throws {
     try valueOrErrno(
       path.withPlatformString { path in
@@ -127,6 +136,7 @@ extension FileUtility {
     )
   }
 
+  @_alwaysEmitIntoClient
   public static func symLink(_ path: FilePath, to dest: FilePath) throws {
     try valueOrErrno(
       path.withPlatformString { path in
@@ -137,6 +147,7 @@ extension FileUtility {
     )
   }
 
+  @_alwaysEmitIntoClient
   public static func readLink(_ path: FilePath) throws -> String {
     let count = Int(PATH_MAX) + 1
     return try .init(capacity: count) { ptr in
@@ -150,6 +161,7 @@ extension FileUtility {
     }
   }
 
+  @_alwaysEmitIntoClient
   public static func realPath(_ path: FilePath) throws -> FilePath {
     try .init(String(capacity: Int(PATH_MAX) + 1, { buffer in
       try path.withPlatformString { path in
@@ -167,6 +179,7 @@ extension FileUtility {
 
 extension FileUtility {
 
+  @_alwaysEmitIntoClient
   public static func changeMode(_ path: FilePath, permissions: FilePermissions) throws {
     try valueOrErrno(
       path.withPlatformString { path in
@@ -175,6 +188,7 @@ extension FileUtility {
     )
   }
 
+  @_alwaysEmitIntoClient
   public static func changeMode(_ fd: FileDescriptor, permissions: FilePermissions) throws {
     try valueOrErrno(
       fchmod(fd.rawValue, permissions.rawValue)
@@ -183,6 +197,7 @@ extension FileUtility {
 
   public typealias FileFlags = UInt32
 
+  @_alwaysEmitIntoClient
   public static func changeFlags(_ path: FilePath, flags: FileFlags) throws {
     try valueOrErrno(
       path.withPlatformString { path in
@@ -191,6 +206,7 @@ extension FileUtility {
     )
   }
 
+  @_alwaysEmitIntoClient
   public static func changeFlags(_ fd: FileDescriptor, flags: FileFlags) throws {
     try valueOrErrno(
       fchflags(fd.rawValue, flags)

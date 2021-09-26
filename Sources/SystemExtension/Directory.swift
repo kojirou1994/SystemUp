@@ -96,8 +96,15 @@ public struct DirectoryEnumerator: Sequence {
 
 public struct Directory {
 
+  @_alwaysEmitIntoClient
+  private init(dir: UnsafeMutablePointer<DIR>) {
+    self.dir = dir
+  }
+
+  @_alwaysEmitIntoClient
   private let dir: UnsafeMutablePointer<DIR>
 
+  @_alwaysEmitIntoClient
   public static func open(_ path: FilePath) throws -> Self {
     guard let dir = path.withPlatformString(opendir) else {
       throw Errno.current
@@ -105,6 +112,7 @@ public struct Directory {
     return .init(dir: dir)
   }
 
+  @_alwaysEmitIntoClient
   public static func open(_ fd: FileDescriptor) throws -> Self {
     guard let dir = fdopendir(fd.rawValue) else {
       throw Errno.current
@@ -112,6 +120,7 @@ public struct Directory {
     return .init(dir: dir)
   }
 
+  @_alwaysEmitIntoClient
   public func close() {
     do {
       try valueOrErrno(closedir(dir))
@@ -121,23 +130,28 @@ public struct Directory {
     }
   }
 
+  @_alwaysEmitIntoClient
   public func tell() throws -> Int {
     telldir(dir)
   }
 
   /// resets the position of the named directory stream to the beginning of the directory.
+  @_alwaysEmitIntoClient
   public func rewind() throws {
     rewinddir(dir)
   }
 
+  @_alwaysEmitIntoClient
   public func seek(offset: Int) throws {
     seekdir(dir, offset)
   }
 
+  @_alwaysEmitIntoClient
   public var fd: FileDescriptor {
     .init(rawValue: dirfd(dir))
   }
 
+  @_alwaysEmitIntoClient
   public func read(into entry: inout Directory.Entry) throws -> Bool {
     var entryPtr: UnsafeMutablePointer<dirent>?
     try valueOrErrno(readdir_r(dir, &entry.entry, &entryPtr))
@@ -153,9 +167,10 @@ public struct Directory {
     return true
   }
 
-  public func closeAfter<R>(_ body: () throws -> R) throws -> R {
+  @_alwaysEmitIntoClient
+  public func closeAfter<R>(_ body: (Self) throws -> R) throws -> R {
     defer { close() }
-    return try body()
+    return try body(self)
   }
 
 }
@@ -164,8 +179,10 @@ extension Directory {
 
   public struct Entry: CustomStringConvertible {
 
+    @_alwaysEmitIntoClient
     fileprivate var entry: dirent
 
+    @_alwaysEmitIntoClient
     public init() {
       entry = .init()
     }
@@ -174,23 +191,28 @@ extension Directory {
       "DirectoryEntry(entryFileNumber: \(entryFileNumber), seekOffset: \(seekOffset), recordLength: \(recordLength), fileType: \(fileType), name: \"\(name)\")"
     }
 
+    @_alwaysEmitIntoClient
     public var entryFileNumber: UInt64 {
       entry.d_ino
     }
 
+    @_alwaysEmitIntoClient
     public var seekOffset: UInt64 {
       entry.d_seekoff
     }
 
+    @_alwaysEmitIntoClient
     public var recordLength: UInt16 {
       entry.d_reclen
     }
 
+    @_alwaysEmitIntoClient
     public var fileType: DirectoryType {
       DirectoryType(rawValue: entry.d_type)
     }
 
     /// exclude "." and ".."
+    @_alwaysEmitIntoClient
     public var isInvalid: Bool {
       let point = UInt8(ascii: ".")
       return (entry.d_name.0 == point && entry.d_name.1 == 0)
@@ -198,6 +220,7 @@ extension Directory {
     }
 
     /// entry name (up to MAXPATHLEN bytes)
+    @_alwaysEmitIntoClient
     public var name: String {
       #if canImport(Darwin)
       withUnsafeBytes(of: entry.d_name) { buffer in
