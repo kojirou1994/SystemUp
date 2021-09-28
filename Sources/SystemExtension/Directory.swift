@@ -5,6 +5,70 @@ import Darwin
 import Glibc
 #endif
 
+public struct RecursiveDirectoryReader {
+
+  public struct ReadOptions: OptionSet {
+    public init(rawValue: Int) {
+      self.rawValue = rawValue
+    }
+
+    public let rawValue: Int
+  }
+
+  public struct ReadResult {
+    public let level: Int
+    public let directory: Directory
+    public let path: FilePath
+    public let entry: Directory.Entry
+  }
+
+  public enum ReadContinuation {
+    case `continue`
+    case skipCurrentDirectory
+    case cancel
+  }
+
+  public static func open(_ path: FilePath, body: (ReadResult) throws -> ReadContinuation, onOpenError: (FilePath, Errno) throws -> Void = { throw $1 }) throws {
+    var isCancelled = false
+    try _recursiveOpen(path, isCancelled: &isCancelled, level: 1, body: body, onError: onOpenError)
+  }
+
+  private static func _recursiveOpen(_ path: FilePath, isCancelled: inout Bool, level: Int, body: (ReadResult) throws -> ReadContinuation, onError: (FilePath, Errno) throws -> Void) throws {
+    let directory: Directory
+    do {
+      directory = try Directory.open(path)
+    } catch let err as Errno {
+      return try onError(path, err)
+    }
+
+    try directory.closeAfter { directory in
+      var entry = Directory.Entry()
+      while try directory.read(into: &entry) {
+        if entry.isInvalid {
+          continue
+        }
+        let res = ReadResult(level: level, directory: directory, path: path.appending(entry.name), entry: entry)
+        switch try body(res) {
+        case .continue: break
+        case .cancel:
+          isCancelled = true
+          return
+        case .skipCurrentDirectory:
+          return
+        }
+
+        if entry.fileType == .directory {
+          try _recursiveOpen(res.path, isCancelled: &isCancelled, level: level+1, body: body, onError: onError)
+        }
+
+        if isCancelled {
+          return
+        }
+      }
+    }
+  }
+}
+
 public struct DirectoryEnumerator: Sequence {
   public init(root: FilePath, maxLevel: Int = .max) {
     self.maxLevel = maxLevel
