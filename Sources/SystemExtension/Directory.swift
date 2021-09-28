@@ -220,9 +220,6 @@ public struct Directory {
     var entryPtr: UnsafeMutablePointer<dirent>?
     try valueOrErrno(readdir_r(dir, &entry.entry, &entryPtr))
     if _slowPath(entryPtr == nil) {
-#if DEBUG
-      print("readdir at end! \(self)")
-#endif
       return false
     }
     withUnsafeMutablePointer(to: &entry) { ptr in
