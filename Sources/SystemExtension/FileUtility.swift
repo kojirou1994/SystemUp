@@ -223,3 +223,28 @@ extension FileUtility {
     )
   }
 }
+
+// MARK: truncate
+extension FileUtility {
+
+  @_alwaysEmitIntoClient
+  public static func truncate(_ path: FilePath, size: Int) throws {
+    assert(!path.isEmpty)
+    try valueOrErrno(
+      path.withPlatformString { path in
+        _truncate(path, off_t(size))
+      }
+    )
+  }
+
+  @_alwaysEmitIntoClient
+  public static func truncate(_ fd: FileDescriptor, size: Int) throws {
+    try valueOrErrno(
+      ftruncate(fd.rawValue, off_t(size))
+    )
+  }
+
+}
+
+@_alwaysEmitIntoClient
+fileprivate let _truncate = truncate
