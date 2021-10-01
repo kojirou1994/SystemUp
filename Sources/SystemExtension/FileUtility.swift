@@ -245,3 +245,91 @@ extension FileUtility {
   }
 
 }
+
+// MARK: access
+extension FileUtility {
+
+  public struct Accessibility: OptionSet {
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient
+    internal init(_ rawValue: Int32) {
+      self.rawValue = .init(rawValue)
+    }
+
+    @_alwaysEmitIntoClient
+    public let rawValue: Int32
+
+    /// test for existence of file
+    @_alwaysEmitIntoClient
+    public static var existence: Self { .init(F_OK) }
+
+    /// test for execute or search permission
+    @_alwaysEmitIntoClient
+    public static var execute: Self { .init(X_OK) }
+
+    /// test for write permission
+    @_alwaysEmitIntoClient
+    public static var write: Self { .init(W_OK) }
+
+  }
+
+  @_alwaysEmitIntoClient
+  public static func checkAccessibility(_ path: FilePath, accessibility: Accessibility, flags: AtFlags) -> Bool {
+    checkAccessibility(path, relativeTo: .init(rawValue: AT_FDCWD), accessibility: accessibility, flags: flags)
+  }
+
+  @_alwaysEmitIntoClient
+  public static func checkAccessibility(_ path: FilePath, relativeTo fd: FileDescriptor, accessibility: Accessibility, flags: AtFlags) -> Bool {
+    assert(!path.isEmpty)
+    assert(flags.isSubset(of: [.noFollow, .effectiveAccess]))
+    return path.withPlatformString { path in
+      faccessat(fd.rawValue, path, accessibility.rawValue, flags.rawValue) == 0
+    }
+  }
+
+}
+
+public struct AtFlags: OptionSet {
+
+  @_alwaysEmitIntoClient
+  public init(rawValue: Int32) {
+    self.rawValue = rawValue
+  }
+
+  @_alwaysEmitIntoClient
+  internal init(_ rawValue: Int32) {
+    self.rawValue = .init(rawValue)
+  }
+
+  @_alwaysEmitIntoClient
+  public let rawValue: Int32
+
+  /// Use effective ids in access check
+  @_alwaysEmitIntoClient
+  public static var effectiveAccess: Self { .init(AT_EACCESS) }
+
+  /// Act on the symlink itself not the target
+  @_alwaysEmitIntoClient
+  public static var noFollow: Self { .init(AT_SYMLINK_NOFOLLOW) }
+
+  /// Act on target of symlink
+  @_alwaysEmitIntoClient
+  public static var follow: Self { .init(AT_SYMLINK_FOLLOW) }
+
+  /// Path refers to directory
+  @_alwaysEmitIntoClient
+  public static var removeDir: Self { .init(AT_REMOVEDIR) }
+
+  /// Return real device inodes resides on for fstatat(2)
+  @_alwaysEmitIntoClient
+  public static var realDevice: Self { .init(AT_REALDEV) }
+
+  /// Use only the fd and Ignore the path for fstatat(2)
+  @_alwaysEmitIntoClient
+  public static var fdOnly: Self { .init(AT_FDONLY) }
+}
