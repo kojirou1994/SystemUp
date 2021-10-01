@@ -14,7 +14,7 @@ public struct FileStatus {
   }
   
   @_alwaysEmitIntoClient
-  private let status: stat
+  internal var status: stat
 }
 
 extension FileStatus: CustomStringConvertible {

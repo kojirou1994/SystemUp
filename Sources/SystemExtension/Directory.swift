@@ -228,12 +228,29 @@ public struct Directory {
     return true
   }
 
+  public func read() throws -> UnsafeMutablePointer<Directory.Entry>? {
+    let ptr = readdir(dir)
+//    if ptr == nil, Errno.current != .init(rawValue: 0) {
+//      throw Errno.current
+//    }
+    return .init(OpaquePointer(ptr))
+  }
+
   @_alwaysEmitIntoClient
   public func closeAfter<R>(_ body: (Self) throws -> R) throws -> R {
     defer { close() }
     return try body(self)
   }
 
+}
+
+extension dirent {
+  @_alwaysEmitIntoClient
+  var isInvalid: Bool {
+    let point = UInt8(ascii: ".")
+    return (d_name.0 == point && d_name.1 == 0)
+    || (d_name.0 == point && d_name.1 == point && d_name.2 == 0)
+  }
 }
 
 extension Directory {
@@ -275,9 +292,7 @@ extension Directory {
     /// exclude "." and ".."
     @_alwaysEmitIntoClient
     public var isInvalid: Bool {
-      let point = UInt8(ascii: ".")
-      return (entry.d_name.0 == point && entry.d_name.1 == 0)
-      || (entry.d_name.0 == point && entry.d_name.1 == point && entry.d_name.2 == 0)
+      entry.isInvalid
     }
 
     /// entry name (up to MAXPATHLEN bytes)

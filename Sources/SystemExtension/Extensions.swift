@@ -34,4 +34,7 @@ extension FileDescriptor {
       try read(into: UnsafeMutableRawBufferPointer(start: ptr, count: count))
     }
   }
+
+  @_alwaysEmitIntoClient
+  public static var currentWorkingDirectory: Self { .init(rawValue: AT_FDCWD) }
 }

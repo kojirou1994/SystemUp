@@ -24,9 +24,9 @@ public struct FileUtility {
   }
 
   @_alwaysEmitIntoClient
-  public static func createDirectoryIntermediately(_ path: FilePath) throws {
+  public static func createDirectoryIntermediately(_ path: FilePath, permissions: FilePermissions = .directoryDefault) throws {
     do {
-      let fileStat = try fileStatus(path, resolveSymbolicLink: true)
+      let fileStat = try fileStatus(path)
       if fileStat.fileType == .directory {
         return
       } else {
@@ -36,10 +36,10 @@ public struct FileUtility {
       // create parent
       var parent = path
       if parent.removeLastComponent(), !parent.isEmpty {
-        try createDirectoryIntermediately(parent)
+        try createDirectoryIntermediately(parent, permissions: permissions)
       }
     }
-    try createDirectory(path, permissions: [.ownerReadWriteExecute, .groupReadWriteExecute, .otherReadWriteExecute])
+    try createDirectory(path, permissions: permissions)
   }
 
   @_alwaysEmitIntoClient
@@ -48,7 +48,7 @@ public struct FileUtility {
     print(#function, self)
 #endif
     assert(!path.isEmpty)
-    let s = try fileStatus(path, resolveSymbolicLink: false)
+    let s = try fileStatus(path, flags: .noFollow)
     if s.fileType == .directory {
       try removeDirectoryRecursive(path)
     } else {
@@ -107,60 +107,59 @@ public struct FileUtility {
 
   @_alwaysEmitIntoClient
   public static func fileStatus(_ fd: FileDescriptor) throws -> FileStatus {
-    var s = stat()
-    try valueOrErrno(
-      fstat(fd.rawValue, &s)
-    )
-    return .init(s)
+    var s = FileStatus(.init())
+    try fileStatus(fd, into: &s)
+    return s
   }
 
   @_alwaysEmitIntoClient
-  public static func fileStatus(_ path: FilePath, resolveSymbolicLink: Bool) throws -> FileStatus {
-    assert(!path.isEmpty)
-    var s = stat()
+  public static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) throws {
     try valueOrErrno(
-      path.withPlatformString { path -> Int32 in
-        if resolveSymbolicLink {
-          return stat(path, &s)
-        } else {
-          return lstat(path, &s)
-        }
+      fstat(fd.rawValue, &status.status)
+    )
+  }
+
+  @_alwaysEmitIntoClient
+  public static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = []) throws -> FileStatus {
+    var s = FileStatus(.init())
+    try fileStatus(path, relativeTo: fd, flags: flags, into: &s)
+    return s
+  }
+
+  @_alwaysEmitIntoClient
+  public static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = [], into status: inout FileStatus) throws {
+    assert(!path.isEmpty)
+    assert(flags.isSubset(of: [.noFollow]))
+    try valueOrErrno(
+      path.withPlatformString { path in
+        fstatat(fd.rawValue, path, &status.status, flags.rawValue)
       })
-    return .init(s)
   }
 }
 
+// MARK: symbolic link
 extension FileUtility {
 
   @_alwaysEmitIntoClient
-  public static func symLink(_ path: FilePath, to dest: String) throws {
+  public static func symLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toDestination dest: FilePath) throws {
     assert(!path.isEmpty)
-    try valueOrErrno(
-      path.withPlatformString { path in
-        symlink(dest, path)
-      }
-    )
-  }
-
-  @_alwaysEmitIntoClient
-  public static func symLink(_ path: FilePath, to dest: FilePath) throws {
-    assert(!path.isEmpty)
+//    assert(!dest.isEmpty)
     try valueOrErrno(
       path.withPlatformString { path in
         dest.withPlatformString { dest in
-          symlink(dest, path)
+          symlinkat(dest, fd.rawValue, path)
         }
       }
     )
   }
 
   @_alwaysEmitIntoClient
-  public static func readLink(_ path: FilePath) throws -> String {
+  public static func readLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory) throws -> String {
     assert(!path.isEmpty)
     let count = Int(PATH_MAX) + 1
     return try .init(capacity: count) { ptr in
       try path.withPlatformString { path in
-        let newCount = readlink(path, ptr.assumingMemoryBound(to: CChar.self), count)
+        let newCount = readlinkat(fd.rawValue, path, ptr.assumingMemoryBound(to: CChar.self), count)
         if newCount == -1 {
           throw Errno.current
         }
@@ -186,14 +185,16 @@ extension FileUtility {
   }
 }
 
+// MARK: chmod
 extension FileUtility {
 
   @_alwaysEmitIntoClient
-  public static func changeMode(_ path: FilePath, permissions: FilePermissions) throws {
+  public static func changeMode(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, permissions: FilePermissions, flags: AtFlags = []) throws {
     assert(!path.isEmpty)
+    assert(flags.isSubset(of: [.noFollow]))
     try valueOrErrno(
       path.withPlatformString { path in
-        chmod(path, permissions.rawValue)
+        fchmodat(fd.rawValue, path, permissions.rawValue, flags.rawValue)
       }
     )
   }
@@ -204,6 +205,11 @@ extension FileUtility {
       fchmod(fd.rawValue, permissions.rawValue)
     )
   }
+
+}
+
+// MARK: chflags
+extension FileUtility {
 
   public typealias FileFlags = UInt32
 
@@ -279,12 +285,7 @@ extension FileUtility {
   }
 
   @_alwaysEmitIntoClient
-  public static func checkAccessibility(_ path: FilePath, accessibility: Accessibility, flags: AtFlags) -> Bool {
-    checkAccessibility(path, relativeTo: .init(rawValue: AT_FDCWD), accessibility: accessibility, flags: flags)
-  }
-
-  @_alwaysEmitIntoClient
-  public static func checkAccessibility(_ path: FilePath, relativeTo fd: FileDescriptor, accessibility: Accessibility, flags: AtFlags) -> Bool {
+  public static func checkAccessibility(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, accessibility: Accessibility, flags: AtFlags = []) -> Bool {
     assert(!path.isEmpty)
     assert(flags.isSubset(of: [.noFollow, .effectiveAccess]))
     return path.withPlatformString { path in
