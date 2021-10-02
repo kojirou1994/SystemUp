@@ -8,153 +8,88 @@ import Foundation
 import SyscallValue
 import KwiftC
 
-public struct FileUtility {
+public enum FileUtility {
+}
+
+public extension FileUtility {
 
   @_alwaysEmitIntoClient
-  public static func createDirectory(_ path: FilePath, permissions: FilePermissions = .directoryDefault) throws {
-#if DEBUG && Xcode
-    print(#function, path)
-#endif
+  static func createDirectory(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, permissions: FilePermissions = .directoryDefault) throws {
     assert(!path.isEmpty)
-    try valueOrErrno(
-      path.withPlatformString { str in
-        mkdir(str, permissions.rawValue)
+    try nothingOrErrno(retryOnInterrupt: false) {
+      path.withPlatformString { path in
+        mkdirat(fd.rawValue, path, permissions.rawValue)
       }
-    )
+    }.get()
   }
 
   @_alwaysEmitIntoClient
-  public static func createDirectoryIntermediately(_ path: FilePath, permissions: FilePermissions = .directoryDefault) throws {
-    do {
-      let fileStat = try fileStatus(path)
-      if fileStat.fileType == .directory {
-        return
-      } else {
-        throw Errno.fileExists
-      }
-    } catch Errno.noSuchFileOrDirectory {
-      // create parent
-      var parent = path
-      if parent.removeLastComponent(), !parent.isEmpty {
-        try createDirectoryIntermediately(parent, permissions: permissions)
-      }
-    }
-    try createDirectory(path, permissions: permissions)
-  }
-
-  @_alwaysEmitIntoClient
-  public static func remove(_ path: FilePath) throws {
-#if DEBUG && Xcode
-    print(#function, self)
-#endif
+  static func unlink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = []) throws {
     assert(!path.isEmpty)
-    let s = try fileStatus(path, flags: .noFollow)
-    if s.fileType == .directory {
-      try removeDirectoryRecursive(path)
-    } else {
-      try unlinkFile(path)
-    }
-  }
-
-  @_alwaysEmitIntoClient
-  public static func unlinkFile(_ path: FilePath) throws {
-#if DEBUG && Xcode
-    print(#function, self)
-#endif
-    assert(!path.isEmpty)
-    try valueOrErrno(
-      path.withPlatformString { str in
-        unlink(str)
+    assert(flags.isSubset(of: [.removeDir]))
+    try nothingOrErrno(retryOnInterrupt: false) {
+      path.withPlatformString { path in
+        unlinkat(fd.rawValue, path, flags.rawValue)
       }
-    )
+    }.get()
   }
 
   @_alwaysEmitIntoClient
-  public static func removeDirectory(_ path: FilePath) throws {
-#if DEBUG && Xcode
-    print(#function, self)
-#endif
-    assert(!path.isEmpty)
-    try valueOrErrno(
-      path.withPlatformString { str in
-        rmdir(str)
-      }
-    )
+  static func removeDirectory(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory) throws {
+    try unlink(path, relativeTo: fd, flags: .removeDir)
   }
 
   @_alwaysEmitIntoClient
-  public static func removeDirectoryRecursive(_ path: FilePath) throws {
-#if DEBUG && Xcode
-    print(#function, self)
-#endif
-    try Directory.open(path)
-      .closeAfter { directory in
-        var entry = Directory.Entry()
-        while try directory.read(into: &entry) {
-          if entry.isInvalid {
-            continue
-          }
-          let entryName = entry.name
-          let childPath = path.appending(entryName)
-          switch entry.fileType {
-          case .directory: try removeDirectoryRecursive(childPath)
-          default: try unlinkFile(childPath)
-          }
-        }
-      } // Directory open
-    try removeDirectory(path)
-  }
-
-  @_alwaysEmitIntoClient
-  public static func fileStatus(_ fd: FileDescriptor) throws -> FileStatus {
-    var s = FileStatus(.init())
+  static func fileStatus(_ fd: FileDescriptor) throws -> FileStatus {
+    var s = FileStatus()
     try fileStatus(fd, into: &s)
     return s
   }
 
   @_alwaysEmitIntoClient
-  public static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) throws {
-    try valueOrErrno(
+  static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
       fstat(fd.rawValue, &status.status)
-    )
+    }.get()
   }
 
   @_alwaysEmitIntoClient
-  public static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = []) throws -> FileStatus {
-    var s = FileStatus(.init())
+  static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = []) throws -> FileStatus {
+    var s = FileStatus()
     try fileStatus(path, relativeTo: fd, flags: flags, into: &s)
     return s
   }
 
   @_alwaysEmitIntoClient
-  public static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = [], into status: inout FileStatus) throws {
+  static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = [], into status: inout FileStatus) throws {
     assert(!path.isEmpty)
     assert(flags.isSubset(of: [.noFollow]))
-    try valueOrErrno(
+    try nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
         fstatat(fd.rawValue, path, &status.status, flags.rawValue)
-      })
+      }
+    }.get()
   }
 }
 
 // MARK: symbolic link
-extension FileUtility {
+public extension FileUtility {
 
   @_alwaysEmitIntoClient
-  public static func symLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toDestination dest: FilePath) throws {
+  static func createSymbolicLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toDestination dest: FilePath) throws {
     assert(!path.isEmpty)
-//    assert(!dest.isEmpty)
-    try valueOrErrno(
+    //    assert(!dest.isEmpty)
+    try nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
         dest.withPlatformString { dest in
           symlinkat(dest, fd.rawValue, path)
         }
       }
-    )
+    }.get()
   }
 
   @_alwaysEmitIntoClient
-  public static func readLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory) throws -> String {
+  static func readLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory) throws -> String {
     assert(!path.isEmpty)
     let count = Int(PATH_MAX) + 1
     return try .init(capacity: count) { ptr in
@@ -169,7 +104,7 @@ extension FileUtility {
   }
 
   @_alwaysEmitIntoClient
-  public static func realPath(_ path: FilePath) throws -> FilePath {
+  static func realPath(_ path: FilePath) throws -> FilePath {
     assert(!path.isEmpty)
     return try .init(String(capacity: Int(PATH_MAX) + 1, { buffer in
       try path.withPlatformString { path in
@@ -186,76 +121,127 @@ extension FileUtility {
 }
 
 // MARK: chmod
-extension FileUtility {
+public extension FileUtility {
 
   @_alwaysEmitIntoClient
-  public static func changeMode(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, permissions: FilePermissions, flags: AtFlags = []) throws {
+  static func set(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, permissions: FilePermissions, flags: AtFlags = []) throws {
     assert(!path.isEmpty)
     assert(flags.isSubset(of: [.noFollow]))
-    try valueOrErrno(
+    try nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
         fchmodat(fd.rawValue, path, permissions.rawValue, flags.rawValue)
       }
-    )
+    }.get()
   }
 
   @_alwaysEmitIntoClient
-  public static func changeMode(_ fd: FileDescriptor, permissions: FilePermissions) throws {
-    try valueOrErrno(
+  static func set(_ fd: FileDescriptor, permissions: FilePermissions) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
       fchmod(fd.rawValue, permissions.rawValue)
-    )
+    }.get()
   }
 
 }
 
 // MARK: chflags
-extension FileUtility {
+public extension FileUtility {
 
-  public typealias FileFlags = UInt32
+  struct FileFlags: OptionSet {
 
-  @_alwaysEmitIntoClient
-  public static func changeFlags(_ path: FilePath, flags: FileFlags) throws {
-    try valueOrErrno(
-      path.withPlatformString { path in
-        chflags(path, flags)
-      }
-    )
+    @_alwaysEmitIntoClient
+    public init(rawValue: UInt32) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient
+    internal init(_ rawValue: Int32) {
+      self.rawValue = .init(rawValue)
+    }
+
+    @_alwaysEmitIntoClient
+    public let rawValue: UInt32
+
+    /// Do not dump the file.
+    @_alwaysEmitIntoClient
+    public static var userNoDump: Self { .init(UF_NODUMP) }
+
+    /// The file may not be changed.
+    @_alwaysEmitIntoClient
+    public static var userImmutable: Self { .init(UF_IMMUTABLE) }
+
+    /// The file may only be appended to.
+    @_alwaysEmitIntoClient
+    public static var userAppend: Self { .init(UF_APPEND) }
+
+    /// The directory is opaque when viewed through a union stack.
+    @_alwaysEmitIntoClient
+    public static var userOpaque: Self { .init(UF_OPAQUE) }
+
+    /// The file or directory is not intended to be displayed to the user.
+    @_alwaysEmitIntoClient
+    public static var userHidden: Self { .init(UF_HIDDEN) }
+
+    /// The file has been archived.
+    @_alwaysEmitIntoClient
+    public static var superArchived: Self { .init(SF_ARCHIVED) }
+
+    /// The file may not be changed.
+    @_alwaysEmitIntoClient
+    public static var superImmutable: Self { .init(SF_IMMUTABLE) }
+
+    /// The file may only be appended to.
+    @_alwaysEmitIntoClient
+    public static var superAppend: Self { .init(SF_APPEND) }
+
+    /// The file is a dataless placeholder.  The system will attempt to materialize it when accessed according to the dataless file materialization policy of the accessing thread or process.  See getiopolicy_np(3).
+    @_alwaysEmitIntoClient
+    public static var superDataless: Self { .init(SF_DATALESS) }
+
   }
 
   @_alwaysEmitIntoClient
-  public static func changeFlags(_ fd: FileDescriptor, flags: FileFlags) throws {
-    try valueOrErrno(
-      fchflags(fd.rawValue, flags)
-    )
+  static func set(_ path: FilePath, flags: FileFlags) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
+      path.withPlatformString { path in
+        chflags(path, flags.rawValue)
+      }
+    }.get()
+  }
+
+  @_alwaysEmitIntoClient
+  static func set(_ fd: FileDescriptor, flags: FileFlags) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
+      fchflags(fd.rawValue, flags.rawValue)
+    }.get()
   }
 }
 
 // MARK: truncate
-extension FileUtility {
+public extension FileUtility {
 
   @_alwaysEmitIntoClient
-  public static func changeFileSize(_ path: FilePath, size: Int) throws {
+  static func truncate(_ path: FilePath, size: Int) throws {
     assert(!path.isEmpty)
-    try valueOrErrno(
+    try nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
-        truncate(path, off_t(size))
+        system_truncate(path, off_t(size))
       }
-    )
+    }.get()
   }
 
   @_alwaysEmitIntoClient
-  public static func changeFileSize(_ fd: FileDescriptor, size: Int) throws {
-    try valueOrErrno(
-      ftruncate(fd.rawValue, off_t(size))
-    )
+  static func truncate(_ fd: FileDescriptor, size: Int) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
+      system_ftruncate(fd.rawValue, off_t(size))
+    }.get()
   }
 
 }
 
 // MARK: access
-extension FileUtility {
+public extension FileUtility {
 
-  public struct Accessibility: OptionSet {
+  struct Accessibility: OptionSet {
 
     @_alwaysEmitIntoClient
     public init(rawValue: Int32) {
@@ -285,52 +271,55 @@ extension FileUtility {
   }
 
   @_alwaysEmitIntoClient
-  public static func checkAccessibility(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, accessibility: Accessibility, flags: AtFlags = []) -> Bool {
+  static func check(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, accessibility: Accessibility, flags: AtFlags = []) -> Bool {
     assert(!path.isEmpty)
     assert(flags.isSubset(of: [.noFollow, .effectiveAccess]))
     return path.withPlatformString { path in
-      faccessat(fd.rawValue, path, accessibility.rawValue, flags.rawValue) == 0
+      system_access(fd.rawValue, path, accessibility.rawValue, flags.rawValue) == 0
     }
   }
 
 }
 
-public struct AtFlags: OptionSet {
+public extension FileUtility {
+  struct AtFlags: OptionSet {
 
-  @_alwaysEmitIntoClient
-  public init(rawValue: Int32) {
-    self.rawValue = rawValue
+    @_alwaysEmitIntoClient
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient
+    internal init(_ rawValue: Int32) {
+      self.rawValue = .init(rawValue)
+    }
+
+    @_alwaysEmitIntoClient
+    public let rawValue: Int32
+
+    /// Use effective ids in access check
+    @_alwaysEmitIntoClient
+    public static var effectiveAccess: Self { .init(AT_EACCESS) }
+
+    /// Act on the symlink itself not the target
+    @_alwaysEmitIntoClient
+    public static var noFollow: Self { .init(AT_SYMLINK_NOFOLLOW) }
+
+    /// Act on target of symlink
+    @_alwaysEmitIntoClient
+    public static var follow: Self { .init(AT_SYMLINK_FOLLOW) }
+
+    /// Path refers to directory
+    @_alwaysEmitIntoClient
+    public static var removeDir: Self { .init(AT_REMOVEDIR) }
+
+    /// Return real device inodes resides on for fstatat(2)
+    @_alwaysEmitIntoClient
+    public static var realDevice: Self { .init(AT_REALDEV) }
+
+    /// Use only the fd and Ignore the path for fstatat(2)
+    @_alwaysEmitIntoClient
+    public static var fdOnly: Self { .init(AT_FDONLY) }
   }
 
-  @_alwaysEmitIntoClient
-  internal init(_ rawValue: Int32) {
-    self.rawValue = .init(rawValue)
-  }
-
-  @_alwaysEmitIntoClient
-  public let rawValue: Int32
-
-  /// Use effective ids in access check
-  @_alwaysEmitIntoClient
-  public static var effectiveAccess: Self { .init(AT_EACCESS) }
-
-  /// Act on the symlink itself not the target
-  @_alwaysEmitIntoClient
-  public static var noFollow: Self { .init(AT_SYMLINK_NOFOLLOW) }
-
-  /// Act on target of symlink
-  @_alwaysEmitIntoClient
-  public static var follow: Self { .init(AT_SYMLINK_FOLLOW) }
-
-  /// Path refers to directory
-  @_alwaysEmitIntoClient
-  public static var removeDir: Self { .init(AT_REMOVEDIR) }
-
-  /// Return real device inodes resides on for fstatat(2)
-  @_alwaysEmitIntoClient
-  public static var realDevice: Self { .init(AT_REALDEV) }
-
-  /// Use only the fd and Ignore the path for fstatat(2)
-  @_alwaysEmitIntoClient
-  public static var fdOnly: Self { .init(AT_FDONLY) }
 }

@@ -34,10 +34,15 @@ public struct RecursiveDirectoryReader {
   }
 
   private static func _recursiveOpen(_ path: FilePath, isCancelled: inout Bool, level: Int, body: (ReadResult) throws -> ReadContinuation, onError: (FilePath, Errno) throws -> Void) throws {
+//    if isCancelled {
+//      return
+//    }
+    print(#function, path)
     let directory: Directory
     do {
       directory = try Directory.open(path)
     } catch let err as Errno {
+      print("opendir error, call onError")
       return try onError(path, err)
     }
 
@@ -62,6 +67,7 @@ public struct RecursiveDirectoryReader {
         }
 
         if isCancelled {
+          print("isCancelled! Exit from \(path)")
           return
         }
       }
@@ -186,11 +192,9 @@ public struct Directory {
 
   @_alwaysEmitIntoClient
   public func close() {
-    do {
-      try valueOrErrno(closedir(dir))
-    } catch {
+    if case .failure(let err) = nothingOrErrno(retryOnInterrupt: false, { closedir(dir) }) {
       // error is ignored
-      assertionFailure("close dir failed: \(error)")
+      assertionFailure("close dir failed: \(err)")
     }
   }
 
@@ -218,7 +222,9 @@ public struct Directory {
   @_alwaysEmitIntoClient
   public func read(into entry: inout Directory.Entry) throws -> Bool {
     var entryPtr: UnsafeMutablePointer<dirent>?
-    try valueOrErrno(readdir_r(dir, &entry.entry, &entryPtr))
+    try nothingOrErrno(retryOnInterrupt: false) {
+      readdir_r(dir, &entry.entry, &entryPtr)
+    }.get()
     if _slowPath(entryPtr == nil) {
       return false
     }

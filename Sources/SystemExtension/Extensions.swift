@@ -21,10 +21,22 @@ extension Errno {
 }
 
 @_alwaysEmitIntoClient
-func valueOrErrno<I: FixedWidthInteger>(
-  _ i: I
-) throws {
-  if i != 0 { throw Errno.current }
+internal func valueOrErrno<I: FixedWidthInteger>(retryOnInterrupt: Bool, _ body: () -> I) -> Result<I, Errno> {
+  repeat {
+    let i = body()
+    guard i != -1 else {
+      return .success(i)
+    }
+    let err = Errno.current
+    guard retryOnInterrupt && err == .interrupted else {
+      return .failure(err)
+    }
+  } while true
+}
+
+@_alwaysEmitIntoClient
+internal func nothingOrErrno<I: FixedWidthInteger>(retryOnInterrupt: Bool, _ body: () -> I) -> Result<Void, Errno> {
+  valueOrErrno(retryOnInterrupt: retryOnInterrupt, body).map { _ in () }
 }
 
 extension FileDescriptor {

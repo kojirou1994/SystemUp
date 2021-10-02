@@ -95,9 +95,9 @@ public final class CopyFileState {
   }
 
   private func _set(flag: Int32, thing: UnsafeRawPointer?) throws -> Self {
-    try valueOrErrno(
+    try nothingOrErrno(retryOnInterrupt: false) {
       copyfile_state_set(state, UInt32(flag), thing)
-    )
+    }.get()
     return self
   }
 
@@ -144,10 +144,10 @@ public final class CopyFileState {
     return .init(cString: str)
   }
 
-  private func _get(flag: Int32, thing: UnsafeMutableRawPointer) throws{
-    try valueOrErrno(
+  private func _get(flag: Int32, thing: UnsafeMutableRawPointer) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
       copyfile_state_get(state, UInt32(flag), thing)
-    )
+    }.get()
   }
 
   public func set(srcFD: FileDescriptor?) throws -> Self {
@@ -215,19 +215,19 @@ private func copyfile_callback(what: Int32, stage: Int32, state: copyfile_state_
 extension FileUtility {
 
   public static func copyFile(from src: FilePath, to dst: FilePath, state: CopyFileState? = nil, flags: CopyFlags = []) throws {
-    try valueOrErrno(
+    try nothingOrErrno(retryOnInterrupt: false) {
       src.withPlatformString { src in
         dst.withPlatformString { dst in
           copyfile(src, dst, state?.state, flags.rawValue)
         }
       }
-    )
+    }.get()
   }
 
   public static func copyFile(from src: FileDescriptor, to dst: FileDescriptor, state: CopyFileState? = nil, flags: CopyFlags = []) throws {
-    try valueOrErrno(
+    try nothingOrErrno(retryOnInterrupt: false) {
       fcopyfile(src.rawValue, dst.rawValue, state?.state, flags.rawValue)
-    )
+    }.get()
   }
 
 }

@@ -23,13 +23,13 @@ extension FileUtility {
 
   @available(macOS 10.12, *)
   public static func cloneFile(from src: FilePath, to dst: FilePath, flags: CloneFlags = []) throws {
-    try valueOrErrno(
+    try nothingOrErrno(retryOnInterrupt: false) {
       src.withPlatformString { src in
         dst.withPlatformString { dst in
           clonefile(src, dst, flags.rawValue)
         }
       }
-    )
+    }.get()
   }
   
 }

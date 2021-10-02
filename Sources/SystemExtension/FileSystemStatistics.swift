@@ -8,34 +8,47 @@ import SyscallValue
 import KwiftC
 
 public extension FileUtility {
+
+  @_alwaysEmitIntoClient
   static func fileSystemStatistics(_ fd: FileDescriptor) throws -> FileSystemStatistics {
-    var s = statfs()
-    try valueOrErrno(
-      fstatfs(fd.rawValue, &s)
-    )
-    return .init(s)
+    var s = FileSystemStatistics()
+    try fileSystemStatistics(fd, into: &s)
+    return s
   }
 
   @_alwaysEmitIntoClient
   static func fileSystemStatistics(_ path: FilePath) throws -> FileSystemStatistics {
-    var s = statfs()
-    try valueOrErrno(
+    var s = FileSystemStatistics()
+    try fileSystemStatistics(path, into: &s)
+    return s
+  }
+
+  @_alwaysEmitIntoClient
+  static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
+      fstatfs(fd.rawValue, &s.value)
+    }.get()
+  }
+
+  @_alwaysEmitIntoClient
+  static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
-        statfs(path, &s)
+        statfs(path, &s.value)
       }
-    )
-    return .init(s)
+    }.get()
   }
 }
 
 public struct FileSystemStatistics {
 
+  /// the c struct
   @_alwaysEmitIntoClient
-  private let value: statfs
+  fileprivate var value: statfs
 
   @_alwaysEmitIntoClient
-  internal init(_ value: statfs) {
-    self.value = value
+  public init() {
+    self.value = .init()
   }
 
 }

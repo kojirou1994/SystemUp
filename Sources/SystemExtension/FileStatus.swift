@@ -9,8 +9,8 @@ import Foundation
 public struct FileStatus {
   
   @_alwaysEmitIntoClient
-  internal init(_ status: stat) {
-    self.status = status
+  public init() {
+    self.status = .init()
   }
   
   @_alwaysEmitIntoClient
