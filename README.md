@@ -1,3 +1,3 @@
 # SystemExtension
 
-A description of this package.
+Only for darwin platforms.
