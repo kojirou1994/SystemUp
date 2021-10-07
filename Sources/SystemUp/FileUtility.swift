@@ -323,3 +323,59 @@ public extension FileUtility {
   }
 
 }
+
+// MARK: rename
+public extension FileUtility {
+
+  struct RenameFlags: OptionSet {
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: UInt32) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient
+    internal init(_ rawValue: Int32) {
+      self.rawValue = .init(rawValue)
+    }
+
+    @_alwaysEmitIntoClient
+    public let rawValue: UInt32
+
+    /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_SWAP), it will cause the source and target to be atomically swapped.  Source and target need not be of the same type, i.e. it is possible to swap a file with a directory.  EINVAL is returned in case of bitwise-inclusive OR with RENAME_EXCL.
+    @_alwaysEmitIntoClient
+    public static var swap: Self { .init(RENAME_SWAP) }
+
+    /// The file may not be changed.
+    @_alwaysEmitIntoClient
+    public static var excl: Self { .init(RENAME_EXCL) }
+
+  }
+
+  @_alwaysEmitIntoClient
+  static func rename(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toNewPath newPath: FilePath, newPathRelativeTo tofd: FileDescriptor = .currentWorkingDirectory) throws {
+    assert(!path.isEmpty)
+    assert(!newPath.isEmpty)
+    try nothingOrErrno(retryOnInterrupt: false) {
+      path.withPlatformString { old in
+        newPath.withPlatformString { new in
+          renameat(fd.rawValue, old, tofd.rawValue, new)
+        }
+      }
+    }.get()
+  }
+
+  @_alwaysEmitIntoClient
+  @available(macOS 10.12, *)
+  static func rename(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toNewPath newPath: FilePath, newPathRelativeTo tofd: FileDescriptor = .currentWorkingDirectory, flags: RenameFlags) throws {
+    assert(!path.isEmpty)
+    assert(!newPath.isEmpty)
+    try nothingOrErrno(retryOnInterrupt: false) {
+      path.withPlatformString { old in
+        newPath.withPlatformString { new -> Int32 in
+          renameatx_np(fd.rawValue, old, tofd.rawValue, new, flags.rawValue)
+        }
+      }
+    }.get()
+  }
+}
