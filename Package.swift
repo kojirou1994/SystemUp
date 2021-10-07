@@ -3,9 +3,9 @@
 import PackageDescription
 
 let package = Package(
-  name: "SystemExtension",
+  name: "SystemUp",
   products: [
-    .library(name: "SystemExtension", targets: ["SystemExtension"]),
+    .library(name: "SystemUp", targets: ["SystemUp"]),
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
@@ -14,7 +14,7 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "SystemExtension",
+      name: "SystemUp",
       dependencies: [
         .product(name: "SyscallValue", package: "SyscallValue"),
         .product(name: "KwiftC", package: "Kwift"),
@@ -22,6 +22,6 @@ let package = Package(
       ]),
     .testTarget(
       name: "SystemExtensionTests",
-      dependencies: ["SystemExtension"]),
+      dependencies: ["SystemUp"]),
   ]
 )

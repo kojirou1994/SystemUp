@@ -153,19 +153,23 @@ public final class CopyFileState {
   public func set(srcFD: FileDescriptor?) throws -> Self {
     try set(flag: COPYFILE_STATE_SRC_FD, value: srcFD?.rawValue ?? -2)
   }
+
   public func set(src: FilePath) throws -> Self {
     try src.withPlatformString { path in
       try _set(flag: COPYFILE_STATE_SRC_FILENAME, thing: path)
     }
   }
+
   public func set(dstFD: FileDescriptor?) throws -> Self {
     try set(flag: COPYFILE_STATE_DST_FD, value: dstFD?.rawValue ?? -2)
   }
+
   public func set(dst: FilePath) throws -> Self {
     try dst.withPlatformString { path in
       try _set(flag: COPYFILE_STATE_DST_FILENAME, thing: path)
     }
   }
+
 }
 
 public struct CopyFileWhat: RawRepresentable, Equatable {

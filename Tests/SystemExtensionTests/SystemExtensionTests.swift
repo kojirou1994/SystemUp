@@ -1,6 +1,6 @@
 import XCTest
 import SystemPackage
-import SystemExtension
+import SystemUp
 import Foundation
 
 final class SystemExtensionTests: XCTestCase {
