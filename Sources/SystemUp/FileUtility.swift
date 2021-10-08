@@ -346,23 +346,34 @@ public extension FileUtility {
     @_alwaysEmitIntoClient
     public static var swap: Self { .init(RENAME_SWAP) }
 
-    /// The file may not be changed.
+    /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_EXCL), it will cause EEXIST to be returned if the destination already exists. EINVAL is returned in case of bitwise-inclusive OR with RENAME_SWAP.
     @_alwaysEmitIntoClient
-    public static var excl: Self { .init(RENAME_EXCL) }
+    public static var exclisive: Self { .init(RENAME_EXCL) }
 
   }
 
+  /// The rename() system call causes the link named old to be renamed as new.  If new exists, it is first removed.  Both old and new must be of the same type (that is, both must be either directories or non-directories) and must reside on the same file system.
+  /// - Parameters:
+  ///   - path: src path
+  ///   - fd: src path relative opened directory fd
+  ///   - newPath: dst path
+  ///   - tofd: dst path relative opened directory fd
   @_alwaysEmitIntoClient
   static func rename(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toNewPath newPath: FilePath, newPathRelativeTo tofd: FileDescriptor = .currentWorkingDirectory) throws {
+    try _rename(path, relativeTo: fd, toNewPath: newPath, newPathRelativeTo: tofd).get()
+  }
+
+  @usableFromInline
+  internal static func _rename(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toNewPath newPath: FilePath, newPathRelativeTo tofd: FileDescriptor = .currentWorkingDirectory) -> Result<Void, Errno> {
     assert(!path.isEmpty)
     assert(!newPath.isEmpty)
-    try nothingOrErrno(retryOnInterrupt: false) {
+    return nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { old in
         newPath.withPlatformString { new in
           renameat(fd.rawValue, old, tofd.rawValue, new)
         }
       }
-    }.get()
+    }
   }
 
   @_alwaysEmitIntoClient
@@ -376,6 +387,31 @@ public extension FileUtility {
           renameatx_np(fd.rawValue, old, tofd.rawValue, new, flags.rawValue)
         }
       }
+    }.get()
+  }
+}
+
+// MARK: cwd
+public extension FileUtility {
+  static var currentDirectoryPath: FilePath {
+    let path = getcwd(nil, 0)!
+    defer {
+      free(path)
+    }
+    return .init(platformString: path)
+  }
+
+  static func changeCurrentDirectoryPath(_ path: FilePath) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
+      path.withPlatformString { path in
+        chdir(path)
+      }
+    }.get()
+  }
+
+  static func changeCurrentDirectoryPath(_ fd: FileDescriptor) throws {
+    try nothingOrErrno(retryOnInterrupt: false) {
+      fchdir(fd.rawValue)
     }.get()
   }
 }
