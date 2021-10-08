@@ -1,5 +1,16 @@
 import SystemPackage
 
+extension FilePath {
+  public var fileExists: Bool {
+    do {
+      _ = try FileUtility.fileStatus(self, flags: .noFollow)
+      return true
+    } catch {
+      return false
+    }
+  }
+}
+
 public extension FileUtility {
 
   @_alwaysEmitIntoClient
