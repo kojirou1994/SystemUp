@@ -24,12 +24,13 @@ extension Errno {
 internal func valueOrErrno<I: FixedWidthInteger>(retryOnInterrupt: Bool, _ body: () -> I) -> Result<I, Errno> {
   repeat {
     let i = body()
-    guard i != -1 else {
+    if i == -1 {
+      let err = Errno.current
+      guard retryOnInterrupt && err == .interrupted else {
+        return .failure(err)
+      }
+    } else {
       return .success(i)
-    }
-    let err = Errno.current
-    guard retryOnInterrupt && err == .interrupted else {
-      return .failure(err)
     }
   } while true
 }
