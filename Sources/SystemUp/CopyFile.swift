@@ -229,6 +229,11 @@ extension FileUtility {
   }
 
   public static func copyFile(from src: FileDescriptor, to dst: FileDescriptor, state: CopyFileState? = nil, flags: CopyFlags = []) throws {
+    assert(
+      CopyFlags([.recursive, .exclusive, .nofollowSrc,
+                  .nofollowDst, .nofollow, .move, .unlink,
+                 .clone, .cloneForce])
+        .intersection(flags).isEmpty, "has flags for path based copyfile")
     try nothingOrErrno(retryOnInterrupt: false) {
       fcopyfile(src.rawValue, dst.rawValue, state?.state, flags.rawValue)
     }.get()
@@ -245,27 +250,86 @@ public struct CopyFlags: OptionSet {
   }
   public let rawValue: copyfile_flags_t
 
+  // MARK: copied contents
+
+  /// Copy the source file's access control lists.
   public static var acl: Self { .init(COPYFILE_ACL) }
+  /// Copy the source file's POSIX information (mode, modification time, etc.).
   public static var stat: Self { .init(COPYFILE_STAT) }
+  /// Copy the source file's extended attributes.
   public static var xattr: Self { .init(COPYFILE_XATTR) }
+  /// Copy the source file's data.
   public static var data: Self { .init(COPYFILE_DATA) }
+
+  /// Copy the source file's POSIX and ACL information; equivalent to[.stat, .acl].
   public static var security: Self { .init(COPYFILE_SECURITY) }
+  /// Copy the metadata; equivalent to [.security, xattr].
   public static var metadata: Self { .init(COPYFILE_METADATA) }
+  /// Copy the entire file; equivalent to [.metadata, .data].
   public static var all: Self { .init(COPYFILE_ALL) }
+
+  // MARK: behavior flags
+
+  /// Causes copyfile() to recursively copy a hierarchy.
   public static var recursive: Self { .init(COPYFILE_RECURSIVE) }
+
+  /// Return a bitmask (corresponding to the flags argument) indicating which contents would be copied; no data are actually copied.  (E.g., if flags was set to COPYFILE_CHECK|COPYFILE_METADATA, and the from file had extended attributes but no ACLs, the return value would be COPYFILE_XATTR .)
   public static var check: Self { .init(COPYFILE_CHECK) }
-  public static var excl: Self { .init(COPYFILE_EXCL) }
+
+  /// Fail if the to file already exists.
+  public static var exclusive: Self { .init(COPYFILE_EXCL) }
+
+  /// Do not follow the from file, if it is a symbolic link.
   public static var nofollowSrc: Self { .init(COPYFILE_NOFOLLOW_SRC) }
+
+  /// Do not follow the to file, if it is a symbolic link.
   public static var nofollowDst: Self { .init(COPYFILE_NOFOLLOW_DST) }
+
+  /// Unlink (using remove(3)) the from file. No error is returned if remove(3) fails.  Note that remove(3) removes a symbolic link itself, not the tar-get of the link.
   public static var move: Self { .init(COPYFILE_MOVE) }
+
+  /// Unlink the to file before starting.
   public static var unlink: Self { .init(COPYFILE_UNLINK) }
+
+  /// This is a convenience macro, equivalent to [.nofollowSrc, .nofollowDst].
   public static var nofollow: Self { .init(COPYFILE_NOFOLLOW) }
+
+  /// Serialize the from file.  The to file is an AppleDouble-format file.
   public static var pack: Self { .init(COPYFILE_PACK) }
+
+  /// Unserialize the from file.  The from file is an AppleDouble-format file; the to file will have the extended attributes, ACLs, resource fork, and FinderInfo data from the to file, regardless of the flags argument passed in.
   public static var unpack: Self { .init(COPYFILE_UNPACK) }
+
+  /// Try to clone the file instead.  This is a best try flag i.e. if cloning fails, fallback to copying the
+  /// file.  This flag is equivalent to (COPYFILE_EXCL | COPYFILE_ACL | COPYFILE_STAT | COPYFILE_XATTR |
+  /// COPYFILE_DATA | COPYFILE_NOFOLLOW_SRC).  Note that if cloning is successful, progress callbacks will
+  /// not be invoked.  Note also that there is no support for cloning directories: if a directory is provided
+  /// as the source and COPYFILE_CLONE_FORCE is not passed, this will instead copy the directory.  Since this
+  /// flag implies COPYFILE_NOFOLLOW_SRC, symbolic links themselves will be cloned instead of their targets.
+  /// Recursive copying however is supported, see below for more information.
   public static var clone: Self { .init(COPYFILE_CLONE) }
+
+  /// Clone the file instead.  This is a force flag i.e. if cloning fails, an error is returned.This flag
+  /// is equivalent to (COPYFILE_EXCL | COPYFILE_ACL | COPYFILE_STAT | COPYFILE_XATTR | COPYFILE_DATA | COPY-
+  /// FILE_NOFOLLOW_SRC).  Note that if cloning is successful, progress callbacks will not be invoked.  Note
+  /// also that there is no support for cloning directories: if a directory is provided as the source, an
+  /// error will be returned.  Since this flag implies COPYFILE_NOFOLLOW_SRC, symbolic links themselves will
+  /// be cloned instead of their targets.
   public static var cloneForce: Self { .init(COPYFILE_CLONE_FORCE) }
+
+  /// If the src file has quarantine information, add the QTN_FLAG_DO_NOT_TRANSLOCATE flag to the quarantine
+  /// information of the dst file.  This allows a bundle to run in place instead of being translocated.
   public static var runInPlace: Self { .init(COPYFILE_RUN_IN_PLACE) }
+
+  /// Copy a file sparsely.  This requires that the source and destination file systems support sparse files
+  /// with hole sizes at least as large as their block sizes.  This also requires that the source file is
+  /// sparse, and for fcopyfile() the source file descriptor's offset be a multiple of the minimum hole size.
+  /// If COPYFILE_DATA is also specified, this will fall back to a full copy if sparse copying cannot be performed for any reason; otherwise, an error is returned.
   public static var dataSparse: Self { .init(COPYFILE_DATA_SPARSE) }
+
+  /// Preserve the UF_TRACKED flag at to when copying metadata, regardless of whether from has it set.  This
+  /// flag is used in conjunction with COPYFILE_STAT, or COPYFILE_CLONE (for its fallback case).
   public static var preserveDstTracked: Self { .init(COPYFILE_PRESERVE_DST_TRACKED) }
+
   public static var verbose: Self { .init(COPYFILE_VERBOSE) }
 }
