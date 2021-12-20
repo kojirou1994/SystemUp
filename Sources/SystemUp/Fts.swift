@@ -13,7 +13,7 @@ public struct Fts {
 
   private let handle: UnsafeMutablePointer<FTS>
 
-  public static func open(path: FilePath, options: Options = []) throws -> Self {
+  public static func open(path: FilePath, options: OpenOptions = []) throws -> Self {
     assert(!path.isEmpty)
 
     return try path.withPlatformString { path in
@@ -24,7 +24,7 @@ public struct Fts {
     }
   }
 
-  public static func open<C: Collection>(paths: C, options: Options = []) throws -> Self where C.Element == FilePath {
+  public static func open<C: Collection>(paths: C, options: OpenOptions = []) throws -> Self where C.Element == FilePath {
 
     let arraySize = paths.count + 1
     let pathArray = UnsafeMutablePointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: arraySize)
@@ -44,7 +44,7 @@ public struct Fts {
     return try _fts_open(pathArray, options)
   }
 
-  internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>, _ options: Options) throws -> Self {
+  internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>, _ options: OpenOptions) throws -> Self {
     precondition(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
 
     guard let ptr = fts_open(array, options.rawValue, nil) else {
@@ -53,27 +53,25 @@ public struct Fts {
     return .init(ptr)
   }
 
-  private func optionalOrErrno<T>(_ v: T?) throws -> T? {
+  private func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws -> Fts.Entry? {
     let errno = Errno.current
-    if v == nil, errno.rawValue != 0 {
+    if ptr == nil, errno.rawValue != 0 {
       throw errno
     }
-    return v
+    return ptr.map { .init($0) }
   }
 
-  public func read() throws -> UnsafeMutablePointer<Fts.Entry>? {
-    let ptr = try optionalOrErrno(fts_read(handle))
-    return .init(OpaquePointer(ptr))
+  public func read() throws -> Fts.Entry? {
+    try entryOrErrno(fts_read(handle))
   }
 
-  public func children(options: ChildrenOptions = []) throws -> UnsafeMutablePointer<Fts.Entry>? {
-    let ptr = try optionalOrErrno(fts_children(handle, options.rawValue))
-    return .init(OpaquePointer(ptr))
+  public func children(options: ChildrenOptions = []) throws -> Fts.Entry? {
+    try entryOrErrno(fts_children(handle, options.rawValue))
   }
 
-  public func set(entry: UnsafeMutablePointer<Fts.Entry>, option: SetOptions) throws {
+  public func set(entry: Fts.Entry, option: SetOption) throws {
     try nothingOrErrno(retryOnInterrupt: false) {
-      fts_set(handle, &entry.pointee.entry, option.rawValue)
+      fts_set(handle, entry.ptr, option.rawValue)
     }.get()
   }
 
@@ -98,7 +96,7 @@ public struct Fts {
 
 extension Fts {
 
-  public struct Options: OptionSet {
+  public struct OpenOptions: OptionSet {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -147,11 +145,11 @@ extension Fts {
 
     /// By default, unless they are specified as path arguments to fts_open(), any files named `.' or `..' encoun-
     /// tered in the file hierarchy are ignored.  This option causes the fts routines to return FTSENT structures for them.
-    public static var seedot: Self { .init(FTS_SEEDOT) }
+    public static var seeDot: Self { .init(FTS_SEEDOT) }
 
     /// This option prevents fts from descending into directories that have a different device number than the file
     /// from which the descent began.
-    public static var xDev: Self { .init(FTS_XDEV) }
+    public static var excludeDifferentDevice: Self { .init(FTS_XDEV) }
 
   }
 
@@ -160,93 +158,89 @@ extension Fts {
 extension Fts {
 
   public struct Entry {
+    @_alwaysEmitIntoClient
+    fileprivate init(_ ptr: UnsafeMutablePointer<FTSENT>) {
+      self.ptr = ptr
+    }
 
     @_alwaysEmitIntoClient
-    fileprivate var entry: FTSENT
+    fileprivate let ptr: UnsafeMutablePointer<FTSENT>
 
     @_alwaysEmitIntoClient
-    public var info: UInt16 {
-      entry.fts_info
+    public var info: Info {
+      .init(rawValue: ptr.pointee.fts_info)
     }
 
     @_alwaysEmitIntoClient
     public var pathToCurrentDirectory: FilePath {
-      .init(platformString: entry.fts_accpath)
+      .init(platformString: ptr.pointee.fts_accpath)
     }
 
     @_alwaysEmitIntoClient
     public var path: FilePath {
-      .init(platformString: entry.fts_path)
+      .init(platformString: ptr.pointee.fts_path)
     }
 
     @_alwaysEmitIntoClient
-    public var name: Int8 {
-      entry.fts_name
+    public var name: String {
+      .init(cString: &ptr.pointee.fts_name)
     }
 
     @_alwaysEmitIntoClient
-    public var namelen: UInt16 {
-      entry.fts_namelen
+    public var nameLength: UInt16 {
+      ptr.pointee.fts_namelen
     }
 
     @_alwaysEmitIntoClient
     public var level: Int16 {
-      entry.fts_level
+      ptr.pointee.fts_level
     }
 
     @_alwaysEmitIntoClient
     public var errno: Errno? {
-      entry.fts_errno == 0 ? nil : .init(rawValue: entry.fts_errno)
+      ptr.pointee.fts_errno == 0 ? nil : .init(rawValue: ptr.pointee.fts_errno)
     }
 
     @_alwaysEmitIntoClient
     public var number: Int {
       get {
-        entry.fts_number
+        ptr.pointee.fts_number
       }
-      _modify {
-        yield &entry.fts_number
+      nonmutating _modify {
+        yield &ptr.pointee.fts_number
       }
     }
-//
-//    @_alwaysEmitIntoClient
-//    public var pointer: UnsafeMutableRawPointer {
-//      entry.fts_pointer
-//    }
 
     @_alwaysEmitIntoClient
-    public var parent: UnsafeMutablePointer<Self> {
-      .init(OpaquePointer(entry.fts_parent))
+    public var pointer: UnsafeMutableRawPointer? {
+      get {
+        ptr.pointee.fts_pointer
+      }
+      nonmutating _modify {
+        yield &ptr.pointee.fts_pointer
+      }
     }
 
     @_alwaysEmitIntoClient
-    public var link: UnsafeMutablePointer<Self>? {
-      .init(OpaquePointer(entry.fts_link))
+    public var parent: Self {
+      .init(ptr.pointee.fts_parent)
     }
 
     @_alwaysEmitIntoClient
-    public var cycle: UnsafeMutablePointer<Self> {
-      .init(OpaquePointer(entry.fts_cycle))
+    public var link: Self? {
+      ptr.pointee.fts_link.map { .init($0) }
+    }
+
+    @_alwaysEmitIntoClient
+    public var cycle: Self {
+      .init(ptr.pointee.fts_cycle)
     }
 
     @_alwaysEmitIntoClient
     public var fileStatus: UnsafeMutablePointer<FileStatus>? {
-      .init(OpaquePointer(entry.fts_statp))
+      .init(OpaquePointer(ptr.pointee.fts_statp))
     }
 
-    var status: FileStatus {
-      get {
-        FileStatus(status: entry.fts_statp.pointee)
-      }
-      _modify {
-        yield &UnsafeMutablePointer<FileStatus>(OpaquePointer(entry.fts_statp))!.pointee
-      }
-    }
-
-    @_alwaysEmitIntoClient
-    func aa() {
-
-    }
   }
 
   public struct ChildrenOptions: OptionSet {
@@ -266,7 +260,7 @@ extension Fts {
     public static var nameOnly: Self { .init(FTS_NAMEONLY) }
   }
 
-  public struct SetOptions: RawRepresentable {
+  public struct SetOption: RawRepresentable {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -301,7 +295,7 @@ extension Fts {
     public static var skip: Self { .init(FTS_SKIP) }
   }
 
-  public struct Info: RawRepresentable {
+  public struct Info: RawRepresentable, Equatable {
 
     public init(rawValue: UInt16) {
       self.rawValue = rawValue
@@ -341,7 +335,7 @@ extension Fts {
     public static var fileNoStat: Self { .init(FTS_NS) }
 
     /// A file for which no stat(2) information was requested.  The contents of the fts_statp field are undefined.
-    public static var directoryNoStat: Self { .init(FTS_NSOK) }
+    public static var fileNoStatRequested: Self { .init(FTS_NSOK) }
 
     /// A symbolic link.
     public static var symbolic: Self { .init(FTS_SL) }
