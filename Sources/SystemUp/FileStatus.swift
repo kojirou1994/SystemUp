@@ -7,6 +7,9 @@ import Glibc
 import Foundation
 
 public struct FileStatus {
+  internal init(status: stat) {
+    self.status = status
+  }  
   
   @_alwaysEmitIntoClient
   public init() {

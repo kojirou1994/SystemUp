@@ -305,14 +305,21 @@ extension Directory {
     @_alwaysEmitIntoClient
     public var name: String {
       #if canImport(Darwin)
-      withUnsafeBytes(of: entry.d_name) { buffer in
-        String(decoding: buffer.prefix(Int(entry.d_namlen)), as: UTF8.self)
+      withNameBuffer { buffer in
+        String(decoding: buffer, as: UTF8.self)
       }
       #else
       String(cStackString: entry.d_name)
       #endif
     }
+
+    public func withNameBuffer<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
+      try withUnsafeBytes(of: entry.d_name) { buffer in
+        try body(.init(rebasing: buffer.prefix(Int(entry.d_namlen))))
+      }
+    }
   }
+
 }
 
 extension Directory {
