@@ -54,11 +54,14 @@ public struct Fts {
   }
 
   private func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws -> Fts.Entry? {
+    if let ptr = ptr {
+      return .init(ptr)
+    }
     let errno = Errno.current
-    if ptr == nil, errno.rawValue != 0 {
+    if errno.rawValue != 0 {
       throw errno
     }
-    return ptr.map { .init($0) }
+    return nil
   }
 
   public func read() throws -> Fts.Entry? {
@@ -345,4 +348,11 @@ extension Fts {
 
   }
 
+}
+
+
+extension Fts.Entry: CustomStringConvertible {
+  public var description: String {
+    "\(String(describing: Self.self))(ptr: \(ptr), name: \(name))"
+  }
 }
