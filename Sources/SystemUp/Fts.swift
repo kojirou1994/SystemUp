@@ -221,8 +221,8 @@ extension Fts {
       ptr.pointee.fts_link.map { .init($0) }
     }
 
-    public var cycle: Self {
-      .init(ptr.pointee.fts_cycle)
+    public var cycle: Self? {
+      ptr.pointee.fts_cycle.map { .init($0) }
     }
 
     public var fileStatus: UnsafeMutablePointer<FileStatus>? {
