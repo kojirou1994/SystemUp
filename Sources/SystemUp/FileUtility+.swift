@@ -13,7 +13,6 @@ extension FilePath {
 
 public extension FileUtility {
 
-  @_alwaysEmitIntoClient
   static func createDirectoryIntermediately(_ path: FilePath, permissions: FilePermissions = .directoryDefault) throws {
     do {
       let status = try fileStatus(path)
@@ -32,7 +31,6 @@ public extension FileUtility {
     try createDirectory(path, permissions: permissions)
   }
 
-  @_alwaysEmitIntoClient
   static func remove(_ path: FilePath) throws {
     assert(!path.isEmpty)
     let s = try fileStatus(path, flags: .noFollow)
@@ -43,7 +41,6 @@ public extension FileUtility {
     }
   }
 
-  @_alwaysEmitIntoClient
   static func removeDirectoryRecursive(_ path: FilePath) throws {
     try Directory.open(path)
       .closeAfter { directory in

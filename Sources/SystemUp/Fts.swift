@@ -161,50 +161,40 @@ extension Fts {
 extension Fts {
 
   public struct Entry {
-    @_alwaysEmitIntoClient
     fileprivate init(_ ptr: UnsafeMutablePointer<FTSENT>) {
       self.ptr = ptr
     }
 
-    @_alwaysEmitIntoClient
     fileprivate let ptr: UnsafeMutablePointer<FTSENT>
 
-    @_alwaysEmitIntoClient
     public var info: Info {
       .init(rawValue: ptr.pointee.fts_info)
     }
 
-    @_alwaysEmitIntoClient
     public var pathToCurrentDirectory: FilePath {
       .init(platformString: ptr.pointee.fts_accpath)
     }
 
-    @_alwaysEmitIntoClient
     public var path: FilePath {
       .init(platformString: ptr.pointee.fts_path)
     }
 
-    @_alwaysEmitIntoClient
     public var name: String {
       .init(cString: &ptr.pointee.fts_name)
     }
 
-    @_alwaysEmitIntoClient
     public var nameLength: UInt16 {
       ptr.pointee.fts_namelen
     }
 
-    @_alwaysEmitIntoClient
     public var level: Int16 {
       ptr.pointee.fts_level
     }
 
-    @_alwaysEmitIntoClient
     public var errno: Errno? {
       ptr.pointee.fts_errno == 0 ? nil : .init(rawValue: ptr.pointee.fts_errno)
     }
 
-    @_alwaysEmitIntoClient
     public var number: Int {
       get {
         ptr.pointee.fts_number
@@ -214,7 +204,6 @@ extension Fts {
       }
     }
 
-    @_alwaysEmitIntoClient
     public var pointer: UnsafeMutableRawPointer? {
       get {
         ptr.pointee.fts_pointer
@@ -224,22 +213,18 @@ extension Fts {
       }
     }
 
-    @_alwaysEmitIntoClient
     public var parent: Self {
       .init(ptr.pointee.fts_parent)
     }
 
-    @_alwaysEmitIntoClient
     public var link: Self? {
       ptr.pointee.fts_link.map { .init($0) }
     }
 
-    @_alwaysEmitIntoClient
     public var cycle: Self {
       .init(ptr.pointee.fts_cycle)
     }
 
-    @_alwaysEmitIntoClient
     public var fileStatus: UnsafeMutablePointer<FileStatus>? {
       .init(OpaquePointer(ptr.pointee.fts_statp))
     }
@@ -349,7 +334,6 @@ extension Fts {
   }
 
 }
-
 
 extension Fts.Entry: CustomStringConvertible {
   public var description: String {
