@@ -225,7 +225,7 @@ extension Fts {
       ptr.pointee.fts_cycle.map { .init($0) }
     }
 
-    public var fileStatus: UnsafeMutablePointer<FileStatus>? {
+    public var fileStatus: UnsafePointer<FileStatus>? {
       .init(OpaquePointer(ptr.pointee.fts_statp))
     }
 
