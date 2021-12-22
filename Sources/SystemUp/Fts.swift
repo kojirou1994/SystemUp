@@ -160,6 +160,21 @@ extension Fts {
 
 extension Fts {
 
+  public enum Level {
+
+    public static var rootParent: Int16 {
+      .init(FTS_ROOTPARENTLEVEL)
+    }
+
+    public static var root: Int16 {
+      .init(FTS_ROOTLEVEL)
+    }
+
+    public static var max: Int16 {
+      .init(FTS_MAXLEVEL)
+    }
+  }
+
   public struct Entry {
     fileprivate init(_ ptr: UnsafeMutablePointer<FTSENT>) {
       self.ptr = ptr
@@ -195,6 +210,7 @@ extension Fts {
       ptr.pointee.fts_errno == 0 ? nil : .init(rawValue: ptr.pointee.fts_errno)
     }
 
+    /// local numeric value
     public var number: Int {
       get {
         ptr.pointee.fts_number
@@ -204,6 +220,7 @@ extension Fts {
       }
     }
 
+    /// local address value
     public var pointer: UnsafeMutableRawPointer? {
       get {
         ptr.pointee.fts_pointer
@@ -213,16 +230,33 @@ extension Fts {
       }
     }
 
-    public var parent: Self {
+    public var parentDirectory: Self {
       .init(ptr.pointee.fts_parent)
     }
 
-    public var link: Self? {
+    /// next file in directory
+    public var nextFile: Self? {
       ptr.pointee.fts_link.map { .init($0) }
     }
 
-    public var cycle: Self? {
+    public var cycleNode: Self? {
       ptr.pointee.fts_cycle.map { .init($0) }
+    }
+
+    /// fd for symlink or chdir
+    public var symbolicFileDescriptor: FileDescriptor {
+      .init(rawValue: ptr.pointee.fts_symfd)
+    }
+    public var inode: ino_t {
+      ptr.pointee.fts_ino
+    }
+
+    public var device: dev_t {
+      ptr.pointee.fts_dev
+    }
+
+    public var linkCount: UInt16 {
+      ptr.pointee.fts_nlink
     }
 
     public var fileStatus: UnsafePointer<FileStatus>? {
@@ -296,7 +330,7 @@ extension Fts {
     public let rawValue: UInt16
 
     /// A directory being visited in pre-order.
-    public static var directory: Self { .init(FTS_D) }
+    public static var directoryPre: Self { .init(FTS_D) }
 
     /// A directory that causes a cycle in the tree.  (The fts_cycle field of the FTSENT structure will be filled in as well.)
     public static var directoryCycle: Self { .init(FTS_DC) }
@@ -337,6 +371,6 @@ extension Fts {
 
 extension Fts.Entry: CustomStringConvertible {
   public var description: String {
-    "\(String(describing: Self.self))(ptr: \(ptr), name: \(name))"
+    "\(String(describing: Self.self))(ptr: \(ptr), name: \(name), level: \(level)"
   }
 }
