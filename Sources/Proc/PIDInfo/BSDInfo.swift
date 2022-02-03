@@ -3,6 +3,7 @@ import CUtility
 
 public struct BSDInfo {
 
+  @_alwaysEmitIntoClient
   private var info: proc_bsdinfo
 
   public init() {
@@ -12,54 +13,76 @@ public struct BSDInfo {
 }
 
 public extension BSDInfo {
+
+  @_alwaysEmitIntoClient
   var flags: Flags {
     .init(rawValue: info.pbi_flags)
   }
 
+  @_alwaysEmitIntoClient
   var status: UInt32 { info.pbi_flags }
 
+  @_alwaysEmitIntoClient
   var xstatus: UInt32 { info.pbi_xstatus }
 
+  @_alwaysEmitIntoClient
   var pid: UInt32 { info.pbi_pid }
 
+  @_alwaysEmitIntoClient
   var ppid: UInt32 { info.pbi_ppid }
 
+  @_alwaysEmitIntoClient
   var uid: uid_t { info.pbi_uid }
 
+  @_alwaysEmitIntoClient
   var gid: gid_t { info.pbi_gid }
 
+  @_alwaysEmitIntoClient
   var ruid: uid_t { info.pbi_ruid }
 
+  @_alwaysEmitIntoClient
   var rgid: gid_t { info.pbi_rgid }
 
+  @_alwaysEmitIntoClient
   var svuid: uid_t { info.pbi_svuid }
 
+  @_alwaysEmitIntoClient
   var svgid: gid_t { info.pbi_svgid }
 
   //  public var rfu_1: UInt32 /* reserved */
 
+  @_alwaysEmitIntoClient
   var comm: String {
     .init(cStackString: info.pbi_comm)
   }
 
+  @_alwaysEmitIntoClient
   var name: String {
     .init(cStackString: info.pbi_name)
   }
 
+  @_alwaysEmitIntoClient
   var nfiles: UInt32 { info.pbi_nfiles }
 
+  @_alwaysEmitIntoClient
   var pgid: UInt32 { info.pbi_pgid }
 
+  @_alwaysEmitIntoClient
   var pjobc: UInt32 { info.pbi_pjobc }
 
+  @_alwaysEmitIntoClient
   var e_tdev: UInt32  { info.e_tdev }
 
+  @_alwaysEmitIntoClient
   var e_tpgid: UInt32  { info.e_tpgid }
 
+  @_alwaysEmitIntoClient
   var nice: Int32 { info.pbi_nice }
 
+  @_alwaysEmitIntoClient
   var start_tvsec: UInt64 { info.pbi_start_tvsec }
 
+  @_alwaysEmitIntoClient
   var start_tvusec: UInt64 { info.pbi_start_tvusec }
 }
 
