@@ -5,7 +5,7 @@ import Darwin
 import Glibc
 #endif
 import SyscallValue
-import KwiftC
+import CUtility
 
 public extension FileUtility {
 

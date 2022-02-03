@@ -35,6 +35,14 @@ internal func nothingOrErrno<I: FixedWidthInteger>(retryOnInterrupt: Bool, _ bod
   valueOrErrno(retryOnInterrupt: retryOnInterrupt, body).map { _ in () }
 }
 
+internal func neverError(_ body: () throws -> Void) {
+  do {
+    try body()
+  } catch {
+    assertionFailure("impossible error: \(errno)")
+  }
+}
+
 extension FileDescriptor {
   public func read<T: SyscallValue>(upToCount count: Int) throws -> T {
     try T.init(capacity: count) { ptr in

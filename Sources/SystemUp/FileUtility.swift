@@ -6,7 +6,7 @@ import Glibc
 #endif
 import Foundation
 import SyscallValue
-import KwiftC
+import CUtility
 
 public enum FileUtility {
 }

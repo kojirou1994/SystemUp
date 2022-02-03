@@ -10,14 +10,19 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
     .package(url: "https://github.com/kojirou1994/SyscallValue.git", from: "0.0.1"),
-    .package(url: "https://github.com/kojirou1994/Kwift.git", from: "0.8.9"),
+    .package(url: "https://github.com/kojirou1994/CUtility.git", from: "0.0.1"),
   ],
   targets: [
     .target(
+      name: "CSystemUp"),
+    .target(
+      name: "CProc"),
+    .target(
       name: "SystemUp",
       dependencies: [
+        "CSystemUp",
         .product(name: "SyscallValue", package: "SyscallValue"),
-        .product(name: "KwiftC", package: "Kwift"),
+        .product(name: "CUtility", package: "CUtility"),
         .product(name: "SystemPackage", package: "swift-system"),
       ]),
     .testTarget(
@@ -25,3 +30,19 @@ let package = Package(
       dependencies: ["SystemUp"]),
   ]
 )
+
+#if os(macOS)
+package.products.append(.library(name: "Proc", targets: ["Proc"]))
+package.targets.append(contentsOf: [
+  .target(
+    name: "Proc",
+    dependencies: [
+      "CProc",
+      .product(name: "CUtility", package: "CUtility"),
+      .product(name: "SystemPackage", package: "swift-system"),
+    ]),
+  .testTarget(
+    name: "ProcTests",
+    dependencies: ["Proc"]),
+])
+#endif

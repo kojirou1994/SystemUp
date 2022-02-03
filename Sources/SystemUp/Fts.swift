@@ -78,22 +78,17 @@ public struct Fts {
     }.get()
   }
 
-  public func close() throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
-      fts_close(handle)
-    }.get()
+  public func close() {
+    neverError {
+      try nothingOrErrno(retryOnInterrupt: false) {
+        fts_close(handle)
+      }.get()
+    }
   }
 
-  public func closeAfter<R>(_ body: (Self) throws -> R) throws -> R {
-    let r: R
-    do {
-      r = try body(self)
-    } catch {
-      try? close()
-      throw error
-    }
-    try close()
-    return r
+  public func closeAfter<R>(_ body: (Self) throws -> R) rethrows -> R {
+    defer { close() }
+    return try body(self)
   }
 }
 

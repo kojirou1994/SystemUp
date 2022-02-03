@@ -187,9 +187,8 @@ public struct Directory {
   }
 
   public func close() {
-    if case .failure(let err) = nothingOrErrno(retryOnInterrupt: false, { closedir(dir) }) {
-      // error is ignored
-      assertionFailure("close dir failed: \(err)")
+    neverError {
+      try nothingOrErrno(retryOnInterrupt: false, { closedir(dir) }).get()
     }
   }
 
