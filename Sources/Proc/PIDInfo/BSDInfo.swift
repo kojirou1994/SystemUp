@@ -49,8 +49,6 @@ public extension BSDInfo {
   @_alwaysEmitIntoClient
   var svgid: gid_t { info.pbi_svgid }
 
-  //  public var rfu_1: UInt32 /* reserved */
-
   @_alwaysEmitIntoClient
   var comm: String {
     .init(cStackString: info.pbi_comm)
