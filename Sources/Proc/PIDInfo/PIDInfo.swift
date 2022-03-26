@@ -31,9 +31,46 @@ public extension PIDInfo {
     try pidInfo(pid: pid, flavor: PROC_PIDVNODEPATHINFO, arg: 0, value: &info)
   }
 
+  // NOTE: macro PROC_PIDPATHINFO_MAXSIZE is unavailable
+  static var pathInfoMaxSize: Int32 { 4 * MAXPATHLEN }
+
+  static func path(pid: Int32) throws -> FilePath {
+    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: Int(Self.pathInfoMaxSize), alignment: MemoryLayout<UInt8>.alignment)
+    defer {
+      buffer.deallocate()
+    }
+    try path(pid: pid, into: buffer)
+    return .init(platformString: buffer.baseAddress!.assumingMemoryBound(to: CInterop.Char.self))
+  }
+
+  static func path(pid: Int32, into buffer: UnsafeMutableRawBufferPointer) throws {
+    assert(buffer.count == Self.pathInfoMaxSize)
+    try syscallValidate {
+      proc_pidpath(pid, buffer.baseAddress, numericCast(buffer.count))
+    }
+  }
+
+  static func name(pid: Int32) throws -> String {
+    try fixedSizeSyscall(body: { buffer, bufferSize in
+      proc_name(pid, buffer, numericCast(bufferSize))
+    }, byteCount: MAXPATHLEN)
+  }
+
+  static func name(pid: Int32, into buffer: UnsafeMutableRawBufferPointer) throws {
+    try syscallValidate {
+      proc_name(pid, buffer.baseAddress, numericCast(buffer.count))
+    }
+  }
+
 }
 
 import SyscallValue
+
+func syscallValidate<T: FixedWidthInteger>(body: () -> T) throws {
+  if body() == -1 {
+    throw Errno(rawValue: errno)
+  }
+}
 
 @usableFromInline
 internal func twiceSyscall<S: FixedWidthInteger, R: SyscallValue>(
@@ -54,6 +91,21 @@ internal func twiceSyscall<S: FixedWidthInteger, R: SyscallValue>(
       return Int(realsize)
     }
 }
+
+internal func fixedSizeSyscall<S: FixedWidthInteger, R: SyscallValue>(
+  body: (_ buffer: UnsafeMutableRawPointer?, _ bufferSize: S) -> S,
+  validating: (S) -> Bool = { $0 != -1 },
+  byteCount: S) throws -> R {
+    let capacity = Int(byteCount)
+    return try R(capacity: capacity) { ptr in
+      let realsize = body(ptr, byteCount)
+      guard validating(realsize) else {
+        throw Errno(rawValue: errno)
+      }
+      precondition(realsize <= capacity)
+      return Int(realsize)
+    }
+  }
 
 @usableFromInline
 internal func oneTimeSyscall<S: FixedWidthInteger, R>(
