@@ -38,6 +38,7 @@ package.targets.append(contentsOf: [
     name: "Proc",
     dependencies: [
       "CProc",
+      .product(name: "SyscallValue", package: "SyscallValue"),
       .product(name: "CUtility", package: "CUtility"),
       .product(name: "SystemPackage", package: "swift-system"),
     ]),
