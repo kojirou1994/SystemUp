@@ -1,9 +1,6 @@
-import SystemPackage
 #if canImport(Darwin)
 import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
+import SystemPackage
 
 public struct CopyFileReturn: RawRepresentable {
   public init(rawValue: CInt) {
@@ -231,9 +228,9 @@ extension FileUtility {
   public static func copyFile(from src: FileDescriptor, to dst: FileDescriptor, state: CopyFileState? = nil, flags: CopyFlags = []) throws {
     assert(
       CopyFlags([.recursive, .exclusive, .nofollowSrc,
-                  .nofollowDst, .nofollow, .move, .unlink,
+                 .nofollowDst, .nofollow, .move, .unlink,
                  .clone, .cloneForce])
-        .intersection(flags).isEmpty, "has flags for path based copyfile")
+      .intersection(flags).isEmpty, "has flags for path based copyfile")
     try nothingOrErrno(retryOnInterrupt: false) {
       fcopyfile(src.rawValue, dst.rawValue, state?.state, flags.rawValue)
     }.get()
@@ -333,3 +330,5 @@ public struct CopyFlags: OptionSet {
 
   public static var verbose: Self { .init(COPYFILE_VERBOSE) }
 }
+
+#endif // Darwin platform
