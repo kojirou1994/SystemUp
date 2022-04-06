@@ -132,6 +132,7 @@ public extension FileUtility {
 }
 
 // MARK: chflags
+#if canImport(Darwin)
 public extension FileUtility {
 
   struct FileFlags: OptionSet {
@@ -189,6 +190,7 @@ public extension FileUtility {
     }.get()
   }
 }
+#endif // chflags end
 
 // MARK: truncate
 public extension FileUtility {
@@ -272,10 +274,14 @@ public extension FileUtility {
     public static var removeDir: Self { .init(AT_REMOVEDIR) }
 
     /// Return real device inodes resides on for fstatat(2)
+    #if canImport(Darwin)
     public static var realDevice: Self { .init(AT_REALDEV) }
+    #endif
 
     /// Use only the fd and Ignore the path for fstatat(2)
+    #if canImport(Darwin)
     public static var fdOnly: Self { .init(AT_FDONLY) }
+    #endif
   }
 
 }
