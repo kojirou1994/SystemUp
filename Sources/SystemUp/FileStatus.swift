@@ -131,7 +131,9 @@ extension FileStatus.FileType {
 
   public static var socket: Self { .init(S_IFSOCK) }
 
+  #if canImport(Darwin)
   public static var wht: Self { .init(S_IFWHT) }
+  #endif
 }
 
 extension FileStatus.FileType: CustomStringConvertible {
