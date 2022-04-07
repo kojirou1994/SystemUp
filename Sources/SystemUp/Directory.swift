@@ -167,24 +167,30 @@ public struct DirectoryEnumerator: Sequence {
 
 public struct Directory {
 
-  private init(dir: UnsafeMutablePointer<DIR>) {
+  #if canImport(Darwin)
+  typealias CDirectoryStream = UnsafeMutablePointer<DIR>
+  #else
+  typealias CDirectoryStream = OpaquePointer
+  #endif
+
+  private init(_ dir: CDirectoryStream) {
     self.dir = dir
   }
 
-  private let dir: UnsafeMutablePointer<DIR>
+  private let dir: CDirectoryStream
 
   public static func open(_ path: FilePath) throws -> Self {
     guard let dir = path.withPlatformString(opendir) else {
       throw Errno.current
     }
-    return .init(dir: dir)
+    return .init(dir)
   }
 
   public static func open(_ fd: FileDescriptor) throws -> Self {
     guard let dir = fdopendir(fd.rawValue) else {
       throw Errno.current
     }
-    return .init(dir: dir)
+    return .init(dir)
   }
 
   public func close() {
