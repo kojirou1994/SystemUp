@@ -261,12 +261,16 @@ extension Directory {
       "DirectoryEntry(entryFileNumber: \(entryFileNumber), seekOffset: \(seekOffset), recordLength: \(recordLength), fileType: \(fileType), name: \"\(name)\")"
     }
 
-    public var entryFileNumber: UInt64 {
+    public var entryFileNumber: some FixedWidthInteger {
       entry.d_ino
     }
 
-    public var seekOffset: UInt64 {
-      entry.d_seekoff
+    public var seekOffset: some FixedWidthInteger {
+      #if canImport(Darwin)
+      return entry.d_seekoff
+      #else
+      return entry.d_off
+      #endif
     }
 
     public var recordLength: UInt16 {
@@ -293,11 +297,13 @@ extension Directory {
       #endif
     }
 
+    #if canImport(Darwin)
     public func withNameBuffer<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
       try withUnsafeBytes(of: entry.d_name) { buffer in
         try body(.init(rebasing: buffer.prefix(Int(entry.d_namlen))))
       }
     }
+    #endif
   }
 
 }
@@ -308,9 +314,6 @@ extension Directory {
     public init(rawValue: UInt8) {
       self.rawValue = rawValue
     }
-    internal init(_ rawValue: Int32) {
-      self.rawValue = .init(rawValue)
-    }
 
     public let rawValue: UInt8
   }
@@ -318,23 +321,23 @@ extension Directory {
 }
 extension Directory.DirectoryType {
 
-  public static var unknown: Self { .init(DT_UNKNOWN) }
+  public static var unknown: Self { .init(rawValue: numericCast(DT_UNKNOWN)) }
 
-  public static var namedPipe: Self { .init(DT_FIFO) }
+  public static var namedPipe: Self { .init(rawValue: numericCast(DT_FIFO)) }
 
-  public static var character: Self { .init(DT_CHR) }
+  public static var character: Self { .init(rawValue: numericCast(DT_CHR)) }
 
-  public static var directory: Self { .init(DT_DIR) }
+  public static var directory: Self { .init(rawValue: numericCast(DT_DIR)) }
 
-  public static var block: Self { .init(DT_BLK) }
+  public static var block: Self { .init(rawValue: numericCast(DT_BLK)) }
 
-  public static var regular: Self { .init(DT_REG) }
+  public static var regular: Self { .init(rawValue: numericCast(DT_REG)) }
 
-  public static var symbolicLink: Self { .init(DT_LNK) }
+  public static var symbolicLink: Self { .init(rawValue: numericCast(DT_LNK)) }
 
-  public static var socket: Self { .init(DT_SOCK) }
+  public static var socket: Self { .init(rawValue: numericCast(DT_SOCK)) }
 
-  public static var wht: Self { .init(DT_WHT) }
+  public static var wht: Self { .init(rawValue: numericCast(DT_WHT)) }
 
 }
 
