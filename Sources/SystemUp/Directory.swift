@@ -230,12 +230,15 @@ public struct Directory {
     return true
   }
 
-  public func read() throws -> UnsafeMutablePointer<Directory.Entry>? {
-    let ptr = readdir(dir)
-//    if ptr == nil, Errno.current != .init(rawValue: 0) {
-//      throw Errno.current
-//    }
-    return .init(OpaquePointer(ptr))
+  public func read() -> Result<UnsafeMutablePointer<Directory.Entry>?, Errno> {
+    errno = 0
+    let entry = readdir(dir)
+    if entry == nil,
+       case let err = Errno.current,
+       err.rawValue != 0 {
+      return .failure(err)
+    }
+    return .success(.init(OpaquePointer(entry)))
   }
 
   public func closeAfter<R>(_ body: (Self) throws -> R) throws -> R {
