@@ -148,7 +148,9 @@ extension FileStatus.FileType: CustomStringConvertible {
     case .regular: return "regular"
     case .symbolicLink: return "symbolicLink"
     case .socket: return "socket"
+    #if canImport(Darwin)
     case .wht: return "wht"
+    #endif
     default: return "unknown"
     }
   }
