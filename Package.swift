@@ -6,6 +6,7 @@ let package = Package(
   name: "SystemUp",
   products: [
     .library(name: "SystemUp", targets: ["SystemUp"]),
+    .library(name: "SystemFileManager", targets: ["SystemFileManager"]),
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
@@ -24,6 +25,11 @@ let package = Package(
         .product(name: "SyscallValue", package: "SyscallValue"),
         .product(name: "CUtility", package: "CUtility"),
         .product(name: "SystemPackage", package: "swift-system"),
+      ]),
+    .target(
+      name: "SystemFileManager",
+      dependencies: [
+        "SystemUp",
       ]),
     .testTarget(
       name: "SystemExtensionTests",

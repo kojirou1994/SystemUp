@@ -1,8 +1,8 @@
 import SystemPackage
 
 public struct FilePathOption {
-  let path: FilePath
-  let relativedDirFD: FileDescriptor
+  public let path: FilePath
+  public let relativedDirFD: FileDescriptor
 }
 
 public extension FilePathOption {
