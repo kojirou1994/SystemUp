@@ -134,7 +134,9 @@ extension Fts {
 
     /// Like FTS_NOSTAT but if the file type is returned by readdir(3), the corresponding file information value is
     /// returned in fts_info instead of FTS_NSOK.
+    #if canImport(Darwin)
     public static var noStatType: Self { .init(FTS_NOSTAT_TYPE) }
+    #endif
 
     /// This option causes the fts routines to return FTSENT structures for symbolic links themselves instead of the
     /// target files they point to.  If this option is set, FTSENT structures for all symbolic links in the hierarchy
@@ -165,9 +167,11 @@ extension Fts {
       .init(FTS_ROOTLEVEL)
     }
 
+    #if canImport(Darwin)
     public static var max: Int16 {
       .init(FTS_MAXLEVEL)
     }
+    #endif
   }
 
   public struct Entry {
