@@ -291,17 +291,31 @@ public extension FileUtility {
       self.rawValue = rawValue
     }
 
-    internal init(_ rawValue: Int32) {
-      self.rawValue = .init(rawValue)
-    }
-
     public let rawValue: UInt32
 
     /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_SWAP), it will cause the source and target to be atomically swapped.  Source and target need not be of the same type, i.e. it is possible to swap a file with a directory.  EINVAL is returned in case of bitwise-inclusive OR with RENAME_EXCL.
-    public static var swap: Self { .init(RENAME_SWAP) }
+    public static var swap: Self {
+      #if canImport(Darwin)
+      return .init(rawValue: numericCast(RENAME_SWAP))
+      #else
+      return .init(rawValue: numericCast(RENAME_EXCHANGE))
+      #endif
+    }
+
+    @available(*, unavailable, renamed: "swap")
+    public static var exchange: Self { .swap }
 
     /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_EXCL), it will cause EEXIST to be returned if the destination already exists. EINVAL is returned in case of bitwise-inclusive OR with RENAME_SWAP.
-    public static var exclisive: Self { .init(RENAME_EXCL) }
+    public static var exclisive: Self {
+      #if canImport(Darwin)
+      return .init(rawValue: numericCast(RENAME_EXCL))
+      #else
+      return .init(rawValue: numericCast(RENAME_NOREPLACE))
+      #endif
+    }
+
+    @available(*, unavailable, renamed: "exclisive")
+    public static var noReplace: Self { .exclisive }
 
   }
 
