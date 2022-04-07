@@ -299,7 +299,7 @@ public extension FileUtility {
       #if canImport(Darwin)
       return .init(rawValue: numericCast(RENAME_SWAP))
       #else
-      return .init(rawValue: numericCast(RENAME_EXCHANGE))
+      return .init(rawValue: numericCast(1 << 1))
       #endif
     }
 
@@ -311,12 +311,25 @@ public extension FileUtility {
       #if canImport(Darwin)
       return .init(rawValue: numericCast(RENAME_EXCL))
       #else
-      return .init(rawValue: numericCast(RENAME_NOREPLACE))
+      return .init(rawValue: numericCast(1 << 0))
       #endif
     }
 
     @available(*, unavailable, renamed: "exclisive")
     public static var noReplace: Self { .exclisive }
+
+    /// If any symbolic links are encountered during pathname resolution, an error is returned.
+    #if canImport(Darwin)
+    public static var noFollowAny: Self {
+      .init(rawValue: numericCast(RENAME_NOFOLLOW_ANY))
+    }
+    #endif
+
+    #if os(Linux)
+    public static var whiteOut: Self {
+      .init(rawValue: 1 << 2)
+    }
+    #endif
 
   }
 
