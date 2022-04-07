@@ -13,27 +13,23 @@ public enum FileUtility {
 
 public extension FileUtility {
 
-  static func createDirectory(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, permissions: FilePermissions = .directoryDefault) throws {
-    assert(!path.isEmpty)
+  static func createDirectory(_ option: FilePathOption, permissions: FilePermissions = .directoryDefault) throws {
+    assert(!option.path.isEmpty)
     try nothingOrErrno(retryOnInterrupt: false) {
-      path.withPlatformString { path in
-        mkdirat(fd.rawValue, path, permissions.rawValue)
+      option.path.withPlatformString { path in
+        mkdirat(option.relativedDirFD.rawValue, path, permissions.rawValue)
       }
     }.get()
   }
 
-  static func unlink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = []) throws {
-    assert(!path.isEmpty)
+  static func unlink(_ option: FilePathOption, flags: AtFlags = []) throws {
+    assert(!option.path.isEmpty)
     assert(flags.isSubset(of: [.removeDir]))
     try nothingOrErrno(retryOnInterrupt: false) {
-      path.withPlatformString { path in
-        unlinkat(fd.rawValue, path, flags.rawValue)
+      option.path.withPlatformString { path in
+        unlinkat(option.relativedDirFD.rawValue, path, flags.rawValue)
       }
     }.get()
-  }
-
-  static func removeDirectory(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory) throws {
-    try unlink(path, relativeTo: fd, flags: .removeDir)
   }
 
   static func fileStatus(_ fd: FileDescriptor) throws -> FileStatus {
@@ -48,18 +44,18 @@ public extension FileUtility {
     }.get()
   }
 
-  static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = []) throws -> FileStatus {
+  static func fileStatus(_ option: FilePathOption, flags: AtFlags = []) throws -> FileStatus {
     var s = FileStatus()
-    try fileStatus(path, relativeTo: fd, flags: flags, into: &s)
+    try fileStatus(option, flags: flags, into: &s)
     return s
   }
 
-  static func fileStatus(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, flags: AtFlags = [], into status: inout FileStatus) throws {
-    assert(!path.isEmpty)
+  static func fileStatus(_ option: FilePathOption, flags: AtFlags = [], into status: inout FileStatus) throws {
+    assert(!option.path.isEmpty)
     assert(flags.isSubset(of: [.noFollow]))
     try nothingOrErrno(retryOnInterrupt: false) {
-      path.withPlatformString { path in
-        fstatat(fd.rawValue, path, &status.status, flags.rawValue)
+      option.path.withPlatformString { path in
+        fstatat(option.relativedDirFD.rawValue, path, &status.status, flags.rawValue)
       }
     }.get()
   }
@@ -68,24 +64,24 @@ public extension FileUtility {
 // MARK: symbolic link
 public extension FileUtility {
 
-  static func createSymbolicLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toDestination dest: FilePath) throws {
-    assert(!path.isEmpty)
+  static func createSymbolicLink(_ option: FilePathOption, toDestination dest: FilePath) throws {
+    assert(!option.path.isEmpty)
     //    assert(!dest.isEmpty)
     try nothingOrErrno(retryOnInterrupt: false) {
-      path.withPlatformString { path in
+      option.path.withPlatformString { path in
         dest.withPlatformString { dest in
-          symlinkat(dest, fd.rawValue, path)
+          symlinkat(dest, option.relativedDirFD.rawValue, path)
         }
       }
     }.get()
   }
 
-  static func readLink(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory) throws -> String {
-    assert(!path.isEmpty)
+  static func readLink(_ option: FilePathOption) throws -> String {
+    assert(!option.path.isEmpty)
     let count = Int(PATH_MAX) + 1
     return try .init(capacity: count) { ptr in
-      try path.withPlatformString { path in
-        let newCount = readlinkat(fd.rawValue, path, ptr.assumingMemoryBound(to: CChar.self), count)
+      try option.path.withPlatformString { path in
+        let newCount = readlinkat(option.relativedDirFD.rawValue, path, ptr.assumingMemoryBound(to: CChar.self), count)
         if newCount == -1 {
           throw Errno.current
         }
@@ -113,12 +109,12 @@ public extension FileUtility {
 // MARK: chmod
 public extension FileUtility {
 
-  static func set(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, permissions: FilePermissions, flags: AtFlags = []) throws {
-    assert(!path.isEmpty)
+  static func set(_ option: FilePathOption, permissions: FilePermissions, flags: AtFlags = []) throws {
+    assert(!option.path.isEmpty)
     assert(flags.isSubset(of: [.noFollow]))
     try nothingOrErrno(retryOnInterrupt: false) {
-      path.withPlatformString { path in
-        fchmodat(fd.rawValue, path, permissions.rawValue, flags.rawValue)
+      option.path.withPlatformString { path in
+        fchmodat(option.relativedDirFD.rawValue, path, permissions.rawValue, flags.rawValue)
       }
     }.get()
   }
@@ -238,11 +234,11 @@ public extension FileUtility {
 
   }
 
-  static func check(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, accessibility: Accessibility, flags: AtFlags = []) -> Bool {
-    assert(!path.isEmpty)
+  static func check(_ option: FilePathOption, accessibility: Accessibility, flags: AtFlags = []) -> Bool {
+    assert(!option.path.isEmpty)
     assert(flags.isSubset(of: [.noFollow, .effectiveAccess]))
-    return path.withPlatformString { path in
-      system_access(fd.rawValue, path, accessibility.rawValue, flags.rawValue) == 0
+    return option.path.withPlatformString { path in
+      system_access(option.relativedDirFD.rawValue, path, accessibility.rawValue, flags.rawValue) == 0
     }
   }
 
@@ -315,35 +311,37 @@ public extension FileUtility {
   ///   - fd: src path relative opened directory fd
   ///   - newPath: dst path
   ///   - tofd: dst path relative opened directory fd
-  static func rename(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toNewPath newPath: FilePath, newPathRelativeTo tofd: FileDescriptor = .currentWorkingDirectory) throws {
-    try _rename(path, relativeTo: fd, toNewPath: newPath, newPathRelativeTo: tofd).get()
+  static func rename(_ src: FilePathOption, to dst: FilePathOption) throws {
+    try _rename(src, to: dst).get()
   }
 
   @usableFromInline
-  internal static func _rename(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toNewPath newPath: FilePath, newPathRelativeTo tofd: FileDescriptor = .currentWorkingDirectory) -> Result<Void, Errno> {
-    assert(!path.isEmpty)
-    assert(!newPath.isEmpty)
+  internal static func _rename(_ src: FilePathOption, to dst: FilePathOption) -> Result<Void, Errno> {
+    assert(!src.path.isEmpty)
+    assert(!dst.path.isEmpty)
     return nothingOrErrno(retryOnInterrupt: false) {
-      path.withPlatformString { old in
-        newPath.withPlatformString { new in
-          renameat(fd.rawValue, old, tofd.rawValue, new)
+      src.path.withPlatformString { old in
+        dst.path.withPlatformString { new in
+          renameat(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new)
         }
       }
     }
   }
 
+  #if canImport(Darwin)
   @available(macOS 10.12, *)
-  static func rename(_ path: FilePath, relativeTo fd: FileDescriptor = .currentWorkingDirectory, toNewPath newPath: FilePath, newPathRelativeTo tofd: FileDescriptor = .currentWorkingDirectory, flags: RenameFlags) throws {
-    assert(!path.isEmpty)
-    assert(!newPath.isEmpty)
+  static func rename(_ src: FilePathOption, to dst: FilePathOption, flags: RenameFlags) throws {
+    assert(!src.path.isEmpty)
+    assert(!dst.path.isEmpty)
     try nothingOrErrno(retryOnInterrupt: false) {
-      path.withPlatformString { old in
-        newPath.withPlatformString { new -> Int32 in
-          renameatx_np(fd.rawValue, old, tofd.rawValue, new, flags.rawValue)
+      src.path.withPlatformString { old in
+        dst.path.withPlatformString { new -> Int32 in
+          renameatx_np(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new, flags.rawValue)
         }
       }
     }.get()
   }
+  #endif
 }
 
 // MARK: cwd

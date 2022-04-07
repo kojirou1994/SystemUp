@@ -22,10 +22,10 @@ extension FileStatus: CustomStringConvertible {
 
   @inline(never)
   public var description: String {
-    "FileStatus(deviceID: \(deviceID), fileType: \(fileType), hardLinksCount: \(hardLinksCount), fileSerialNumber: \(fileSerialNumber), userID: \(String(userID, radix: 8, uppercase: true)), rDeviceID: \(rDeviceID), lastAccessTime: \(lastAccessTime), lastModificationTime: \(lastModificationTime), lastStatusChangedTime: \(lastStatusChangedTime), creationTime: \(creationTime), size: \(size), blocksCount: \(blocksCount), blockSize: \(blockSize), flags: \(flags), fileGenerationNumber: \(fileGenerationNumber))"
+    "FileStatus(deviceID: \(deviceID), fileType: \(fileType), hardLinksCount: \(hardLinksCount), fileSerialNumber: \(fileSerialNumber), userID: \(String(userID, radix: 8, uppercase: true)), rDeviceID: \(rDeviceID), size: \(size), blocksCount: \(blocksCount), blockSize: \(blockSize))"
   }
 
-  public var deviceID: Int32 {
+  public var deviceID: some FixedWidthInteger {
     status.st_dev
   }
 
@@ -37,11 +37,11 @@ extension FileStatus: CustomStringConvertible {
     .init(rawValue: status.st_mode & ~S_IFMT)
   }
 
-  public var hardLinksCount: UInt16 {
+  public var hardLinksCount: some FixedWidthInteger {
     status.st_nlink
   }
 
-  public var fileSerialNumber: UInt64 {
+  public var fileSerialNumber: some FixedWidthInteger {
     status.st_ino
   }
 
@@ -49,25 +49,33 @@ extension FileStatus: CustomStringConvertible {
     status.st_uid
   }
 
-  public var rDeviceID: Int32 {
+  public var rDeviceID: some FixedWidthInteger {
     status.st_rdev
   }
 
+  #if canImport(Darwin)
   public var lastAccessTime: timespec {
     status.st_atimespec
   }
+  #endif
 
+  #if canImport(Darwin)
   public var lastModificationTime: timespec {
     status.st_mtimespec
   }
+  #endif
 
+  #if canImport(Darwin)
   public var lastStatusChangedTime: timespec {
     status.st_ctimespec
   }
+  #endif
 
+  #if canImport(Darwin)
   public var creationTime: timespec {
     status.st_birthtimespec
   }
+  #endif
 
   public var size: Int {
     Int(status.st_size)
@@ -83,13 +91,17 @@ extension FileStatus: CustomStringConvertible {
     Int(status.st_blksize)
   }
 
+  #if canImport(Darwin)
   public var flags: UInt32 {
     status.st_flags
   }
+  #endif
 
+  #if canImport(Darwin)
   public var fileGenerationNumber: UInt32 {
     status.st_gen
   }
+  #endif
 
   public struct FileType: RawRepresentable, Equatable {
 

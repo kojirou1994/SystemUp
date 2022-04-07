@@ -1,9 +1,6 @@
-import SystemPackage
 #if canImport(Darwin)
+import SystemPackage
 import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
 import SyscallValue
 import CUtility
 
@@ -144,3 +141,5 @@ public extension FileSystemStatistics {
   }
 
 }
+
+#endif // Darwin platform
