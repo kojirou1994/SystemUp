@@ -25,7 +25,7 @@ extension FileStatus: CustomStringConvertible {
     "FileStatus(deviceID: \(deviceID), fileType: \(fileType), hardLinksCount: \(hardLinksCount), fileSerialNumber: \(fileSerialNumber), userID: \(String(userID, radix: 8, uppercase: true)), rDeviceID: \(rDeviceID), size: \(size), blocksCount: \(blocksCount), blockSize: \(blockSize))"
   }
 
-  public var deviceID: some FixedWidthInteger {
+  public var deviceID: CInterop.UpDev {
     status.st_dev
   }
 
@@ -37,11 +37,11 @@ extension FileStatus: CustomStringConvertible {
     .init(rawValue: status.st_mode & ~S_IFMT)
   }
 
-  public var hardLinksCount: some FixedWidthInteger {
+  public var hardLinksCount: CInterop.UpNumberOfLinks {
     status.st_nlink
   }
 
-  public var fileSerialNumber: some FixedWidthInteger {
+  public var fileSerialNumber: CInterop.UpInodeNumber {
     status.st_ino
   }
 
@@ -49,7 +49,7 @@ extension FileStatus: CustomStringConvertible {
     status.st_uid
   }
 
-  public var rDeviceID: some FixedWidthInteger {
+  public var rDeviceID: CInterop.UpDev {
     status.st_rdev
   }
 

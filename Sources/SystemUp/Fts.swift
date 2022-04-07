@@ -258,7 +258,7 @@ extension Fts {
       ptr.pointee.fts_dev
     }
 
-    public var linkCount: some FixedWidthInteger {
+    public var linkCount: CInterop.UpNumberOfLinks {
       ptr.pointee.fts_nlink
     }
 

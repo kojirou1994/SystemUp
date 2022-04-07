@@ -274,8 +274,8 @@ extension Directory {
       entry.d_ino
     }
 
-    public var seekOffset: some FixedWidthInteger {
-      #if canImport(Darwin)
+    public var seekOffset: CInterop.UpSeekOffset {
+      #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
       return entry.d_seekoff
       #else
       return entry.d_off
