@@ -270,7 +270,7 @@ extension Directory {
       "DirectoryEntry(entryFileNumber: \(entryFileNumber), seekOffset: \(seekOffset), recordLength: \(recordLength), fileType: \(fileType), name: \"\(name)\")"
     }
 
-    public var entryFileNumber: some FixedWidthInteger {
+    public var entryFileNumber: CInterop.UpInodeNumber {
       entry.d_ino
     }
 
