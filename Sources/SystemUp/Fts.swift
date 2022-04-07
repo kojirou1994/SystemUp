@@ -250,7 +250,7 @@ extension Fts {
       ptr.pointee.fts_dev
     }
 
-    public var linkCount: UInt16 {
+    public var linkCount: some FixedWidthInteger {
       ptr.pointee.fts_nlink
     }
 

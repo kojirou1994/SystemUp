@@ -3,6 +3,7 @@ import SystemPackage
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
+import CSystemUp
 #endif
 import Foundation
 import SyscallValue
