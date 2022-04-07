@@ -4,32 +4,30 @@ import Darwin
 import SyscallValue
 import CUtility
 
-public extension FileUtility {
+public extension FileSyscalls {
 
-  static func fileSystemStatistics(_ fd: FileDescriptor) throws -> FileSystemStatistics {
+  static func fileSystemStatistics(_ fd: FileDescriptor) -> Result<FileSystemStatistics, Errno> {
     var s = FileSystemStatistics()
-    try fileSystemStatistics(fd, into: &s)
-    return s
+    return fileSystemStatistics(fd, into: &s).map { s }
   }
 
-  static func fileSystemStatistics(_ path: FilePath) throws -> FileSystemStatistics {
+  static func fileSystemStatistics(_ path: FilePath) throws -> Result<FileSystemStatistics, Errno> {
     var s = FileSystemStatistics()
-    try fileSystemStatistics(path, into: &s)
-    return s
+    return fileSystemStatistics(path, into: &s).map { s }
   }
 
-  static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       fstatfs(fd.rawValue, &s.value)
-    }.get()
+    }
   }
 
-  static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
         statfs(path, &s.value)
       }
-    }.get()
+    }
   }
 }
 

@@ -4,7 +4,7 @@ import SystemPackage
 extension Data {
 
   public init(contentsOfFileDescriptor fd: FileDescriptor) throws {
-    let size = try FileUtility.fileStatus(fd).size
+    let size = try FileSyscalls.fileStatus(fd).get().size
     let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
 
     let count = try fd.read(into: buffer)
@@ -14,7 +14,7 @@ extension Data {
 
 extension Array where Element == UInt8 {
   public init(contentsOfFileDescriptor fd: FileDescriptor) throws {
-    let size = try FileUtility.fileStatus(fd).size
+    let size = try FileSyscalls.fileStatus(fd).get().size
 
     try self.init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
       initializedCount = try fd.read(into: .init(buffer))
@@ -24,7 +24,7 @@ extension Array where Element == UInt8 {
 
 extension ContiguousArray where Element == UInt8 {
   public init(contentsOfFileDescriptor fd: FileDescriptor) throws {
-    let size = try FileUtility.fileStatus(fd).size
+    let size = try FileSyscalls.fileStatus(fd).get().size
 
     try self.init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
       initializedCount = try fd.read(into: .init(buffer))

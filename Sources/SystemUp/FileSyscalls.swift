@@ -9,76 +9,67 @@ import Foundation
 import SyscallValue
 import CUtility
 
-public enum FileUtility {
-}
+public enum FileSyscalls {}
 
-public extension FileUtility {
+public extension FileSyscalls {
 
-  static func createDirectory(_ option: FilePathOption, permissions: FilePermissions = .directoryDefault) throws {
-    assert(!option.path.isEmpty)
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func createDirectory(_ option: FilePathOption, permissions: FilePermissions = .directoryDefault) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       option.path.withPlatformString { path in
         mkdirat(option.relativedDirFD.rawValue, path, permissions.rawValue)
       }
-    }.get()
+    }
   }
 
-  static func unlink(_ option: FilePathOption, flags: AtFlags = []) throws {
-    assert(!option.path.isEmpty)
+  static func unlink(_ option: FilePathOption, flags: AtFlags = []) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.removeDir]))
-    try nothingOrErrno(retryOnInterrupt: false) {
+    return nothingOrErrno(retryOnInterrupt: false) {
       option.path.withPlatformString { path in
         unlinkat(option.relativedDirFD.rawValue, path, flags.rawValue)
       }
-    }.get()
+    }
   }
 
-  static func fileStatus(_ fd: FileDescriptor) throws -> FileStatus {
+  static func fileStatus(_ fd: FileDescriptor) -> Result<FileStatus, Errno> {
     var s = FileStatus()
-    try fileStatus(fd, into: &s)
-    return s
+    return fileStatus(fd, into: &s).map { s }
   }
 
-  static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       fstat(fd.rawValue, &status.status)
-    }.get()
+    }
   }
 
-  static func fileStatus(_ option: FilePathOption, flags: AtFlags = []) throws -> FileStatus {
+  static func fileStatus(_ option: FilePathOption, flags: AtFlags = []) -> Result<FileStatus, Errno> {
     var s = FileStatus()
-    try fileStatus(option, flags: flags, into: &s)
-    return s
+    return fileStatus(option, flags: flags, into: &s).map { s }
   }
 
-  static func fileStatus(_ option: FilePathOption, flags: AtFlags = [], into status: inout FileStatus) throws {
-    assert(!option.path.isEmpty)
+  static func fileStatus(_ option: FilePathOption, flags: AtFlags = [], into status: inout FileStatus) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.noFollow]))
-    try nothingOrErrno(retryOnInterrupt: false) {
+    return nothingOrErrno(retryOnInterrupt: false) {
       option.path.withPlatformString { path in
         fstatat(option.relativedDirFD.rawValue, path, &status.status, flags.rawValue)
       }
-    }.get()
+    }
   }
 }
 
 // MARK: symbolic link
-public extension FileUtility {
+public extension FileSyscalls {
 
-  static func createSymbolicLink(_ option: FilePathOption, toDestination dest: FilePath) throws {
-    assert(!option.path.isEmpty)
-    //    assert(!dest.isEmpty)
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func createSymbolicLink(_ option: FilePathOption, toDestination dest: FilePath) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       option.path.withPlatformString { path in
         dest.withPlatformString { dest in
           symlinkat(dest, option.relativedDirFD.rawValue, path)
         }
       }
-    }.get()
+    }
   }
 
   static func readLink(_ option: FilePathOption) throws -> String {
-    assert(!option.path.isEmpty)
     let count = Int(PATH_MAX) + 1
     return try .init(capacity: count) { ptr in
       try option.path.withPlatformString { path in
@@ -92,8 +83,7 @@ public extension FileUtility {
   }
 
   static func realPath(_ path: FilePath) throws -> FilePath {
-    assert(!path.isEmpty)
-    return try .init(String(capacity: Int(PATH_MAX) + 1, { buffer in
+    try .init(String(capacity: Int(PATH_MAX) + 1, { buffer in
       try path.withPlatformString { path in
         let cstr = buffer.assumingMemoryBound(to: CChar.self)
         let ptr = realpath(path, cstr)
@@ -108,29 +98,28 @@ public extension FileUtility {
 }
 
 // MARK: chmod
-public extension FileUtility {
+public extension FileSyscalls {
 
-  static func set(_ option: FilePathOption, permissions: FilePermissions, flags: AtFlags = []) throws {
-    assert(!option.path.isEmpty)
+  static func set(_ option: FilePathOption, permissions: FilePermissions, flags: AtFlags = []) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.noFollow]))
-    try nothingOrErrno(retryOnInterrupt: false) {
+    return nothingOrErrno(retryOnInterrupt: false) {
       option.path.withPlatformString { path in
         fchmodat(option.relativedDirFD.rawValue, path, permissions.rawValue, flags.rawValue)
       }
-    }.get()
+    }
   }
 
-  static func set(_ fd: FileDescriptor, permissions: FilePermissions) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func set(_ fd: FileDescriptor, permissions: FilePermissions) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       fchmod(fd.rawValue, permissions.rawValue)
-    }.get()
+    }
   }
 
 }
 
 // MARK: chflags
 #if canImport(Darwin)
-public extension FileUtility {
+public extension FileSyscalls {
 
   struct FileFlags: OptionSet {
 
@@ -138,79 +127,83 @@ public extension FileUtility {
       self.rawValue = rawValue
     }
 
-    internal init(_ rawValue: Int32) {
-      self.rawValue = .init(rawValue)
-    }
-
     public let rawValue: UInt32
 
     /// Do not dump the file.
+    @_alwaysEmitIntoClient
     public static var userNoDump: Self { .init(UF_NODUMP) }
 
     /// The file may not be changed.
+    @_alwaysEmitIntoClient
     public static var userImmutable: Self { .init(UF_IMMUTABLE) }
 
     /// The file may only be appended to.
+    @_alwaysEmitIntoClient
     public static var userAppend: Self { .init(UF_APPEND) }
 
     /// The directory is opaque when viewed through a union stack.
+    @_alwaysEmitIntoClient
     public static var userOpaque: Self { .init(UF_OPAQUE) }
 
     /// The file or directory is not intended to be displayed to the user.
+    @_alwaysEmitIntoClient
     public static var userHidden: Self { .init(UF_HIDDEN) }
 
     /// The file has been archived.
+    @_alwaysEmitIntoClient
     public static var superArchived: Self { .init(SF_ARCHIVED) }
 
     /// The file may not be changed.
+    @_alwaysEmitIntoClient
     public static var superImmutable: Self { .init(SF_IMMUTABLE) }
 
     /// The file may only be appended to.
+    @_alwaysEmitIntoClient
     public static var superAppend: Self { .init(SF_APPEND) }
 
     /// The file is a dataless placeholder.  The system will attempt to materialize it when accessed according to the dataless file materialization policy of the accessing thread or process.  See getiopolicy_np(3).
+    @_alwaysEmitIntoClient
     public static var superDataless: Self { .init(SF_DATALESS) }
 
   }
 
-  static func set(_ path: FilePath, flags: FileFlags) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func set(_ path: FilePath, flags: FileFlags) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
         chflags(path, flags.rawValue)
       }
-    }.get()
+    }
   }
 
-  static func set(_ fd: FileDescriptor, flags: FileFlags) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func set(_ fd: FileDescriptor, flags: FileFlags) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       fchflags(fd.rawValue, flags.rawValue)
-    }.get()
+    }
   }
 }
 #endif // chflags end
 
 // MARK: truncate
-public extension FileUtility {
+public extension FileSyscalls {
 
-  static func truncate(_ path: FilePath, size: Int) throws {
-    assert(!path.isEmpty)
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func truncate(_ path: FilePath, size: Int) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
         system_truncate(path, off_t(size))
       }
-    }.get()
+    }
   }
 
-  static func truncate(_ fd: FileDescriptor, size: Int) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func truncate(_ fd: FileDescriptor, size: Int) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       system_ftruncate(fd.rawValue, off_t(size))
-    }.get()
+    }
   }
 
 }
 
 // MARK: access
-public extension FileUtility {
+public extension FileSyscalls {
 
   struct Accessibility: OptionSet {
 
@@ -218,19 +211,18 @@ public extension FileUtility {
       self.rawValue = rawValue
     }
 
-    internal init(_ rawValue: Int32) {
-      self.rawValue = .init(rawValue)
-    }
-
     public let rawValue: Int32
 
     /// test for existence of file
+    @_alwaysEmitIntoClient
     public static var existence: Self { .init(F_OK) }
 
     /// test for execute or search permission
+    @_alwaysEmitIntoClient
     public static var execute: Self { .init(X_OK) }
 
     /// test for write permission
+    @_alwaysEmitIntoClient
     public static var write: Self { .init(W_OK) }
 
   }
@@ -245,38 +237,40 @@ public extension FileUtility {
 
 }
 
-public extension FileUtility {
+public extension FileSyscalls {
   struct AtFlags: OptionSet {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
 
-    internal init(_ rawValue: Int32) {
-      self.rawValue = .init(rawValue)
-    }
-
     public let rawValue: Int32
 
     /// Use effective ids in access check
+    @_alwaysEmitIntoClient
     public static var effectiveAccess: Self { .init(AT_EACCESS) }
 
     /// Act on the symlink itself not the target
+    @_alwaysEmitIntoClient
     public static var noFollow: Self { .init(AT_SYMLINK_NOFOLLOW) }
 
     /// Act on target of symlink
+    @_alwaysEmitIntoClient
     public static var follow: Self { .init(AT_SYMLINK_FOLLOW) }
 
     /// Path refers to directory
+    @_alwaysEmitIntoClient
     public static var removeDir: Self { .init(AT_REMOVEDIR) }
 
     /// Return real device inodes resides on for fstatat(2)
     #if canImport(Darwin)
+    @_alwaysEmitIntoClient
     public static var realDevice: Self { .init(AT_REALDEV) }
     #endif
 
     /// Use only the fd and Ignore the path for fstatat(2)
     #if canImport(Darwin)
+    @_alwaysEmitIntoClient
     public static var fdOnly: Self { .init(AT_FDONLY) }
     #endif
   }
@@ -284,7 +278,7 @@ public extension FileUtility {
 }
 
 // MARK: rename
-public extension FileUtility {
+public extension FileSyscalls {
 
   struct RenameFlags: OptionSet {
 
@@ -295,37 +289,43 @@ public extension FileUtility {
     public let rawValue: UInt32
 
     /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_SWAP), it will cause the source and target to be atomically swapped.  Source and target need not be of the same type, i.e. it is possible to swap a file with a directory.  EINVAL is returned in case of bitwise-inclusive OR with RENAME_EXCL.
+    @_alwaysEmitIntoClient
     public static var swap: Self {
       #if canImport(Darwin)
-      return .init(rawValue: numericCast(RENAME_SWAP))
+      return .init(RENAME_SWAP)
       #else
-      return .init(rawValue: numericCast(1 << 1))
+      return .init(rawValue: 1 << 1)
       #endif
     }
 
     @available(*, unavailable, renamed: "swap")
+    @_alwaysEmitIntoClient
     public static var exchange: Self { .swap }
 
     /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_EXCL), it will cause EEXIST to be returned if the destination already exists. EINVAL is returned in case of bitwise-inclusive OR with RENAME_SWAP.
+    @_alwaysEmitIntoClient
     public static var exclisive: Self {
       #if canImport(Darwin)
-      return .init(rawValue: numericCast(RENAME_EXCL))
+      return .init(RENAME_EXCL)
       #else
-      return .init(rawValue: numericCast(1 << 0))
+      return .init(rawValue: 1 << 0)
       #endif
     }
 
     @available(*, unavailable, renamed: "exclisive")
+    @_alwaysEmitIntoClient
     public static var noReplace: Self { .exclisive }
 
     /// If any symbolic links are encountered during pathname resolution, an error is returned.
     #if canImport(Darwin)
+    @_alwaysEmitIntoClient
     public static var noFollowAny: Self {
-      .init(rawValue: numericCast(RENAME_NOFOLLOW_ANY))
+      .init(RENAME_NOFOLLOW_ANY)
     }
     #endif
 
     #if os(Linux)
+    @_alwaysEmitIntoClient
     public static var whiteOut: Self {
       .init(rawValue: 1 << 2)
     }
@@ -339,15 +339,8 @@ public extension FileUtility {
   ///   - fd: src path relative opened directory fd
   ///   - newPath: dst path
   ///   - tofd: dst path relative opened directory fd
-  static func rename(_ src: FilePathOption, to dst: FilePathOption) throws {
-    try _rename(src, to: dst).get()
-  }
-
-  @usableFromInline
-  internal static func _rename(_ src: FilePathOption, to dst: FilePathOption) -> Result<Void, Errno> {
-    assert(!src.path.isEmpty)
-    assert(!dst.path.isEmpty)
-    return nothingOrErrno(retryOnInterrupt: false) {
+  static func rename(_ src: FilePathOption, to dst: FilePathOption) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       src.path.withPlatformString { old in
         dst.path.withPlatformString { new in
           renameat(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new)
@@ -358,22 +351,20 @@ public extension FileUtility {
 
   #if canImport(Darwin)
   @available(macOS 10.12, *)
-  static func rename(_ src: FilePathOption, to dst: FilePathOption, flags: RenameFlags) throws {
-    assert(!src.path.isEmpty)
-    assert(!dst.path.isEmpty)
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func rename(_ src: FilePathOption, to dst: FilePathOption, flags: RenameFlags) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       src.path.withPlatformString { old in
         dst.path.withPlatformString { new -> Int32 in
           renameatx_np(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new, flags.rawValue)
         }
       }
-    }.get()
+    }
   }
   #endif
 }
 
 // MARK: cwd
-public extension FileUtility {
+public extension FileSyscalls {
   static var currentDirectoryPath: FilePath {
     let path = getcwd(nil, 0)!
     defer {
@@ -382,17 +373,17 @@ public extension FileUtility {
     return .init(platformString: path)
   }
 
-  static func changeCurrentDirectoryPath(_ path: FilePath) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func changeCurrentDirectoryPath(_ path: FilePath) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
         chdir(path)
       }
-    }.get()
+    }
   }
 
-  static func changeCurrentDirectoryPath(_ fd: FileDescriptor) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+  static func changeCurrentDirectoryPath(_ fd: FileDescriptor) -> Result<Void, Errno> {
+    nothingOrErrno(retryOnInterrupt: false) {
       fchdir(fd.rawValue)
-    }.get()
+    }
   }
 }

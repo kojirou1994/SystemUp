@@ -108,30 +108,35 @@ extension FileStatus: CustomStringConvertible {
     public init(rawValue: mode_t) {
       self.rawValue = rawValue
     }
-    internal init(_ rawValue: mode_t) {
-      self.rawValue = rawValue
-    }
 
     public let rawValue: mode_t
   }
 }
 
 extension FileStatus.FileType {
+  @_alwaysEmitIntoClient
   public static var namedPipe: Self { .init(S_IFIFO) }
 
+  @_alwaysEmitIntoClient
   public static var character: Self { .init(S_IFCHR) }
 
+  @_alwaysEmitIntoClient
   public static var directory: Self { .init(S_IFDIR) }
 
+  @_alwaysEmitIntoClient
   public static var block: Self { .init(S_IFBLK) }
 
+  @_alwaysEmitIntoClient
   public static var regular: Self { .init(S_IFREG) }
 
+  @_alwaysEmitIntoClient
   public static var symbolicLink: Self { .init(S_IFLNK) }
 
+  @_alwaysEmitIntoClient
   public static var socket: Self { .init(S_IFSOCK) }
 
   #if canImport(Darwin)
+  @_alwaysEmitIntoClient
   public static var wht: Self { .init(S_IFWHT) }
   #endif
 }

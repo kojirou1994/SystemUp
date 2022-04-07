@@ -327,23 +327,32 @@ extension Directory {
 }
 extension Directory.DirectoryType {
 
-  public static var unknown: Self { .init(rawValue: numericCast(DT_UNKNOWN)) }
+  @_alwaysEmitIntoClient
+  public static var unknown: Self { .init(DT_UNKNOWN) }
 
-  public static var namedPipe: Self { .init(rawValue: numericCast(DT_FIFO)) }
+  @_alwaysEmitIntoClient
+  public static var namedPipe: Self { .init(DT_FIFO) }
 
-  public static var character: Self { .init(rawValue: numericCast(DT_CHR)) }
+  @_alwaysEmitIntoClient
+  public static var character: Self { .init(DT_CHR) }
 
-  public static var directory: Self { .init(rawValue: numericCast(DT_DIR)) }
+  @_alwaysEmitIntoClient
+  public static var directory: Self { .init(DT_DIR) }
 
-  public static var block: Self { .init(rawValue: numericCast(DT_BLK)) }
+  @_alwaysEmitIntoClient
+  public static var block: Self { .init(DT_BLK) }
 
-  public static var regular: Self { .init(rawValue: numericCast(DT_REG)) }
+  @_alwaysEmitIntoClient
+  public static var regular: Self { .init(DT_REG) }
 
-  public static var symbolicLink: Self { .init(rawValue: numericCast(DT_LNK)) }
+  @_alwaysEmitIntoClient
+  public static var symbolicLink: Self { .init(DT_LNK) }
 
-  public static var socket: Self { .init(rawValue: numericCast(DT_SOCK)) }
+  @_alwaysEmitIntoClient
+  public static var socket: Self { .init(DT_SOCK) }
 
-  public static var wht: Self { .init(rawValue: numericCast(DT_WHT)) }
+  @_alwaysEmitIntoClient
+  public static var wht: Self { .init(DT_WHT) }
 
 }
 
