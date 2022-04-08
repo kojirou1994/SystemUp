@@ -64,8 +64,8 @@ public struct Fts {
     return nil
   }
 
-  public func read() throws -> Fts.Entry? {
-    try entryOrErrno(fts_read(handle))
+  public func read() -> Fts.Entry? {
+    .init(fts_read(handle))
   }
 
   public func children(options: ChildrenOptions = []) throws -> Fts.Entry? {
