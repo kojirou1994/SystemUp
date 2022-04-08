@@ -13,44 +13,41 @@ public struct Fts {
 
   private let handle: UnsafeMutablePointer<FTS>
 
-  public static func open(path: FilePath, options: OpenOptions = []) throws -> Self {
-    assert(!path.isEmpty)
-
-    return try path.withPlatformString { path in
+  public static func open(path: FilePath, options: OpenOptions = []) -> Result<Self, Errno> {
+    path.withPlatformString { path in
       var array: (UnsafeMutablePointer<Int8>?, UnsafeMutablePointer<Int8>?) = (UnsafeMutablePointer(mutating: path), nil)
-      return try withUnsafeMutablePointer(to: &array) { pointer in
-        try _fts_open(UnsafeMutableRawPointer(pointer).assumingMemoryBound(to: UnsafeMutablePointer<Int8>?.self), options)
+      return withUnsafeMutableBytes(of: &array) { pointer in
+        _fts_open(pointer.baseAddress?.assumingMemoryBound(to: UnsafeMutablePointer<Int8>?.self), options)
       }
     }
   }
 
-  public static func open<C: Collection>(paths: C, options: OpenOptions = []) throws -> Self where C.Element == FilePath {
+  public static func open<C: Collection>(paths: C, options: OpenOptions = []) -> Result<Self, Errno> where C.Element == FilePath {
 
     let arraySize = paths.count + 1
-    let pathArray = UnsafeMutablePointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: arraySize)
+    let pathArray = UnsafeMutableBufferPointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: arraySize)
+    pathArray.initialize(repeating: nil)
     defer {
-      pathArray.deinitialize(count: arraySize)
+      pathArray.dropLast().forEach { $0?.deallocate() }
+      pathArray.initialize(repeating: nil)
       pathArray.deallocate()
     }
     paths.enumerated().forEach { offset, path in
-      assert(!path.isEmpty)
-      // TODO: unsafe, but safe
       path.withPlatformString { path in
-        pathArray.advanced(by: offset).initialize(to: UnsafeMutablePointer(mutating: path))
+        pathArray[offset] = strdup(path)
       }
     }
-    pathArray.advanced(by: paths.count).initialize(to: nil)
 
-    return try _fts_open(pathArray, options)
+    return _fts_open(pathArray.baseAddress, options)
   }
 
-  internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>, _ options: OpenOptions) throws -> Self {
-    precondition(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
+  internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>?, _ options: OpenOptions) -> Result<Self, Errno> {
+    assert(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
 
     guard let ptr = fts_open(array, options.rawValue, nil) else {
-      throw Errno.current
+      return .failure(Errno.current)
     }
-    return .init(ptr)
+    return .success(.init(ptr))
   }
 
   private func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws -> Fts.Entry? {
