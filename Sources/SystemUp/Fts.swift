@@ -65,7 +65,7 @@ public struct Fts {
   }
 
   public func read() -> Fts.Entry? {
-    .init(fts_read(handle))
+    fts_read(handle).map(Fts.Entry.init)
   }
 
   public func children(options: ChildrenOptions = []) throws -> Fts.Entry? {
