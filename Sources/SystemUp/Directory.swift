@@ -41,7 +41,7 @@ public struct RecursiveDirectoryReader {
     print(#function, path)
     let directory: Directory
     do {
-      directory = try Directory.open(path)
+      directory = try Directory.open(path).get()
     } catch let err as Errno {
       print("opendir error, call onError")
       return try onError(path, err)
@@ -49,7 +49,7 @@ public struct RecursiveDirectoryReader {
 
     try directory.closeAfter { directory in
       var entry = Directory.Entry()
-      while try directory.read(into: &entry) {
+      while try directory.read(into: &entry).get() {
         if entry.isInvalid {
           continue
         }
@@ -109,7 +109,7 @@ public struct DirectoryEnumerator: Sequence {
         // skip
         return
       }
-      openedDirectories.append((try .open(path), path))
+      openedDirectories.append((try .open(path).get(), path))
     }
 
     public func next() -> Element? {
@@ -123,7 +123,7 @@ public struct DirectoryEnumerator: Sequence {
         }
         while let lastDir = openedDirectories.last {
 
-          while try lastDir.directory.read(into: &entry) {
+          while try lastDir.directory.read(into: &entry).get() {
             if entry.isInvalid {
               continue
             }
@@ -179,18 +179,18 @@ public struct Directory {
 
   private let dir: CDirectoryStream
 
-  public static func open(_ path: FilePath) throws -> Self {
+  public static func open(_ path: FilePath) -> Result<Self, Errno> {
     guard let dir = path.withPlatformString(opendir) else {
-      throw Errno.current
+      return .failure(.current)
     }
-    return .init(dir)
+    return .success(.init(dir))
   }
 
-  public static func open(_ fd: FileDescriptor) throws -> Self {
+  public static func open(_ fd: FileDescriptor) -> Result<Self, Errno> {
     guard let dir = fdopendir(fd.rawValue) else {
-      throw Errno.current
+      return .failure(.current)
     }
-    return .init(dir)
+    return .success(.init(dir))
   }
 
   public func close() {
@@ -216,18 +216,22 @@ public struct Directory {
     .init(rawValue: dirfd(dir))
   }
 
-  public func read(into entry: inout Directory.Entry) throws -> Bool {
+
+  @available(*, deprecated, message: "unsafe")
+  public func read(into entry: inout Directory.Entry) -> Result<Bool, Errno> {
     var entryPtr: UnsafeMutablePointer<dirent>?
-    try nothingOrErrno(retryOnInterrupt: false) {
+    return nothingOrErrno(retryOnInterrupt: false) {
       readdir_r(dir, &entry.entry, &entryPtr)
-    }.get()
-    if _slowPath(entryPtr == nil) {
-      return false
     }
-    withUnsafeMutablePointer(to: &entry) { ptr in
-      assert(OpaquePointer(ptr) == OpaquePointer(entryPtr))
+    .map { _ in
+      if _slowPath(entryPtr == nil) {
+        return false
+      }
+      withUnsafeMutablePointer(to: &entry) { ptr in
+        assert(OpaquePointer(ptr) == OpaquePointer(entryPtr))
+      }
+      return true
     }
-    return true
   }
 
   public func read() -> Result<UnsafeMutablePointer<Directory.Entry>?, Errno> {
