@@ -294,6 +294,10 @@ extension Directory {
       DirectoryType(rawValue: entry.d_type)
     }
 
+    public var isHidden: Bool {
+      entry.d_name.0 == UInt8(ascii: ".")
+    }
+
     /// is "." or ".."
     public var isDot: Bool {
       entry.isDot
