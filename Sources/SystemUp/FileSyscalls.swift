@@ -368,8 +368,10 @@ public extension FileSyscalls {
 
 // MARK: cwd
 public extension FileSyscalls {
-  static var currentDirectoryPath: FilePath {
-    let path = getcwd(nil, 0)!
+  static var currentDirectoryPath: FilePath? {
+    guard let path = getcwd(nil, 0) else {
+      return nil
+    }
     defer {
       free(path)
     }

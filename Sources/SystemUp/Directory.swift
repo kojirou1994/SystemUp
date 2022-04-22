@@ -50,7 +50,7 @@ public struct RecursiveDirectoryReader {
     try directory.closeAfter { directory in
       var entry = Directory.Entry()
       while try directory.read(into: &entry).get() {
-        if entry.isInvalid {
+        if entry.isDot {
           continue
         }
         let res = ReadResult(level: level, directory: directory, path: path.appending(entry.name), entry: entry)
@@ -124,7 +124,7 @@ public struct DirectoryEnumerator: Sequence {
         while let lastDir = openedDirectories.last {
 
           while try lastDir.directory.read(into: &entry).get() {
-            if entry.isInvalid {
+            if entry.isDot {
               continue
             }
             let nextName = entry.name
@@ -253,7 +253,7 @@ public struct Directory {
 }
 
 extension dirent {
-  var isInvalid: Bool {
+  var isDot: Bool {
     let point = UInt8(ascii: ".")
     return (d_name.0 == point && d_name.1 == 0)
     || (d_name.0 == point && d_name.1 == point && d_name.2 == 0)
@@ -294,9 +294,14 @@ extension Directory {
       DirectoryType(rawValue: entry.d_type)
     }
 
-    /// exclude "." and ".."
+    /// is "." or ".."
+    public var isDot: Bool {
+      entry.isDot
+    }
+
+    @available(*, deprecated, renamed: "isDot")
     public var isInvalid: Bool {
-      entry.isInvalid
+      isDot
     }
 
     /// entry name (up to MAXPATHLEN bytes)

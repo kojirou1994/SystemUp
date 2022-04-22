@@ -53,7 +53,7 @@ extension SystemFileManager {
         case .failure(let e): return .failure(e)
         case .success(let entry):
           if let entry = entry {
-            if entry.pointee.isInvalid {
+            if entry.pointee.isDot {
               continue rootloop
             }
             let entryName = entry.pointee.name
@@ -75,6 +75,33 @@ extension SystemFileManager {
       }
       return removeDirectory(path)
     }
+  }
+
+  /// Performs a deep enumeration of the specified directory and returns the paths of all of the contained subdirectories.
+  /// - Parameter path: The path of the root directory.
+  /// - Returns: Relative paths of all of the contained subdirectories.
+  public static func subpathsOfDirectory(atPath path: FilePath) throws -> [FilePath] {
+    var results = [FilePath]()
+    try _subpathsOfDirectory(atPath: path, basePath: FilePath(), into: &results)
+    return results
+  }
+
+  private static func _subpathsOfDirectory(atPath path: FilePath, basePath: FilePath, into results: inout [FilePath]) throws {
+    try Directory.open(path)
+      .get()
+      .closeAfter { directory in
+        while let nextEntry = try directory.read().get() {
+          if nextEntry.pointee.isDot {
+            continue
+          }
+          let entryName = nextEntry.pointee.name
+          let result = basePath.appending(entryName)
+          results.append(result)
+          if nextEntry.pointee.fileType == .directory {
+            try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
+          }
+        }
+      }
   }
 
 }
