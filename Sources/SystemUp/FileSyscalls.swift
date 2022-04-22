@@ -225,6 +225,9 @@ public extension FileSyscalls {
     @_alwaysEmitIntoClient
     public static var write: Self { .init(W_OK) }
 
+    @_alwaysEmitIntoClient
+    public static var read: Self { .init(R_OK) }
+
   }
 
   static func check(_ option: FilePathOption, accessibility: Accessibility, flags: AtFlags = []) -> Bool {
@@ -304,7 +307,7 @@ public extension FileSyscalls {
 
     /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_EXCL), it will cause EEXIST to be returned if the destination already exists. EINVAL is returned in case of bitwise-inclusive OR with RENAME_SWAP.
     @_alwaysEmitIntoClient
-    public static var exclisive: Self {
+    public static var exclusive: Self {
       #if canImport(Darwin)
       return .init(RENAME_EXCL)
       #else
@@ -314,7 +317,7 @@ public extension FileSyscalls {
 
     @available(*, unavailable, renamed: "exclisive")
     @_alwaysEmitIntoClient
-    public static var noReplace: Self { .exclisive }
+    public static var noReplace: Self { .exclusive }
 
     /// If any symbolic links are encountered during pathname resolution, an error is returned.
     #if canImport(Darwin)
