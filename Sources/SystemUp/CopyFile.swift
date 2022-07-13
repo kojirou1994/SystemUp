@@ -144,10 +144,7 @@ public final class CopyFileState {
   private func getPath(flag: Int32) throws -> FilePath? {
     var ptr: UnsafeMutablePointer<CChar>?
     try _get(flag: flag, thing: &ptr)
-    guard let str = ptr else {
-      return nil
-    }
-    return .init(cString: str)
+    return ptr.map { FilePath(platformString: $0) }
   }
 
   private func _get(flag: Int32, thing: UnsafeMutableRawPointer) throws {
