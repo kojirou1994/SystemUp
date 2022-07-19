@@ -43,6 +43,18 @@ extension SystemFileManager {
     FileSyscalls.unlink(.absolute(path), flags: .removeDir)
   }
 
+  public static func removeDirectoryUntilSuccess(_ path: FilePath) -> Result<Void, Errno> {
+    while true {
+      switch removeDirectoryRecursive(path) {
+      case .success: return .success(())
+      case .failure(.directoryNotEmpty):
+        break
+      case .failure(let err):
+        return .failure(err)
+      }
+    }
+  }
+
   public static func removeDirectoryRecursive(_ path: FilePath) -> Result<Void, Errno> {
     switch Directory.open(path) {
     case .failure(let e): return .failure(e)
