@@ -195,7 +195,11 @@ extension Fts {
     }
 
     public var name: String {
+      #if compiler(<5.7)
       .init(cString: &ptr.pointee.fts_name)
+      #else
+      .init(cString: ptr.pointer(to: \.fts_name).unsafelyUnwrapped)
+      #endif
     }
 
     public var nameLength: UInt16 {
