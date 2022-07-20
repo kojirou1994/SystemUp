@@ -30,8 +30,6 @@ public struct DirectoryEnumerator: Sequence {
     private var started: Bool = false
     private var finished: Bool = false
 
-    private var entry = Directory.Entry()
-
     public private(set) var error: Errno?
 
     private func push(_ path: FilePath) throws {
@@ -53,12 +51,11 @@ public struct DirectoryEnumerator: Sequence {
         }
         while let lastDir = openedDirectories.last {
 
-          while try lastDir.directory.read(into: &entry).get() {
+          while let entry = try lastDir.directory.read().get()?.pointee {
             if entry.isDot {
               continue
             }
             let nextName = entry.name
-            #warning("compiler bug")
             let nextPath = lastDir.path.appending(nextName)
             if entry.fileType == .directory {
               // push dir
