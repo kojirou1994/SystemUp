@@ -6,4 +6,6 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include <sys/xattr.h>
+
 #endif // linux end

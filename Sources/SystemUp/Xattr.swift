@@ -1,9 +1,14 @@
-#if canImport(Darwin)
+#if os(macOS) || os(iOS)
 import Darwin
+#elseif os(Linux)
+import Glibc
+import CSystemUp
+#endif
 import SystemPackage
 
 @discardableResult
-private func checkXattrError<T: FixedWidthInteger>(_ result: T) throws -> T {
+private func checkXattrError<T: FixedWidthInteger>(_ body: () -> T) throws -> T {
+  let result = body()
   if result == -1 {
     throw Errno.current
   }
@@ -30,7 +35,6 @@ extension Xattr.XattrType {
       }
       assert(currentStart == endAddress, "has non null-terminated string, just ignored!!")
     }
-
   }
 }
 
@@ -43,27 +47,25 @@ public enum Xattr {
   ///   - path: file path
   ///   - options: noFollow and showCompression are accepted
   /// - Returns: dictionary
-  public static func listAll(path: String, options: XattrOptions) throws -> [String : XattrType] {
-    assert(options.isSubset(of: [.noFollow, .showCompression]))
-    return try path.withCString { path in
-      var result = [String : XattrType]()
+  public static func listAll(path: UnsafePointer<Int8>, options: Options) throws -> [String : XattrType] {
 
-      try _listxattr(path, options: options.rawValue)
-        .forEachKeyCString { key, keyCString in
-          result[key] = try _getxattr(path: path, key: keyCString, position: 0, options: options.rawValue)
-        }
-      return result
-    }
+    var result = [String : XattrType]()
+
+    try _listxattr(path, options: options)
+      .forEachKeyCString { key, keyCString in
+        result[key] = try _getxattr(path: path, key: keyCString, position: 0, options: options)
+      }
+
+    return result
   }
 
   ///
   /// - Parameters:
   ///   - path: file path
   ///   - options: noFollow and showCompression are accepted
-  public static func allKeys(path: String, options: XattrOptions) throws -> [String] {
-    assert(options.isSubset(of: [.noFollow, .showCompression]))
+  public static func allKeys(path: UnsafePointer<Int8>, options: Options) throws -> [String] {
     var keys = [String]()
-    try _listxattr(path, options: options.rawValue)
+    try _listxattr(path, options: options)
       .forEachKeyCString { key, _ in keys.append(key) }
     return keys
   }
@@ -73,9 +75,8 @@ public enum Xattr {
   ///   - path: file path
   ///   - key: specific key
   ///   - options: noFollow and showCompression are accepted
-  public static func getValue(path: String, for key: String, options: XattrOptions) throws -> XattrType {
-    assert(options.isSubset(of: [.noFollow, .showCompression]))
-    return try _getxattr(path: path, key: key, position: 0, options: options.rawValue)
+  public static func getValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws -> XattrType {
+    try _getxattr(path: path, key: key, position: 0, options: options)
   }
 
   /// set xattr value for specific key
@@ -84,10 +85,20 @@ public enum Xattr {
   ///   - key: xattr key
   ///   - path: file path
   ///   - options: noFollow, create and replace are accepted
-  public static func set(_ value: XattrType, for key: String, path: String, options: XattrOptions) throws {
+  public static func set(_ value: XattrType, for key: UnsafePointer<Int8>, path: UnsafePointer<Int8>, options: Options) throws {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
     try value.withUnsafeBytes { buffer in
-      _ = try checkXattrError(setxattr(path, key, buffer.baseAddress, buffer.count, 0, options.rawValue))
+      _ = try checkXattrError { () -> Int32 in
+        #if os(macOS) || os(iOS)
+        return setxattr(path, key, buffer.baseAddress, buffer.count, 0, options.rawValue)
+        #elseif os(Linux)
+        if options.contains(.noFollow) {
+          return lsetxattr(path, key, buffer.baseAddress, buffer.count, options.rawValue)
+        } else {
+          return setxattr(path, key, buffer.baseAddress, buffer.count, options.rawValue)
+        }
+        #endif
+      }
     }
   }
 
@@ -95,14 +106,11 @@ public enum Xattr {
   /// - Parameters:
   ///   - path: file path
   ///   - options: noFollow and showCompression are accepted
-  public static func removeAll(path: String, options: XattrOptions) throws {
-    assert(options.isSubset(of: [.noFollow, .showCompression]))
-    try path.withCString { path in
-      try _listxattr(path, options: options.rawValue)
-        .forEachKeyCString { _, key in
-          try _removexattr(path: path, name: key, options: options.rawValue)
-        }
-    }
+  public static func removeAll(path: UnsafePointer<Int8>, options: Options) throws {
+    try _listxattr(path, options: options)
+      .forEachKeyCString { _, key in
+        try _removexattr(path: path, name: key, options: options)
+      }
   }
 
   /// remove xattr for specific key
@@ -110,34 +118,92 @@ public enum Xattr {
   ///   - path: file path
   ///   - key: xattr key
   ///   - options: noFollow and showCompression are accepted
-  public static func removeValue(path: String, for key: String, options: XattrOptions) throws {
-    assert(options.isSubset(of: [.noFollow, .showCompression]))
-    try _removexattr(path: path, name: key, options: options.rawValue)
+  public static func removeValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws {
+    try _removexattr(path: path, name: key, options: options)
   }
 
-  private static func _getxattr(path: UnsafePointer<Int8>, key: UnsafePointer<Int8>, position: UInt32, options: Int32) throws -> XattrType {
-    let size = try checkXattrError(getxattr(path, key, nil, 0, position, options))
+  private static func _getxattr(path: UnsafePointer<Int8>, key: UnsafePointer<Int8>, position: UInt32, options: Options) throws -> XattrType {
+    #if os(macOS) || os(iOS)
+    assert(options.isSubset(of: [.noFollow, .showCompression]))
+    #endif
+    let size = try checkXattrError { () -> Int in
+      #if os(macOS) || os(iOS)
+      return getxattr(path, key, nil, 0, position, options.rawValue)
+      #elseif os(Linux)
+      if options.contains(.noFollow) {
+        return lgetxattr(path, key, nil, 0)
+      } else {
+        return getxattr(path, key, nil, 0)
+      }
+      #endif
+    }
     guard size > 0 else {
       return XattrType()
     }
     return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try checkXattrError(getxattr(path, key, buffer.baseAddress!, size, position, options))
+      let newSize = try checkXattrError { () -> Int in
+        #if os(macOS) || os(iOS)
+        return getxattr(path, key, buffer.baseAddress!, size, position, options.rawValue)
+        #elseif os(Linux)
+        if options.contains(.noFollow) {
+          return lgetxattr(path, key, buffer.baseAddress!, size)
+        } else {
+          return getxattr(path, key, buffer.baseAddress!, size)
+        }
+        #endif
+      }
       assert(newSize <= size)
       initializedCount = newSize
     }
   }
 
-  private static func _removexattr(path: UnsafePointer<Int8>, name: UnsafePointer<Int8>, options: Int32) throws {
-    try checkXattrError(removexattr(path, name, options))
+  private static func _removexattr(path: UnsafePointer<Int8>, name: UnsafePointer<Int8>, options: Options) throws {
+    #if os(macOS) || os(iOS)
+    assert(options.isSubset(of: [.noFollow, .showCompression]))
+    #endif
+    try checkXattrError { () -> Int32 in
+      #if os(macOS) || os(iOS)
+      return removexattr(path, name, options.rawValue)
+      #elseif os(Linux)
+      if options.contains(.noFollow) {
+        return lremovexattr(path, name)
+      } else {
+        return removexattr(path, name)
+      }
+      #endif
+    }
   }
 
-  private static func _listxattr(_ path: UnsafePointer<Int8>, options: Int32) throws -> XattrType {
-    let size = try checkXattrError(listxattr(path, nil, 0, options))
+  private static func _listxattr(_ path: UnsafePointer<Int8>, options: Options) throws -> XattrType {
+    #if os(macOS) || os(iOS)
+    assert(options.isSubset(of: [.noFollow, .showCompression]))
+    #endif
+    let size = try checkXattrError { () -> Int in
+      #if os(macOS) || os(iOS)
+      return listxattr(path, nil, 0, options.rawValue)
+      #elseif os(Linux)
+      if options.contains(.noFollow) {
+        return llistxattr(path, nil, 0)
+      } else {
+        return listxattr(path, nil, 0)
+      }
+      #endif
+    }
     guard size > 0 else {
       return XattrType()
     }
     return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try checkXattrError(listxattr(path, .init(OpaquePointer(buffer.baseAddress)), size, options))
+      let newSize = try checkXattrError { () -> Int in
+        #if os(macOS) || os(iOS)
+        return listxattr(path, buffer.baseAddress, size, options.rawValue)
+        #elseif os(Linux)
+        if options.contains(.noFollow) {
+          return llistxattr(path, buffer.baseAddress, size)
+        } else {
+          return listxattr(path, buffer.baseAddress, size)
+        }
+        #endif
+      }
       assert(newSize <= size)
       initializedCount = newSize
     }
@@ -146,7 +212,7 @@ public enum Xattr {
 }
 
 extension Xattr {
-  public struct XattrOptions: OptionSet {
+  public struct Options: OptionSet {
 
     public var rawValue: Int32
 
@@ -156,16 +222,28 @@ extension Xattr {
 
     /// Don't follow symbolic links
     @_alwaysEmitIntoClient
-    public static var noFollow: Self { Self(rawValue: XATTR_NOFOLLOW) }
+    public static var noFollow: Self {
+      #if os(macOS) || os(iOS)
+      Self(rawValue: XATTR_NOFOLLOW)
+      #else
+      Self(rawValue: 1 << 16) /* not standard! */
+      #endif
+    }
+
     /// set the value, fail if attr already exists
     @_alwaysEmitIntoClient
-    public static var create: Self { Self(rawValue: XATTR_CREATE) }
+    public static var create: Self { Self(rawValue: Int32(XATTR_CREATE)) }
+
     /// set the value, fail if attr does not exist
     @_alwaysEmitIntoClient
-    public static var replace: Self { Self(rawValue: XATTR_REPLACE) }
+    public static var replace: Self { Self(rawValue: Int32(XATTR_REPLACE)) }
+
+    #if os(macOS) || os(iOS)
     /// option for f/getxattr() and f/listxattr() to expose the HFS Compression extended attributes
     @_alwaysEmitIntoClient
     public static var showCompression: Self { Self(rawValue: XATTR_SHOWCOMPRESSION) }
+    #endif
+
     /*
      currently useless
      /// Set this to bypass authorization checking (eg. if doing auth-related work)
@@ -175,6 +253,7 @@ extension Xattr {
      */
   }
 
+  #if os(macOS) || os(iOS)
   @_alwaysEmitIntoClient
   public static var maxNameLength: Int32 { XATTR_MAXNAMELEN }
 
@@ -184,5 +263,5 @@ extension Xattr {
 
   @_alwaysEmitIntoClient
   public static var resourceForkName: String { XATTR_RESOURCEFORK_NAME }
+  #endif
 }
-#endif
