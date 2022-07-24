@@ -4,18 +4,14 @@ import Darwin
 #elseif canImport(Glibc)
 import Glibc
 #endif
-import Foundation
+import CUtility
 
 public struct FileStatus {
-  internal init(status: stat) {
-    self.status = status
+  public init(rawValue: CInterop.UpStat) {
+    self.rawValue = rawValue
   }
-  
-  public init() {
-    self.status = .init()
-  }
-  
-  internal var status: stat
+
+  public var rawValue: CInterop.UpStat
 }
 
 extension FileStatus: CustomStringConvertible {
@@ -24,120 +20,129 @@ extension FileStatus: CustomStringConvertible {
   public var description: String {
     "FileStatus(deviceID: \(deviceID), fileType: \(fileType), hardLinksCount: \(hardLinksCount), fileSerialNumber: \(fileSerialNumber), userID: \(String(userID, radix: 8, uppercase: true)), rDeviceID: \(rDeviceID), size: \(size), blocksCount: \(blocksCount), blockSize: \(blockSize))"
   }
+}
 
-  public var deviceID: CInterop.UpDev {
-    status.st_dev
+public extension FileStatus {
+
+  var deviceID: CInterop.UpDev {
+    rawValue.st_dev
   }
 
-  public var fileType: FileType {
-    .init(rawValue: status.st_mode & S_IFMT)
+  var fileType: FileType {
+    .init(rawValue: rawValue.st_mode & S_IFMT)
   }
 
-  public var permissions: FilePermissions {
-    .init(rawValue: status.st_mode & ~S_IFMT)
+  var permissions: FilePermissions {
+    .init(rawValue: rawValue.st_mode & ~S_IFMT)
   }
 
-  public var hardLinksCount: CInterop.UpNumberOfLinks {
-    status.st_nlink
+  var hardLinksCount: CInterop.UpNumberOfLinks {
+    rawValue.st_nlink
   }
 
-  public var fileSerialNumber: CInterop.UpInodeNumber {
-    status.st_ino
+  var fileSerialNumber: CInterop.UpInodeNumber {
+    rawValue.st_ino
   }
 
-  public var userID: UInt32 {
-    status.st_uid
+  var userID: UInt32 {
+    rawValue.st_uid
   }
 
-  public var rDeviceID: CInterop.UpDev {
-    status.st_rdev
+  var rDeviceID: CInterop.UpDev {
+    rawValue.st_rdev
+  }
+
+  var lastAccessTime: CInterop.UpTimespec {
+    #if canImport(Darwin)
+    rawValue.st_atimespec
+    #elseif canImport(Glibc)
+    rawValue.st_atim
+    #endif
+  }
+
+  var lastModificationTime: CInterop.UpTimespec {
+    #if canImport(Darwin)
+    rawValue.st_mtimespec
+    #elseif canImport(Glibc)
+    rawValue.st_mtim
+    #endif
+  }
+
+  var lastStatusChangedTime: CInterop.UpTimespec {
+    #if canImport(Darwin)
+    rawValue.st_ctimespec
+    #elseif canImport(Glibc)
+    rawValue.st_ctim
+    #endif
   }
 
   #if canImport(Darwin)
-  public var lastAccessTime: timespec {
-    status.st_atimespec
+  var creationTime: CInterop.UpTimespec {
+    rawValue.st_birthtimespec
   }
   #endif
 
-  #if canImport(Darwin)
-  public var lastModificationTime: timespec {
-    status.st_mtimespec
-  }
-  #endif
-
-  #if canImport(Darwin)
-  public var lastStatusChangedTime: timespec {
-    status.st_ctimespec
-  }
-  #endif
-
-  #if canImport(Darwin)
-  public var creationTime: timespec {
-    status.st_birthtimespec
-  }
-  #endif
-
-  public var size: Int {
-    Int(status.st_size)
+  var size: CInterop.UpSize {
+    rawValue.st_size
   }
 
   /// The actual number of blocks allocated for the file in 512-byte units.  As short symbolic links are stored in the inode, this number may be zero.
-  public var blocksCount: Int {
-    Int(status.st_blocks)
+  var blocksCount: CInterop.UpBlocksCount {
+    rawValue.st_blocks
   }
 
   /// The optimal I/O block size for the file.
-  public var blockSize: Int {
-    Int(status.st_blksize)
+  var blockSize: CInterop.UpBlockSize {
+    rawValue.st_blksize
   }
 
   #if canImport(Darwin)
-  public var flags: UInt32 {
-    status.st_flags
+  var flags: UInt32 {
+    rawValue.st_flags
   }
   #endif
 
   #if canImport(Darwin)
-  public var fileGenerationNumber: UInt32 {
-    status.st_gen
+  var fileGenerationNumber: UInt32 {
+    rawValue.st_gen
   }
   #endif
 
-  public struct FileType: RawRepresentable, Equatable {
+  struct FileType: RawRepresentable, Equatable {
 
-    public init(rawValue: mode_t) {
+    public init(rawValue: CInterop.Mode) {
       self.rawValue = rawValue
     }
 
-    public let rawValue: mode_t
+    public let rawValue: CInterop.Mode
   }
 }
 
-extension FileStatus.FileType {
+public extension FileStatus.FileType {
   @_alwaysEmitIntoClient
-  public static var namedPipe: Self { .init(S_IFIFO) }
+  static var namedPipe: Self { .init(macroValue: S_IFIFO) }
 
   @_alwaysEmitIntoClient
-  public static var character: Self { .init(S_IFCHR) }
+  static var character: Self { .init(macroValue: S_IFCHR) }
 
   @_alwaysEmitIntoClient
-  public static var directory: Self { .init(S_IFDIR) }
+  static var directory: Self { .init(macroValue: S_IFDIR) }
 
   @_alwaysEmitIntoClient
-  public static var block: Self { .init(S_IFBLK) }
+  static var block: Self { .init(macroValue: S_IFBLK) }
 
   @_alwaysEmitIntoClient
-  public static var regular: Self { .init(S_IFREG) }
+  static var regular: Self { .init(macroValue: S_IFREG) }
 
   @_alwaysEmitIntoClient
-  public static var symbolicLink: Self { .init(S_IFLNK) }
+  static var symbolicLink: Self { .init(macroValue: S_IFLNK) }
 
   @_alwaysEmitIntoClient
-  public static var socket: Self { .init(S_IFSOCK) }
+  static var socket: Self { .init(macroValue: S_IFSOCK) }
 
   #if canImport(Darwin)
   @_alwaysEmitIntoClient
-  public static var wht: Self { .init(S_IFWHT) }
+  static var wht: Self { .init(macroValue: S_IFWHT) }
   #endif
 }
 
