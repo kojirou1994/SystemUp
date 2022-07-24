@@ -108,7 +108,7 @@ public final class CopyFileState {
   }
 
   /// Get the number of data bytes copied so far.  (Only valid for copyfile_state_get(); see below for more details about callbacks.)  If a COPYFILE_CLONE or COPYFILE_CLONE_FORCE operation successfully cloned the requested objects, then this value will be 0.
-  public var copiedBytes: off_t {
+  public var copiedBytes: CInterop.UpSize {
     try! get(flag: COPYFILE_STATE_COPIED)
   }
 
@@ -192,10 +192,11 @@ public struct CopyFileWhat: RawRepresentable, Equatable {
 
   /// The object being copied is a directory, and is being entered.  (That is, none of the filesystem objects contained within the directory have been copied yet.)
   @_alwaysEmitIntoClient
-  public static var dir: Self { .init(macroValue: COPYFILE_RECURSE_DIR) }
+  public static var directory: Self { .init(macroValue: COPYFILE_RECURSE_DIR) }
+
   /// The object being copied is a directory, and all of the objects contained have been copied.  At this stage, the destination directory being copied will have any extra permissions that were added to allow the copying will be removed.
   @_alwaysEmitIntoClient
-  public static var dirCleanup: Self { .init(macroValue: COPYFILE_RECURSE_DIR_CLEANUP) }
+  public static var directoryCleanup: Self { .init(macroValue: COPYFILE_RECURSE_DIR_CLEANUP) }
 
   @_alwaysEmitIntoClient
   public static var copyData: Self { .init(macroValue: COPYFILE_COPY_DATA) }
@@ -208,12 +209,12 @@ extension CopyFileWhat: CustomStringConvertible {
   public var description: String {
     switch self {
     case .file: return "file"
-    case .dir: return "dir"
+    case .directory: return "directory"
     case .error: return "error"
-    case .dirCleanup: return "dirCleanup"
+    case .directoryCleanup: return "directoryCleanup"
     case .copyData: return "copyData"
     case .copyXattr: return "copyXattr"
-    default: return "CopyFileWhat(unknownRawValue: \(rawValue))"
+    default: return unknownDescription
     }
   }
 }
@@ -237,8 +238,8 @@ extension FileSyscalls {
 
   public static func copyFile(from src: FileDescriptor, to dst: FileDescriptor, state: CopyFileState? = nil, flags: CopyFlags = []) -> Result<Void, Errno> {
     assert(
-      CopyFlags([.recursive, .exclusive, .nofollowSrc,
-                 .nofollowDst, .nofollow, .move, .unlink,
+      CopyFlags([.recursive, .exclusive, .noFollowSource,
+                 .noFollowDestination, .noFollow, .move, .unlink,
                  .clone, .cloneForce])
       .intersection(flags).isEmpty, "has flags for path based copyfile")
     return nothingOrErrno(retryOnInterrupt: false) {
@@ -301,11 +302,11 @@ public struct CopyFlags: OptionSet {
 
   /// Do not follow the from file, if it is a symbolic link.
   @_alwaysEmitIntoClient
-  public static var nofollowSrc: Self { .init(macroValue: COPYFILE_NOFOLLOW_SRC) }
+  public static var noFollowSource: Self { .init(macroValue: COPYFILE_NOFOLLOW_SRC) }
 
   /// Do not follow the to file, if it is a symbolic link.
   @_alwaysEmitIntoClient
-  public static var nofollowDst: Self { .init(macroValue: COPYFILE_NOFOLLOW_DST) }
+  public static var noFollowDestination: Self { .init(macroValue: COPYFILE_NOFOLLOW_DST) }
 
   /// Unlink (using remove(3)) the from file. No error is returned if remove(3) fails.  Note that remove(3) removes a symbolic link itself, not the tar-get of the link.
   @_alwaysEmitIntoClient
@@ -317,7 +318,7 @@ public struct CopyFlags: OptionSet {
 
   /// This is a convenience macro, equivalent to [.nofollowSrc, .nofollowDst].
   @_alwaysEmitIntoClient
-  public static var nofollow: Self { .init(macroValue: COPYFILE_NOFOLLOW) }
+  public static var noFollow: Self { .init(macroValue: COPYFILE_NOFOLLOW) }
 
   /// Serialize the from file.  The to file is an AppleDouble-format file.
   @_alwaysEmitIntoClient

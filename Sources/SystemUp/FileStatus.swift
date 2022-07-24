@@ -161,7 +161,7 @@ extension FileStatus.FileType: CustomStringConvertible {
     #if canImport(Darwin)
     case .wht: return "wht"
     #endif
-    default: return "unknown"
+    default: return unknownDescription
     }
   }
 
