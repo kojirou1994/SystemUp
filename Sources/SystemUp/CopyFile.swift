@@ -11,13 +11,13 @@ public struct CopyFileReturn: RawRepresentable {
 
   /// The copy will continue as expected.
   @_alwaysEmitIntoClient
-  public static var `continue`: Self { .init(COPYFILE_CONTINUE) }
+  public static var `continue`: Self { .init(macroValue: COPYFILE_CONTINUE) }
   /// This object will be skipped, and the next object will be processed.  (Note that, when entering a directory, returning COPYFILE_SKIP from the call-back function will prevent the contents of the directory from being copied.)
   @_alwaysEmitIntoClient
-  public static var skip: Self { .init(COPYFILE_SKIP) }
+  public static var skip: Self { .init(macroValue: COPYFILE_SKIP) }
   /// The entire copy is aborted at this stage.  Any filesystem objects created up to this point will remain.  copyfile() will return -1, but errno will be unmodified.
   @_alwaysEmitIntoClient
-  public static var quit: Self { .init(COPYFILE_QUIT) }
+  public static var quit: Self { .init(macroValue: COPYFILE_QUIT) }
 }
 
 public struct CopyFileStage: RawRepresentable, Equatable {
@@ -29,18 +29,18 @@ public struct CopyFileStage: RawRepresentable, Equatable {
 
   /// Before copying has begun.  The third parameter will be a newly-created copyfile_state_t object with the call-back function and context pre-loaded.
   @_alwaysEmitIntoClient
-  public static var start: Self { .init(COPYFILE_START) }
+  public static var start: Self { .init(macroValue: COPYFILE_START) }
 
   /// After copying has successfully finished.
   @_alwaysEmitIntoClient
-  public static var finish: Self { .init(COPYFILE_FINISH) }
+  public static var finish: Self { .init(macroValue: COPYFILE_FINISH) }
 
   /// Indicates an error has happened at some stage.  If the first argument to the call-back function is COPYFILE_RECURSE_ERROR, then an error occurred while processing the source hierarchy; otherwise, it will indicate what type of object was being copied, and errno will be set to indicate the error.
   @_alwaysEmitIntoClient
-  public static var error: Self { .init(COPYFILE_ERR) }
+  public static var error: Self { .init(macroValue: COPYFILE_ERR) }
 
   @_alwaysEmitIntoClient
-  public static var progress: Self { .init(COPYFILE_PROGRESS) }
+  public static var progress: Self { .init(macroValue: COPYFILE_PROGRESS) }
 }
 
 extension CopyFileStage: CustomStringConvertible {
@@ -184,24 +184,24 @@ public struct CopyFileWhat: RawRepresentable, Equatable {
 
   /// There was an error in processing an element of the source hierarchy; this happens when fts(3) returns an error or unknown file type.  (Currently, the second argu-ment to the call-back function will always be COPYFILE_ERR in this case.)
   @_alwaysEmitIntoClient
-  public static var error: Self { .init(COPYFILE_RECURSE_ERROR) }
+  public static var error: Self { .init(macroValue: COPYFILE_RECURSE_ERROR) }
 
   /// The object being copied is a file (or, rather, something other than a directory).
   @_alwaysEmitIntoClient
-  public static var file: Self { .init(COPYFILE_RECURSE_FILE) }
+  public static var file: Self { .init(macroValue: COPYFILE_RECURSE_FILE) }
 
   /// The object being copied is a directory, and is being entered.  (That is, none of the filesystem objects contained within the directory have been copied yet.)
   @_alwaysEmitIntoClient
-  public static var dir: Self { .init(COPYFILE_RECURSE_DIR) }
+  public static var dir: Self { .init(macroValue: COPYFILE_RECURSE_DIR) }
   /// The object being copied is a directory, and all of the objects contained have been copied.  At this stage, the destination directory being copied will have any extra permissions that were added to allow the copying will be removed.
   @_alwaysEmitIntoClient
-  public static var dirCleanup: Self { .init(COPYFILE_RECURSE_DIR_CLEANUP) }
+  public static var dirCleanup: Self { .init(macroValue: COPYFILE_RECURSE_DIR_CLEANUP) }
 
   @_alwaysEmitIntoClient
-  public static var copyData: Self { .init(COPYFILE_COPY_DATA) }
+  public static var copyData: Self { .init(macroValue: COPYFILE_COPY_DATA) }
 
   @_alwaysEmitIntoClient
-  public static var copyXattr: Self { .init(COPYFILE_COPY_XATTR) }
+  public static var copyXattr: Self { .init(macroValue: COPYFILE_COPY_XATTR) }
 }
 
 extension CopyFileWhat: CustomStringConvertible {
@@ -220,7 +220,7 @@ extension CopyFileWhat: CustomStringConvertible {
 
 private func copyfile_callback(what: Int32, stage: Int32, state: copyfile_state_t?, src: UnsafePointer<CChar>?, dst: UnsafePointer<CChar>?, ctx: UnsafeMutableRawPointer?) -> Int32 {
   let context = unsafeBitCast(ctx, to: CopyFileState.self)
-  return context.callback?(.init(what), .init(stage), context).rawValue ?? COPYFILE_CONTINUE
+  return context.callback?(.init(rawValue: what), .init(rawValue: stage), context).rawValue ?? COPYFILE_CONTINUE
 }
 
 extension FileSyscalls {
@@ -259,68 +259,73 @@ public struct CopyFlags: OptionSet {
 
   /// Copy the source file's access control lists.
   @_alwaysEmitIntoClient
-  public static var acl: Self { .init(COPYFILE_ACL) }
+  public static var acl: Self { .init(macroValue: COPYFILE_ACL) }
+
   /// Copy the source file's POSIX information (mode, modification time, etc.).
   @_alwaysEmitIntoClient
-  public static var stat: Self { .init(COPYFILE_STAT) }
+  public static var stat: Self { .init(macroValue: COPYFILE_STAT) }
+
   /// Copy the source file's extended attributes.
   @_alwaysEmitIntoClient
-  public static var xattr: Self { .init(COPYFILE_XATTR) }
+  public static var xattr: Self { .init(macroValue: COPYFILE_XATTR) }
+
   /// Copy the source file's data.
   @_alwaysEmitIntoClient
-  public static var data: Self { .init(COPYFILE_DATA) }
+  public static var data: Self { .init(macroValue: COPYFILE_DATA) }
 
   /// Copy the source file's POSIX and ACL information; equivalent to[.stat, .acl].
   @_alwaysEmitIntoClient
-  public static var security: Self { .init(COPYFILE_SECURITY) }
+  public static var security: Self { .init(macroValue: COPYFILE_SECURITY) }
+
   /// Copy the metadata; equivalent to [.security, xattr].
   @_alwaysEmitIntoClient
-  public static var metadata: Self { .init(COPYFILE_METADATA) }
+  public static var metadata: Self { .init(macroValue: COPYFILE_METADATA) }
+
   /// Copy the entire file; equivalent to [.metadata, .data].
   @_alwaysEmitIntoClient
-  public static var all: Self { .init(COPYFILE_ALL) }
+  public static var all: Self { .init(macroValue: COPYFILE_ALL) }
 
   // MARK: behavior flags
 
   /// Causes copyfile() to recursively copy a hierarchy.
   @_alwaysEmitIntoClient
-  public static var recursive: Self { .init(COPYFILE_RECURSIVE) }
+  public static var recursive: Self { .init(macroValue: COPYFILE_RECURSIVE) }
 
   /// Return a bitmask (corresponding to the flags argument) indicating which contents would be copied; no data are actually copied.  (E.g., if flags was set to COPYFILE_CHECK|COPYFILE_METADATA, and the from file had extended attributes but no ACLs, the return value would be COPYFILE_XATTR .)
   @_alwaysEmitIntoClient
-  public static var check: Self { .init(COPYFILE_CHECK) }
+  public static var check: Self { .init(macroValue: COPYFILE_CHECK) }
 
   /// Fail if the to file already exists.
   @_alwaysEmitIntoClient
-  public static var exclusive: Self { .init(COPYFILE_EXCL) }
+  public static var exclusive: Self { .init(macroValue: COPYFILE_EXCL) }
 
   /// Do not follow the from file, if it is a symbolic link.
   @_alwaysEmitIntoClient
-  public static var nofollowSrc: Self { .init(COPYFILE_NOFOLLOW_SRC) }
+  public static var nofollowSrc: Self { .init(macroValue: COPYFILE_NOFOLLOW_SRC) }
 
   /// Do not follow the to file, if it is a symbolic link.
   @_alwaysEmitIntoClient
-  public static var nofollowDst: Self { .init(COPYFILE_NOFOLLOW_DST) }
+  public static var nofollowDst: Self { .init(macroValue: COPYFILE_NOFOLLOW_DST) }
 
   /// Unlink (using remove(3)) the from file. No error is returned if remove(3) fails.  Note that remove(3) removes a symbolic link itself, not the tar-get of the link.
   @_alwaysEmitIntoClient
-  public static var move: Self { .init(COPYFILE_MOVE) }
+  public static var move: Self { .init(macroValue: COPYFILE_MOVE) }
 
   /// Unlink the to file before starting.
   @_alwaysEmitIntoClient
-  public static var unlink: Self { .init(COPYFILE_UNLINK) }
+  public static var unlink: Self { .init(macroValue: COPYFILE_UNLINK) }
 
   /// This is a convenience macro, equivalent to [.nofollowSrc, .nofollowDst].
   @_alwaysEmitIntoClient
-  public static var nofollow: Self { .init(COPYFILE_NOFOLLOW) }
+  public static var nofollow: Self { .init(macroValue: COPYFILE_NOFOLLOW) }
 
   /// Serialize the from file.  The to file is an AppleDouble-format file.
   @_alwaysEmitIntoClient
-  public static var pack: Self { .init(COPYFILE_PACK) }
+  public static var pack: Self { .init(macroValue: COPYFILE_PACK) }
 
   /// Unserialize the from file.  The from file is an AppleDouble-format file; the to file will have the extended attributes, ACLs, resource fork, and FinderInfo data from the to file, regardless of the flags argument passed in.
   @_alwaysEmitIntoClient
-  public static var unpack: Self { .init(COPYFILE_UNPACK) }
+  public static var unpack: Self { .init(macroValue: COPYFILE_UNPACK) }
 
   /// Try to clone the file instead.  This is a best try flag i.e. if cloning fails, fallback to copying the
   /// file.  This flag is equivalent to (COPYFILE_EXCL | COPYFILE_ACL | COPYFILE_STAT | COPYFILE_XATTR |
@@ -330,7 +335,7 @@ public struct CopyFlags: OptionSet {
   /// flag implies COPYFILE_NOFOLLOW_SRC, symbolic links themselves will be cloned instead of their targets.
   /// Recursive copying however is supported, see below for more information.
   @_alwaysEmitIntoClient
-  public static var clone: Self { .init(COPYFILE_CLONE) }
+  public static var clone: Self { .init(macroValue: COPYFILE_CLONE) }
 
   /// Clone the file instead.  This is a force flag i.e. if cloning fails, an error is returned.This flag
   /// is equivalent to (COPYFILE_EXCL | COPYFILE_ACL | COPYFILE_STAT | COPYFILE_XATTR | COPYFILE_DATA | COPY-
@@ -339,27 +344,27 @@ public struct CopyFlags: OptionSet {
   /// error will be returned.  Since this flag implies COPYFILE_NOFOLLOW_SRC, symbolic links themselves will
   /// be cloned instead of their targets.
   @_alwaysEmitIntoClient
-  public static var cloneForce: Self { .init(COPYFILE_CLONE_FORCE) }
+  public static var cloneForce: Self { .init(macroValue: COPYFILE_CLONE_FORCE) }
 
   /// If the src file has quarantine information, add the QTN_FLAG_DO_NOT_TRANSLOCATE flag to the quarantine
   /// information of the dst file.  This allows a bundle to run in place instead of being translocated.
   @_alwaysEmitIntoClient
-  public static var runInPlace: Self { .init(COPYFILE_RUN_IN_PLACE) }
+  public static var runInPlace: Self { .init(macroValue: COPYFILE_RUN_IN_PLACE) }
 
   /// Copy a file sparsely.  This requires that the source and destination file systems support sparse files
   /// with hole sizes at least as large as their block sizes.  This also requires that the source file is
   /// sparse, and for fcopyfile() the source file descriptor's offset be a multiple of the minimum hole size.
   /// If COPYFILE_DATA is also specified, this will fall back to a full copy if sparse copying cannot be performed for any reason; otherwise, an error is returned.
   @_alwaysEmitIntoClient
-  public static var dataSparse: Self { .init(COPYFILE_DATA_SPARSE) }
+  public static var dataSparse: Self { .init(macroValue: COPYFILE_DATA_SPARSE) }
 
   /// Preserve the UF_TRACKED flag at to when copying metadata, regardless of whether from has it set.  This
   /// flag is used in conjunction with COPYFILE_STAT, or COPYFILE_CLONE (for its fallback case).
   @_alwaysEmitIntoClient
-  public static var preserveDstTracked: Self { .init(COPYFILE_PRESERVE_DST_TRACKED) }
+  public static var preserveDstTracked: Self { .init(macroValue: COPYFILE_PRESERVE_DST_TRACKED) }
 
   @_alwaysEmitIntoClient
-  public static var verbose: Self { .init(COPYFILE_VERBOSE) }
+  public static var verbose: Self { .init(macroValue: COPYFILE_VERBOSE) }
 }
 
 #endif // Darwin platform

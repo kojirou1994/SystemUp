@@ -185,31 +185,31 @@ extension Directory {
 extension Directory.DirectoryType {
 
   @_alwaysEmitIntoClient
-  public static var unknown: Self { .init(DT_UNKNOWN) }
+  public static var unknown: Self { .init(macroValue: DT_UNKNOWN) }
 
   @_alwaysEmitIntoClient
-  public static var namedPipe: Self { .init(DT_FIFO) }
+  public static var namedPipe: Self { .init(macroValue: DT_FIFO) }
 
   @_alwaysEmitIntoClient
-  public static var character: Self { .init(DT_CHR) }
+  public static var character: Self { .init(macroValue: DT_CHR) }
 
   @_alwaysEmitIntoClient
-  public static var directory: Self { .init(DT_DIR) }
+  public static var directory: Self { .init(macroValue: DT_DIR) }
 
   @_alwaysEmitIntoClient
-  public static var block: Self { .init(DT_BLK) }
+  public static var block: Self { .init(macroValue: DT_BLK) }
 
   @_alwaysEmitIntoClient
-  public static var regular: Self { .init(DT_REG) }
+  public static var regular: Self { .init(macroValue: DT_REG) }
 
   @_alwaysEmitIntoClient
-  public static var symbolicLink: Self { .init(DT_LNK) }
+  public static var symbolicLink: Self { .init(macroValue: DT_LNK) }
 
   @_alwaysEmitIntoClient
-  public static var socket: Self { .init(DT_SOCK) }
+  public static var socket: Self { .init(macroValue: DT_SOCK) }
 
   @_alwaysEmitIntoClient
-  public static var wht: Self { .init(DT_WHT) }
+  public static var wht: Self { .init(macroValue: DT_WHT) }
 
 }
 

@@ -38,9 +38,9 @@ public extension FileSyscalls {
     public let rawValue: UInt32
 
     @_alwaysEmitIntoClient
-    public static var noFollow: Self { .init(CLONE_NOFOLLOW) }
+    public static var noFollow: Self { .init(macroValue: CLONE_NOFOLLOW) }
     @_alwaysEmitIntoClient
-    public static var noOwnerCopy: Self { .init(CLONE_NOOWNERCOPY) }
+    public static var noOwnerCopy: Self { .init(macroValue: CLONE_NOOWNERCOPY) }
 
   }
   

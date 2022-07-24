@@ -131,39 +131,39 @@ public extension FileSyscalls {
 
     /// Do not dump the file.
     @_alwaysEmitIntoClient
-    public static var userNoDump: Self { .init(UF_NODUMP) }
+    public static var userNoDump: Self { .init(macroValue: UF_NODUMP) }
 
     /// The file may not be changed.
     @_alwaysEmitIntoClient
-    public static var userImmutable: Self { .init(UF_IMMUTABLE) }
+    public static var userImmutable: Self { .init(macroValue: UF_IMMUTABLE) }
 
     /// The file may only be appended to.
     @_alwaysEmitIntoClient
-    public static var userAppend: Self { .init(UF_APPEND) }
+    public static var userAppend: Self { .init(macroValue: UF_APPEND) }
 
     /// The directory is opaque when viewed through a union stack.
     @_alwaysEmitIntoClient
-    public static var userOpaque: Self { .init(UF_OPAQUE) }
+    public static var userOpaque: Self { .init(macroValue: UF_OPAQUE) }
 
     /// The file or directory is not intended to be displayed to the user.
     @_alwaysEmitIntoClient
-    public static var userHidden: Self { .init(UF_HIDDEN) }
+    public static var userHidden: Self { .init(macroValue: UF_HIDDEN) }
 
     /// The file has been archived.
     @_alwaysEmitIntoClient
-    public static var superArchived: Self { .init(SF_ARCHIVED) }
+    public static var superArchived: Self { .init(macroValue: SF_ARCHIVED) }
 
     /// The file may not be changed.
     @_alwaysEmitIntoClient
-    public static var superImmutable: Self { .init(SF_IMMUTABLE) }
+    public static var superImmutable: Self { .init(macroValue: SF_IMMUTABLE) }
 
     /// The file may only be appended to.
     @_alwaysEmitIntoClient
-    public static var superAppend: Self { .init(SF_APPEND) }
+    public static var superAppend: Self { .init(macroValue: SF_APPEND) }
 
     /// The file is a dataless placeholder.  The system will attempt to materialize it when accessed according to the dataless file materialization policy of the accessing thread or process.  See getiopolicy_np(3).
     @_alwaysEmitIntoClient
-    public static var superDataless: Self { .init(SF_DATALESS) }
+    public static var superDataless: Self { .init(macroValue: SF_DATALESS) }
 
   }
 
@@ -215,18 +215,18 @@ public extension FileSyscalls {
 
     /// test for existence of file
     @_alwaysEmitIntoClient
-    public static var existence: Self { .init(F_OK) }
+    public static var existence: Self { .init(macroValue: F_OK) }
 
     /// test for execute or search permission
     @_alwaysEmitIntoClient
-    public static var execute: Self { .init(X_OK) }
+    public static var execute: Self { .init(macroValue: X_OK) }
 
     /// test for write permission
     @_alwaysEmitIntoClient
-    public static var write: Self { .init(W_OK) }
+    public static var write: Self { .init(macroValue: W_OK) }
 
     @_alwaysEmitIntoClient
-    public static var read: Self { .init(R_OK) }
+    public static var read: Self { .init(macroValue: R_OK) }
 
   }
 
@@ -251,30 +251,30 @@ public extension FileSyscalls {
 
     /// Use effective ids in access check
     @_alwaysEmitIntoClient
-    public static var effectiveAccess: Self { .init(AT_EACCESS) }
+    public static var effectiveAccess: Self { .init(macroValue: AT_EACCESS) }
 
     /// Act on the symlink itself not the target
     @_alwaysEmitIntoClient
-    public static var noFollow: Self { .init(AT_SYMLINK_NOFOLLOW) }
+    public static var noFollow: Self { .init(macroValue: AT_SYMLINK_NOFOLLOW) }
 
     /// Act on target of symlink
     @_alwaysEmitIntoClient
-    public static var follow: Self { .init(AT_SYMLINK_FOLLOW) }
+    public static var follow: Self { .init(macroValue: AT_SYMLINK_FOLLOW) }
 
     /// Path refers to directory
     @_alwaysEmitIntoClient
-    public static var removeDir: Self { .init(AT_REMOVEDIR) }
+    public static var removeDir: Self { .init(macroValue: AT_REMOVEDIR) }
 
     /// Return real device inodes resides on for fstatat(2)
     #if canImport(Darwin)
     @_alwaysEmitIntoClient
-    public static var realDevice: Self { .init(AT_REALDEV) }
+    public static var realDevice: Self { .init(macroValue: AT_REALDEV) }
     #endif
 
     /// Use only the fd and Ignore the path for fstatat(2)
     #if canImport(Darwin)
     @_alwaysEmitIntoClient
-    public static var fdOnly: Self { .init(AT_FDONLY) }
+    public static var fdOnly: Self { .init(macroValue: AT_FDONLY) }
     #endif
   }
 
@@ -295,9 +295,9 @@ public extension FileSyscalls {
     @_alwaysEmitIntoClient
     public static var swap: Self {
       #if canImport(Darwin)
-      return .init(RENAME_SWAP)
+      return .init(macroValue: RENAME_SWAP)
       #else
-      return .init(rawValue: 1 << 1)
+      return .init(macroValue: 1 << 1)
       #endif
     }
 
@@ -309,9 +309,9 @@ public extension FileSyscalls {
     @_alwaysEmitIntoClient
     public static var exclusive: Self {
       #if canImport(Darwin)
-      return .init(RENAME_EXCL)
+      return .init(macroValue: RENAME_EXCL)
       #else
-      return .init(rawValue: 1 << 0)
+      return .init(macroValue: 1 << 0)
       #endif
     }
 
@@ -323,14 +323,14 @@ public extension FileSyscalls {
     #if canImport(Darwin)
     @_alwaysEmitIntoClient
     public static var noFollowAny: Self {
-      .init(RENAME_NOFOLLOW_ANY)
+      .init(macroValue: RENAME_NOFOLLOW_ANY)
     }
     #endif
 
     #if os(Linux)
     @_alwaysEmitIntoClient
     public static var whiteOut: Self {
-      .init(rawValue: 1 << 2)
+      .init(macroValue: 1 << 2)
     }
     #endif
 
