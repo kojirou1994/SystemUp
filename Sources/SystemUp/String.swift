@@ -6,7 +6,7 @@ extension String {
   public init(utf8ContentsOfFileDescriptor fd: FileDescriptor) throws {
     let size = try FileSyscalls.fileStatus(fd).get().size
 
-    try self.init(unsafeUninitializedCapacity: size) { buffer in
+    try self.init(unsafeUninitializedCapacity: Int(size)) { buffer in
       try fd.read(into: UnsafeMutableRawBufferPointer(buffer))
     }
   }
@@ -15,7 +15,7 @@ extension String {
 
     let size = try FileSyscalls.fileStatus(fd).get().size
 
-    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
+    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: Int(size), alignment: MemoryLayout<UInt8>.alignment)
     defer {
       buffer.deallocate()
     }
