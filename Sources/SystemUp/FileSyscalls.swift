@@ -31,18 +31,18 @@ public extension FileSyscalls {
   }
 
   static func fileStatus(_ fd: FileDescriptor) -> Result<FileStatus, Errno> {
-    var s = FileStatus()
+    var s = FileStatus(rawValue: .init())
     return fileStatus(fd, into: &s).map { s }
   }
 
   static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) -> Result<Void, Errno> {
     nothingOrErrno(retryOnInterrupt: false) {
-      fstat(fd.rawValue, &status.status)
+      fstat(fd.rawValue, &status.rawValue)
     }
   }
 
   static func fileStatus(_ option: FilePathOption, flags: AtFlags = []) -> Result<FileStatus, Errno> {
-    var s = FileStatus()
+    var s = FileStatus(rawValue: .init())
     return fileStatus(option, flags: flags, into: &s).map { s }
   }
 
@@ -50,7 +50,7 @@ public extension FileSyscalls {
     assert(flags.isSubset(of: [.noFollow]))
     return nothingOrErrno(retryOnInterrupt: false) {
       option.path.withPlatformString { path in
-        fstatat(option.relativedDirFD.rawValue, path, &status.status, flags.rawValue)
+        fstatat(option.relativedDirFD.rawValue, path, &status.rawValue, flags.rawValue)
       }
     }
   }
@@ -73,7 +73,7 @@ public extension FileSyscalls {
     let count = Int(PATH_MAX) + 1
     return try .init(capacity: count) { ptr in
       try option.path.withPlatformString { path in
-        let newCount = readlinkat(option.relativedDirFD.rawValue, path, ptr.assumingMemoryBound(to: CChar.self), count)
+        let newCount = readlinkat(option.relativedDirFD.rawValue, path, ptr, count)
         if newCount == -1 {
           throw Errno.current
         }
