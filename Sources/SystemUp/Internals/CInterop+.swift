@@ -1,28 +1,34 @@
 import SystemPackage
 import CSystemUp
 
-extension CInterop {
+public extension CInterop {
   #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-  public typealias UpInodeNumber = UInt64
+  typealias UpInodeNumber = UInt64
   #elseif os(Linux)
-  public typealias UpInodeNumber = ino_t
+  typealias UpInodeNumber = ino_t
   #endif
 
   #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-  public typealias UpSeekOffset = UInt64
+  typealias UpSeekOffset = UInt64
   #elseif os(Linux)
-  public typealias UpSeekOffset = off_t
+  typealias UpSeekOffset = off_t
   #endif
 
   #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-  public typealias UpDev = dev_t
+  typealias UpSize = Int64
   #elseif os(Linux)
-  public typealias UpDev = dev_t
+  typealias UpSize = off_t
   #endif
 
-  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-  public typealias UpNumberOfLinks = nlink_t
-  #elseif os(Linux)
-  public typealias UpNumberOfLinks = nlink_t
-  #endif
+  typealias UpBlocksCount = blkcnt_t
+
+  typealias UpBlockSize = blksize_t
+
+  typealias UpDev = dev_t
+
+  typealias UpNumberOfLinks = nlink_t
+
+  typealias UpStat = stat
+
+  typealias UpTimespec = timespec
 }
