@@ -7,46 +7,37 @@ import CUtility
 public extension FileSyscalls {
 
   static func fileSystemStatistics(_ fd: FileDescriptor) -> Result<FileSystemStatistics, Errno> {
-    var s = FileSystemStatistics()
+    var s = FileSystemStatistics(rawValue: .init())
     return fileSystemStatistics(fd, into: &s).map { s }
   }
 
   static func fileSystemStatistics(_ path: FilePath) throws -> Result<FileSystemStatistics, Errno> {
-    var s = FileSystemStatistics()
+    var s = FileSystemStatistics(rawValue: .init())
     return fileSystemStatistics(path, into: &s).map { s }
   }
 
   static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
     nothingOrErrno(retryOnInterrupt: false) {
-      fstatfs(fd.rawValue, &s.value)
+      fstatfs(fd.rawValue, &s.rawValue)
     }
   }
 
   static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
     nothingOrErrno(retryOnInterrupt: false) {
       path.withPlatformString { path in
-        statfs(path, &s.value)
+        statfs(path, &s.rawValue)
       }
     }
   }
 }
 
-public struct FileSystemStatistics {
+public struct FileSystemStatistics: RawRepresentable {
 
   /// the c struct
-  fileprivate var value: statfs
+  public var rawValue: statfs
 
-  public init() {
-    self.value = .init()
-  }
-
-}
-
-extension FileSystemStatistics: CustomStringConvertible {
-
-  @inline(never)
-  public var description: String {
-    "FileSystemStatistics(blockSize: \(blockSize), ioSize: \(ioSize), blocks: \(blocks), freeBlocks: \(freeBlocks), freeBlocksNonSuperuser: \(freeBlocksNonSuperuser), nodes: \(nodes), freeNodes: \(freeNodes), usedNodes: \(usedNodes), id: \(id), owner: \(owner), type: \(type), flags: \(flags), subType: \(subType), typeName: \(typeName), mountedOnName: \(mountedOnName), mountedFileSystem: \(mountedFileSystem))"
+  public init(rawValue: statfs) {
+    self.rawValue = rawValue
   }
 
 }
@@ -54,77 +45,77 @@ extension FileSystemStatistics: CustomStringConvertible {
 public extension FileSystemStatistics {
   /// fundamental file system block size
   var blockSize: UInt32 {
-    value.f_bsize
+    rawValue.f_bsize
   }
 
   /// optimal transfer block size
   var ioSize: Int32 {
-    value.f_iosize
+    rawValue.f_iosize
   }
 
   /// total data blocks in file system
   var blocks: UInt64 {
-    value.f_blocks
+    rawValue.f_blocks
   }
 
   /// free blocks in fs
   var freeBlocks: UInt64 {
-    value.f_bfree
+    rawValue.f_bfree
   }
 
   /// free blocks avail to non-superuser
   var freeBlocksNonSuperuser: UInt64 {
-    value.f_bavail
+    rawValue.f_bavail
   }
 
   /// total file nodes in file system
   var nodes: UInt64 {
-    value.f_files
+    rawValue.f_files
   }
 
   /// free file nodes in fs
   var freeNodes: UInt64 {
-    value.f_ffree
+    rawValue.f_ffree
   }
 
   /// file system id
   var id: fsid {
-    value.f_fsid
+    rawValue.f_fsid
   }
 
   /// user that mounted the filesystem
   var owner: uid_t {
-    value.f_owner
+    rawValue.f_owner
   }
 
   /// type of filesystem
   var type: UInt32 {
-    value.f_type
+    rawValue.f_type
   }
 
   /// fs sub-type (flavor)
   var subType: UInt32 {
-    value.f_fssubtype
+    rawValue.f_fssubtype
   }
 
   /// fs type name
   var typeName: String {
-    String(cStackString: value.f_fstypename)
+    String(cStackString: rawValue.f_fstypename)
   }
 
   /// copy of mount exported flags
   var flags: UInt32 {
-    value.f_flags
+    rawValue.f_flags
   }
 
   /// directory on which mounted
   var mountedOnName: String {
-    String(cStackString: value.f_mntonname)
+    String(cStackString: rawValue.f_mntonname)
   }
 
   /// mounted filesystem
   var mountedFileSystem: String {
-    String.init(cStackString: value.f_mntfromname)
+    String.init(cStackString: rawValue.f_mntfromname)
   }
 }
 
