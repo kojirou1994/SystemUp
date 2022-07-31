@@ -4,6 +4,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/vfs.h>
 #include <dirent.h>
 
 #include <sys/xattr.h>

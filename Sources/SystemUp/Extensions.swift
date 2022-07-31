@@ -17,6 +17,17 @@ extension Errno {
   static var current: Self { .init(rawValue: errno) }
 }
 
+@inlinable @inline(__always)
+public func retryOnInterrupt<T>(_ body: () -> Result<T, Errno>) -> Result<T, Errno> {
+  while true {
+    switch body() {
+    case .success(let v): return .success(v)
+    case .failure(.interrupted): break
+    case .failure(let e): return .failure(e)
+    }
+  }
+}
+
 internal func valueOrErrno<I: FixedWidthInteger>(retryOnInterrupt: Bool, _ body: () -> I) -> Result<I, Errno> {
   repeat {
     let i = body()

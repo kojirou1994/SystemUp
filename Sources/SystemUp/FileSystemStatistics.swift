@@ -1,7 +1,10 @@
-#if canImport(Darwin)
 import SystemPackage
+#if canImport(Darwin)
 import Darwin
-import SyscallValue
+#elseif canImport(Glibc)
+import Glibc
+#endif
+import CSystemUp
 import CUtility
 
 public extension FileSyscalls {
@@ -43,56 +46,74 @@ public struct FileSystemStatistics: RawRepresentable {
 }
 
 public extension FileSystemStatistics {
+
+  #if canImport(Darwin)
+  typealias BlockSize = UInt32
+  typealias UpFSWord = UInt64
+  #elseif os(Linux)
+  typealias BlockSize = __fsword_t
+  typealias UpFSWord = __fsword_t
+  #endif
+
   /// fundamental file system block size
-  var blockSize: UInt32 {
+  var blockSize: BlockSize {
     rawValue.f_bsize
   }
 
+  #if canImport(Darwin)
   /// optimal transfer block size
   var ioSize: Int32 {
     rawValue.f_iosize
   }
+  #endif
 
   /// total data blocks in file system
-  var blocks: UInt64 {
+  var blocks: some FixedWidthInteger {
     rawValue.f_blocks
   }
 
   /// free blocks in fs
-  var freeBlocks: UInt64 {
+  var freeBlocks: some FixedWidthInteger {
     rawValue.f_bfree
   }
 
   /// free blocks avail to non-superuser
-  var freeBlocksNonSuperuser: UInt64 {
+  var availableBlocks: some FixedWidthInteger {
     rawValue.f_bavail
   }
 
   /// total file nodes in file system
-  var nodes: UInt64 {
+  var nodes: some FixedWidthInteger {
     rawValue.f_files
   }
 
   /// free file nodes in fs
-  var freeNodes: UInt64 {
+  var freeNodes: some FixedWidthInteger {
     rawValue.f_ffree
   }
 
   /// file system id
-  var id: fsid {
-    rawValue.f_fsid
+  var id: (Int32, Int32) {
+    #if canImport(Darwin)
+    rawValue.f_fsid.val
+    #else
+    rawValue.f_fsid.__val
+    #endif
   }
 
+  #if canImport(Darwin)
   /// user that mounted the filesystem
   var owner: uid_t {
     rawValue.f_owner
   }
+  #endif
 
   /// type of filesystem
-  var type: UInt32 {
+  var type: some FixedWidthInteger {
     rawValue.f_type
   }
 
+  #if canImport(Darwin)
   /// fs sub-type (flavor)
   var subType: UInt32 {
     rawValue.f_fssubtype
@@ -102,12 +123,14 @@ public extension FileSystemStatistics {
   var typeName: String {
     String(cStackString: rawValue.f_fstypename)
   }
+  #endif
 
   /// copy of mount exported flags
-  var flags: UInt32 {
+  var flags: some FixedWidthInteger {
     rawValue.f_flags
   }
 
+  #if canImport(Darwin)
   /// directory on which mounted
   var mountedOnName: String {
     String(cStackString: rawValue.f_mntonname)
@@ -117,18 +140,18 @@ public extension FileSystemStatistics {
   var mountedFileSystem: String {
     String.init(cStackString: rawValue.f_mntfromname)
   }
-}
-
-public extension FileSystemStatistics {
-
-  var usedNodes: UInt64 {
-    nodes - freeNodes
-  }
-
-  var usedBlocks: UInt64 {
-    blocks - freeBlocks
-  }
+  #endif
 
 }
 
-#endif // Darwin platform
+//public extension FileSystemStatistics {
+//
+//  var usedNodes: UInt64 {
+//    nodes - freeNodes
+//  }
+//
+//  var usedBlocks: UInt64 {
+//    blocks - freeBlocks
+//  }
+//
+//}
