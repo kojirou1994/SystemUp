@@ -6,9 +6,39 @@ import Glibc
 import CUtility
 import SystemPackage
 
-public enum PosixEnvironment {}
+public struct PosixEnvironment {
+  public var environment: [String: String]
+  public init(environment: [String: String]) {
+    self.environment = environment
+  }
+
+  public var envCArray: CStringArray {
+    let result = CStringArray()
+    result.reserveCapacity(environment.count)
+    environment.forEach { result.append("\($0)=\($1)") }
+    return result
+  }
+}
 
 public extension PosixEnvironment {
+
+  static var global: Self {
+
+    var result = Self(environment: .init())
+
+    for entry in NullTerminatedArray(environ) {
+      if let entry = entry.pointee {
+        let string = String(cString: entry)
+        if let i = string.firstIndex(of: "=") {
+          let key = string[..<i]
+          let value = string[i...].dropFirst()
+          result.environment[String(key)] = String(value)
+        }
+      }
+    }
+
+    return result
+  }
 
   /// set() may invalidate the result cstring
   static func get<T: StringProtocol>(key: T) -> StaticCString? {
