@@ -36,7 +36,7 @@ public struct Directory {
 
   public func close() {
     neverError {
-      try nothingOrErrno(retryOnInterrupt: false, { closedir(dir) }).get()
+      voidOrErrno { closedir(dir) }
     }
   }
 
@@ -61,7 +61,7 @@ public struct Directory {
   @available(*, deprecated, message: "unsafe")
   public func read(into entry: inout Directory.Entry) -> Result<Bool, Errno> {
     var entryPtr: UnsafeMutablePointer<dirent>?
-    return nothingOrErrno(retryOnInterrupt: false) {
+    return voidOrErrno {
       readdir_r(dir, &entry.entry, &entryPtr)
     }
     .map { _ in

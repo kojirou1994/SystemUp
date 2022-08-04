@@ -20,13 +20,13 @@ public extension FileSyscalls {
   }
 
   static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
-    nothingOrErrno(retryOnInterrupt: false) {
+    voidOrErrno {
       fstatfs(fd.rawValue, &s.rawValue)
     }
   }
 
   static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
-    nothingOrErrno(retryOnInterrupt: false) {
+    voidOrErrno {
       path.withPlatformString { path in
         statfs(path, &s.rawValue)
       }
@@ -45,6 +45,7 @@ public struct FileSystemStatistics: RawRepresentable {
 
 }
 
+@available(macOS 10.15, iOS 13.0, *)
 public extension FileSystemStatistics {
 
   #if canImport(Darwin)

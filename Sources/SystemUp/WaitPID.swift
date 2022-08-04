@@ -4,15 +4,16 @@ import Darwin
 import Glibc
 #endif
 import SystemPackage
+import CSystemUp
 import CUtility
 
 public enum WaitPID {}
 
 public extension WaitPID {
-  static func wait(pid: PID, status: UnsafeMutablePointer<Int32>? = nil, options: Options = [],
+  static func wait(pid: PID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
                    rusage: UnsafeMutablePointer<rusage>? = nil) -> Result<PID, Errno> {
-    valueOrErrno(retryOnInterrupt: false) {
-      wait4(pid.rawValue, status, options.rawValue, rusage)
+    valueOrErrno {
+      wait4(pid.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage)
     }.map(PID.init)
   }
 }
@@ -35,6 +36,15 @@ extension WaitPID {
 
     public let rawValue: Int32
   }
+
+  public struct ExitStatus: RawRepresentable {
+
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    public var rawValue: Int32
+  }
 }
 
 public extension WaitPID.PID {
@@ -56,4 +66,48 @@ public extension WaitPID.Options {
   @_alwaysEmitIntoClient
   static var continued: Self { .init(macroValue: WCONTINUED) }
   #endif
+}
+
+public extension WaitPID.ExitStatus {
+  @_alwaysEmitIntoClient
+  var exited: Bool {
+    swift_WIFEXITED(rawValue).cBool
+  }
+
+  @_alwaysEmitIntoClient
+  var exitStatus: Int32 {
+    precondition(exited)
+    return swift_WEXITSTATUS(rawValue)
+  }
+
+  @_alwaysEmitIntoClient
+  var signaled: Bool {
+    swift_WIFSIGNALED(rawValue).cBool
+  }
+
+  @_alwaysEmitIntoClient
+  var terminationSignal: Int32 {
+    precondition(signaled)
+    return swift_WTERMSIG(rawValue)
+  }
+
+  @_alwaysEmitIntoClient
+  var coreDumped: Bool {
+    swift_WCOREDUMP(rawValue).cBool
+  }
+
+  @_alwaysEmitIntoClient
+  var stopped: Bool {
+    swift_WIFSTOPPED(rawValue).cBool
+  }
+
+  @_alwaysEmitIntoClient
+  var stopSignal: Int32 {
+    swift_WSTOPSIG(rawValue)
+  }
+
+  @_alwaysEmitIntoClient
+  var continued: Bool {
+    swift_WIFCONTINUED(rawValue).cBool
+  }
 }

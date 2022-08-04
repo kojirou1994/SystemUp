@@ -101,7 +101,7 @@ public final class CopyFileState {
   }
 
   private func _set(flag: Int32, thing: UnsafeRawPointer?) throws -> Self {
-    try nothingOrErrno(retryOnInterrupt: false) {
+    try voidOrErrno {
       copyfile_state_set(state, UInt32(flag), thing)
     }.get()
     return self
@@ -148,7 +148,7 @@ public final class CopyFileState {
   }
 
   private func _get(flag: Int32, thing: UnsafeMutableRawPointer) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+    try voidOrErrno {
       copyfile_state_get(state, UInt32(flag), thing)
     }.get()
   }
@@ -227,7 +227,7 @@ private func copyfile_callback(what: Int32, stage: Int32, state: copyfile_state_
 extension FileSyscalls {
 
   public static func copyFile(from src: FilePath, to dst: FilePath, state: CopyFileState? = nil, flags: CopyFlags = []) -> Result<Void, Errno> {
-    nothingOrErrno(retryOnInterrupt: false) {
+    voidOrErrno {
       src.withPlatformString { src in
         dst.withPlatformString { dst in
           copyfile(src, dst, state?.state, flags.rawValue)
@@ -242,7 +242,7 @@ extension FileSyscalls {
                  .noFollowDestination, .noFollow, .move, .unlink,
                  .clone, .cloneForce])
       .intersection(flags).isEmpty, "has flags for path based copyfile")
-    return nothingOrErrno(retryOnInterrupt: false) {
+    return voidOrErrno {
       fcopyfile(src.rawValue, dst.rawValue, state?.state, flags.rawValue)
     }
   }

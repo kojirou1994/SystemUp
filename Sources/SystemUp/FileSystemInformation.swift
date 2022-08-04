@@ -18,13 +18,13 @@ public extension FileSyscalls {
   }
 
   static func fileSystemInformation(_ fd: FileDescriptor, into s: inout FileSystemInformation) -> Result<Void, Errno> {
-    nothingOrErrno(retryOnInterrupt: false) {
+    voidOrErrno {
       fstatvfs(fd.rawValue, &s.rawValue)
     }
   }
 
   static func fileSystemInformation(_ path: FilePath, into s: inout FileSystemInformation) -> Result<Void, Errno> {
-    nothingOrErrno(retryOnInterrupt: false) {
+    voidOrErrno {
       path.withPlatformString { path in
         statvfs(path, &s.rawValue)
       }

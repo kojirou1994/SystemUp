@@ -25,7 +25,7 @@ public extension SignalSet {
     sigemptyset(&rawValue)
   }
 
-  mutating func fill() {
+  mutating func fillAll() {
     sigfillset(&rawValue)
   }
 

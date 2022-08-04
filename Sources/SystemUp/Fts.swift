@@ -70,16 +70,16 @@ public struct Fts {
   }
 
   public func set(entry: Fts.Entry, option: SetOption) throws {
-    try nothingOrErrno(retryOnInterrupt: false) {
+    try voidOrErrno {
       fts_set(handle, entry.ptr, option.rawValue)
     }.get()
   }
 
   public func close() {
     neverError {
-      try nothingOrErrno(retryOnInterrupt: false) {
+      voidOrErrno {
         fts_close(handle)
-      }.get()
+      }
     }
   }
 
