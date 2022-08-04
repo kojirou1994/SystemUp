@@ -6,15 +6,16 @@ import Glibc
 #endif
 import SyscallValue
 
-extension FilePermissions {
-  public static var directoryDefault: Self { [.ownerReadWriteExecute, .groupReadExecute, .otherReadExecute] }
+public extension FilePermissions {
+  static var directoryDefault: Self { [.ownerReadWriteExecute, .groupReadExecute, .otherReadExecute] }
 
-  public static var fileDefault: Self { [.ownerReadWrite, .groupRead, .otherRead] }
+  static var fileDefault: Self { [.ownerReadWrite, .groupRead, .otherRead] }
 
+  static var executableDefault: Self { [.ownerReadWriteExecute, .groupReadExecute, .otherReadExecute] }
 }
 
 extension Errno {
-  static var current: Self { .init(rawValue: errno) }
+  public static var current: Self { .init(rawValue: errno) }
 }
 
 @inlinable @inline(__always)
@@ -28,30 +29,47 @@ public func retryOnInterrupt<T>(_ body: () -> Result<T, Errno>) -> Result<T, Err
   }
 }
 
-internal func valueOrErrno<I: FixedWidthInteger>(retryOnInterrupt: Bool, _ body: () -> I) -> Result<I, Errno> {
-  repeat {
-    let i = body()
-    if i == -1 {
-      let err = Errno.current
-      guard retryOnInterrupt && err == .interrupted else {
-        return .failure(err)
-      }
-    } else {
-      return .success(i)
-    }
-  } while true
-}
-
-internal func nothingOrErrno<I: FixedWidthInteger>(retryOnInterrupt: Bool, _ body: () -> I) -> Result<Void, Errno> {
-  valueOrErrno(retryOnInterrupt: retryOnInterrupt, body).map { _ in () }
-}
-
-internal func neverError(_ body: () throws -> Void) {
-  do {
-    try body()
-  } catch {
-    assertionFailure("impossible error: \(errno)")
+@inlinable @inline(__always)
+public func zeroOrErrnoOnReturn(_ body: () -> Int32) -> Result<Void, Errno> {
+  let code = body()
+  if code == 0 {
+    return .success(())
+  } else {
+    return .failure(.init(rawValue: code))
   }
+}
+
+@inlinable @inline(__always)
+public func voidOrErrno<I: FixedWidthInteger>(_ body: () -> I) -> Result<Void, Errno> {
+  valueOrErrno(body).map { _ in () }
+}
+
+@inlinable @inline(__always)
+public func valueOrErrno<I: FixedWidthInteger>(_ body: () -> I) -> Result<I, Errno> {
+  let i = body()
+  if i == -1 {
+    let err = Errno.current
+    return .failure(err)
+  } else {
+    return .success(i)
+  }
+}
+
+@inlinable @inline(__always)
+public func neverError<R, E>(_ body: () -> Result<R, E>) {
+  switch body() {
+  case .success: break
+  case .failure(let error):
+    assertionFailure("Impossible error: \(error)")
+  }
+}
+
+@inlinable @inline(__always)
+internal func withOptionalUnsafePointer<T, R, Result>(to v: T?, _ body: (UnsafePointer<R>?) throws -> Result) rethrows -> Result {
+  if let v = v {
+    return try withUnsafePointer(to: v) { try body(.init(OpaquePointer($0))) }
+  }
+  return try body(nil)
 }
 
 extension FileDescriptor {
