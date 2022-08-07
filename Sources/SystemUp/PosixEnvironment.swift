@@ -27,13 +27,12 @@ public extension PosixEnvironment {
     var result = Self(environment: .init())
 
     for entry in NullTerminatedArray(environ) {
-      if let entry = entry.pointee {
-        let string = String(cString: entry)
-        if let i = string.firstIndex(of: "=") {
-          let key = string[..<i]
-          let value = string[i...].dropFirst()
-          result.environment[String(key)] = String(value)
-        }
+      let entry = entry.pointee
+      let buffer = UnsafeRawBufferPointer(start: entry, count: UTF8._nullCodeUnitOffset(in: entry))
+      if let i = buffer.firstIndex(of: UInt8(ascii: "=")) {
+        let key = UnsafeRawBufferPointer(rebasing: buffer[..<i])
+        let value = UnsafeRawBufferPointer(rebasing: buffer[i...].dropFirst())
+        result.environment[String(decoding: key, as: UTF8.self)] = String(decoding: value, as: UTF8.self)
       }
     }
 
@@ -41,8 +40,8 @@ public extension PosixEnvironment {
   }
 
   /// set() may invalidate the result cstring
-  static func get<T: StringProtocol>(key: T) -> StaticCString? {
-    key.withCString(getenv).map { StaticCString(cString: $0) }
+  static func get<T: StringProtocol>(key: T) -> String? {
+    key.withCString(getenv).map { String(cString: $0) }
   }
 
   static func set<T: StringProtocol, R: StringProtocol>(key: T, value: R, overwrite: Bool = true) -> Result<Void, Errno> {
