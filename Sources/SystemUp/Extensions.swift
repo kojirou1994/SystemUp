@@ -66,8 +66,9 @@ public func neverError<R, E>(_ body: () -> Result<R, E>) {
 
 @inlinable @inline(__always)
 internal func withOptionalUnsafePointer<T, R, Result>(to v: T?, _ body: (UnsafePointer<R>?) throws -> Result) rethrows -> Result {
+  assert(MemoryLayout<T>.size == MemoryLayout<R>.size)
   if let v = v {
-    return try withUnsafePointer(to: v) { try body(.init(OpaquePointer($0))) }
+    return try withUnsafePointer(to: v) { try body(UnsafeRawPointer($0).assumingMemoryBound(to: R.self)) }
   }
   return try body(nil)
 }

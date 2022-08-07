@@ -111,3 +111,15 @@ public extension WaitPID.ExitStatus {
     swift_WIFCONTINUED(rawValue).cBool
   }
 }
+
+extension WaitPID.ExitStatus: CustomStringConvertible {
+  public var description: String {
+    if exited {
+      return "exited \(exitStatus)"
+    } else if signaled {
+      return "signaled \(terminationSignal)"
+    } else {
+      return "unknown \(rawValue)"
+    }
+  }
+}
