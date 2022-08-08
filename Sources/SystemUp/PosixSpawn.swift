@@ -22,8 +22,8 @@ public extension PosixSpawn {
     assert(argv[0] != nil, "At least argv[0] must be present in the array")
 
     return voidOrErrno {
-      withOptionalUnsafePointer(to: fileActions) { fap in
-        withOptionalUnsafePointer(to: attributes) { attrp -> Int32 in
+      withOptionalUnsafePointer(to: fileActions) { (fap: UnsafePointer<FileActions.CType>?) in
+        withOptionalUnsafePointer(to: attributes) { (attrp: UnsafePointer<Attributes.CType>?) -> Int32 in
           if searchPATH {
             return posix_spawnp(&pid, path, fap, attrp, argv, envp)
           } else {
@@ -38,10 +38,13 @@ public extension PosixSpawn {
 extension PosixSpawn {
 
   public struct Attributes {
+
     #if canImport(Darwin)
-    private var attributes: posix_spawnattr_t?
+    public typealias CType = posix_spawnattr_t?
+    private var attributes: CType = nil
     #else
-    private var attributes: posix_spawnattr_t = .init()
+    public typealias CType = posix_spawnattr_t
+    private var attributes: CType = .init()
     #endif
 
     public init() throws {
@@ -77,8 +80,10 @@ extension PosixSpawn {
 
   public struct FileActions {
     #if canImport(Darwin)
+    public typealias CType = posix_spawn_file_actions_t?
     private var fileActions: posix_spawn_file_actions_t?
     #else
+    public typealias CType = posix_spawn_file_actions_t
     private var fileActions: posix_spawn_file_actions_t = .init()
     #endif
 
