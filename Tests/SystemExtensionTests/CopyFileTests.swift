@@ -1,10 +1,11 @@
+#if canImport(Darwin)
 import XCTest
 import SystemPackage
 import SystemUp
 
 final class CopyFileTests: XCTestCase {
   func testCopyFileFlags() {
-    XCTAssertEqual([CopyFlags.nofollowDst, .nofollowSrc] as CopyFlags, CopyFlags.nofollow)
+    XCTAssertEqual([CopyFlags.noFollowDestination, .noFollowSource] as CopyFlags, CopyFlags.noFollow)
 
     XCTAssertEqual([CopyFlags.stat, .acl] as CopyFlags, CopyFlags.security)
 
@@ -13,3 +14,4 @@ final class CopyFileTests: XCTestCase {
     XCTAssertEqual([CopyFlags.metadata, .data] as CopyFlags, CopyFlags.all)
   }
 }
+#endif
