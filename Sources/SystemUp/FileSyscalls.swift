@@ -30,20 +30,10 @@ public extension FileSyscalls {
     }
   }
 
-  static func fileStatus(_ fd: FileDescriptor) -> Result<FileStatus, Errno> {
-    var s = FileStatus(rawValue: .init())
-    return fileStatus(fd, into: &s).map { s }
-  }
-
   static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) -> Result<Void, Errno> {
     voidOrErrno {
       fstat(fd.rawValue, &status.rawValue)
     }
-  }
-
-  static func fileStatus(_ option: FilePathOption, flags: AtFlags = []) -> Result<FileStatus, Errno> {
-    var s = FileStatus(rawValue: .init())
-    return fileStatus(option, flags: flags, into: &s).map { s }
   }
 
   static func fileStatus(_ option: FilePathOption, flags: AtFlags = [], into status: inout FileStatus) -> Result<Void, Errno> {
@@ -51,6 +41,34 @@ public extension FileSyscalls {
     return voidOrErrno {
       option.path.withPlatformString { path in
         fstatat(option.relativedDirFD.rawValue, path, &status.rawValue, flags.rawValue)
+      }
+    }
+  }
+
+  static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
+    voidOrErrno {
+      fstatfs(fd.rawValue, &s.rawValue)
+    }
+  }
+
+  static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
+    voidOrErrno {
+      path.withPlatformString { path in
+        statfs(path, &s.rawValue)
+      }
+    }
+  }
+
+  static func fileSystemInformation(_ fd: FileDescriptor, into s: inout FileSystemInformation) -> Result<Void, Errno> {
+    voidOrErrno {
+      fstatvfs(fd.rawValue, &s.rawValue)
+    }
+  }
+
+  static func fileSystemInformation(_ path: FilePath, into s: inout FileSystemInformation) -> Result<Void, Errno> {
+    voidOrErrno {
+      path.withPlatformString { path in
+        statvfs(path, &s.rawValue)
       }
     }
   }

@@ -1,4 +1,3 @@
-import SystemPackage
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
@@ -6,33 +5,6 @@ import Glibc
 #endif
 import CSystemUp
 import CUtility
-
-public extension FileSyscalls {
-
-  static func fileSystemStatistics(_ fd: FileDescriptor) -> Result<FileSystemStatistics, Errno> {
-    var s = FileSystemStatistics(rawValue: .init())
-    return fileSystemStatistics(fd, into: &s).map { s }
-  }
-
-  static func fileSystemStatistics(_ path: FilePath) throws -> Result<FileSystemStatistics, Errno> {
-    var s = FileSystemStatistics(rawValue: .init())
-    return fileSystemStatistics(path, into: &s).map { s }
-  }
-
-  static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
-    voidOrErrno {
-      fstatfs(fd.rawValue, &s.rawValue)
-    }
-  }
-
-  static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
-    voidOrErrno {
-      path.withPlatformString { path in
-        statfs(path, &s.rawValue)
-      }
-    }
-  }
-}
 
 public struct FileSystemStatistics: RawRepresentable {
 

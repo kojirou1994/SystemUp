@@ -1,13 +1,15 @@
 import SystemPackage
 import SystemUp
+import struct Foundation.Data
 
 public struct SystemFileManager {}
 
 extension SystemFileManager {
 
   public static func createDirectoryIntermediately(_ option: FilePathOption, permissions: FilePermissions = .directoryDefault) throws {
-    switch FileSyscalls.fileStatus(option) {
-    case .success(let status):
+    var status = FileStatus(rawValue: .init())
+    switch FileSyscalls.fileStatus(option, into: &status) {
+    case .success:
       if status.fileType == .directory {
         return
       } else {
@@ -29,8 +31,9 @@ extension SystemFileManager {
   }
 
   public static func remove(_ path: FilePath) -> Result<Void, Errno> {
-    FileSyscalls.fileStatus(.absolute(path), flags: .noFollow)
-      .flatMap { status in
+    var status = FileStatus(rawValue: .init())
+    return FileSyscalls.fileStatus(.absolute(path), flags: .noFollow, into: &status)
+      .flatMap {
         if status.fileType == .directory {
           return removeDirectoryRecursive(path)
         } else {
@@ -114,6 +117,44 @@ extension SystemFileManager {
           }
         }
       }
+  }
+
+}
+
+// MARK: File Contents
+public extension SystemFileManager {
+
+  private static func length(fd: FileDescriptor) throws -> Int {
+    var status = FileStatus(rawValue: .init())
+    try FileSyscalls.fileStatus(fd, into: &status).get()
+    return Int(status.size)
+  }
+
+  static func contents(ofFileDescriptor fd: FileDescriptor) throws -> [UInt8] {
+    let size = try length(fd: fd)
+
+    return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
+      initializedCount = try fd.read(into: .init(buffer))
+    }
+  }
+
+  @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
+  static func contents(ofFileDescriptor fd: FileDescriptor) throws -> String {
+    let size = try length(fd: fd)
+
+    return try .init(unsafeUninitializedCapacity: size) { buffer in
+      try fd.read(into: UnsafeMutableRawBufferPointer(buffer))
+    }
+  }
+
+  static func contents(ofFileDescriptor fd: FileDescriptor) throws -> Data {
+    let size = try length(fd: fd)
+
+    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
+
+    let count = try fd.read(into: buffer)
+
+    return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
   }
 
 }

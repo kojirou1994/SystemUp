@@ -1,36 +1,9 @@
-import SystemPackage
+import CUtility
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
 #endif
-
-public extension FileSyscalls {
-
-  static func fileSystemInformation(_ fd: FileDescriptor) -> Result<FileSystemInformation, Errno> {
-    var s = FileSystemInformation(rawValue: .init())
-    return fileSystemInformation(fd, into: &s).map { s }
-  }
-
-  static func fileSystemInformation(_ path: FilePath) throws -> Result<FileSystemInformation, Errno> {
-    var s = FileSystemInformation(rawValue: .init())
-    return fileSystemInformation(path, into: &s).map { s }
-  }
-
-  static func fileSystemInformation(_ fd: FileDescriptor, into s: inout FileSystemInformation) -> Result<Void, Errno> {
-    voidOrErrno {
-      fstatvfs(fd.rawValue, &s.rawValue)
-    }
-  }
-
-  static func fileSystemInformation(_ path: FilePath, into s: inout FileSystemInformation) -> Result<Void, Errno> {
-    voidOrErrno {
-      path.withPlatformString { path in
-        statvfs(path, &s.rawValue)
-      }
-    }
-  }
-}
 
 /// POSIX filesystem information
 public struct FileSystemInformation: RawRepresentable {
