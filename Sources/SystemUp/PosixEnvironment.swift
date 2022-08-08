@@ -28,11 +28,10 @@ public extension PosixEnvironment {
 
     for entry in NullTerminatedArray(environ) {
       let entry = entry.pointee
-      let buffer = UnsafeRawBufferPointer(start: entry, count: UTF8._nullCodeUnitOffset(in: entry))
-      if let i = buffer.firstIndex(of: UInt8(ascii: "=")) {
-        let key = UnsafeRawBufferPointer(rebasing: buffer[..<i])
-        let value = UnsafeRawBufferPointer(rebasing: buffer[i...].dropFirst())
-        result.environment[String(decoding: key, as: UTF8.self)] = String(decoding: value, as: UTF8.self)
+      if let finish = strchr(entry, Int32(UInt8(ascii: "="))) {
+        let key = UnsafeRawBufferPointer(start: entry, count: finish - entry)
+        let value = String(cString: finish.advanced(by: 1))
+        result.environment[String(decoding: key, as: UTF8.self)] = value
       }
     }
 
@@ -44,6 +43,7 @@ public extension PosixEnvironment {
     key.withCString(getenv).map { String(cString: $0) }
   }
 
+  @discardableResult
   static func set<T: StringProtocol, R: StringProtocol>(key: T, value: R, overwrite: Bool = true) -> Result<Void, Errno> {
     voidOrErrno {
       key.withCString { key in
@@ -61,6 +61,7 @@ public extension PosixEnvironment {
     }
   }
 
+  @discardableResult
   static func unset<T: StringProtocol>(key: T) -> Result<Void, Errno> {
     voidOrErrno {
       key.withCString(unsetenv)
