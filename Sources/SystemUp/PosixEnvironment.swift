@@ -39,18 +39,14 @@ public extension PosixEnvironment {
   }
 
   /// set() may invalidate the result cstring
-  static func get<T: StringProtocol>(key: T) -> String? {
-    key.withCString(getenv).map { String(cString: $0) }
+  static func get(key: UnsafePointer<CChar>) -> String? {
+    getenv(key).map { String(cString: $0) }
   }
 
   @discardableResult
-  static func set<T: StringProtocol, R: StringProtocol>(key: T, value: R, overwrite: Bool = true) -> Result<Void, Errno> {
+  static func set(key: UnsafePointer<CChar>, value: UnsafePointer<CChar>, overwrite: Bool = true) -> Result<Void, Errno> {
     voidOrErrno {
-      key.withCString { key in
-        value.withCString { value in
-          setenv(key, value, .init(cBool: overwrite))
-        }
-      }
+      setenv(key, value, .init(cBool: overwrite))
     }
   }
 
@@ -62,9 +58,9 @@ public extension PosixEnvironment {
   }
 
   @discardableResult
-  static func unset<T: StringProtocol>(key: T) -> Result<Void, Errno> {
+  static func unset(key: UnsafePointer<CChar>) -> Result<Void, Errno> {
     voidOrErrno {
-      key.withCString(unsetenv)
+      unsetenv(key)
     }
   }
 
