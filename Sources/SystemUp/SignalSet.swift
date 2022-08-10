@@ -10,6 +10,10 @@ public struct SignalSet: RawRepresentable {
   public init(rawValue: sigset_t) {
     self.rawValue = rawValue
   }
+
+  public init() {
+    self.rawValue = .init()
+  }
 }
 
 public extension SignalSet {

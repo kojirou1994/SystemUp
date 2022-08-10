@@ -306,9 +306,49 @@ public extension PosixSpawn.Attributes {
       }
     }
   }
+
+  typealias QualityOfService = qos_class_t
+
+  var qualityOfService: QualityOfService {
+    mutating get {
+      var result: QualityOfService = .unspecified
+      neverError {
+        zeroOrErrnoOnReturn {
+          posix_spawnattr_get_qos_class_np(&attributes, &result)
+        }
+      }
+      return result
+    }
+    set {
+      neverError {
+        zeroOrErrnoOnReturn {
+          posix_spawnattr_set_qos_class_np(&attributes, newValue)
+        }
+      }
+    }
+  }
+}
+
+public extension PosixSpawn.Attributes.QualityOfService {
+  @_alwaysEmitIntoClient
+  static var userInteractive: Self { QOS_CLASS_USER_INTERACTIVE }
+
+  @_alwaysEmitIntoClient
+  static var userInitiated: Self { QOS_CLASS_USER_INITIATED }
+
+  @_alwaysEmitIntoClient
+  static var utility: Self { QOS_CLASS_UTILITY }
+
+  @_alwaysEmitIntoClient
+  static var background: Self { QOS_CLASS_BACKGROUND }
+
+  @_alwaysEmitIntoClient
+  static var `default`: Self { QOS_CLASS_USER_INTERACTIVE }
+
+  @_alwaysEmitIntoClient
+  static var unspecified: Self { QOS_CLASS_UNSPECIFIED }
 }
 #endif // Darwin end
-
 
 public extension PosixSpawn.Attributes.Flags {
 
@@ -345,3 +385,31 @@ public extension PosixSpawn.Attributes.Flags {
 
 }
 
+public extension PosixSpawn.Attributes {
+  mutating func resetSignalsLikeTSC() {
+    // Unmask all signals.
+    var noSignals = SignalSet()
+    noSignals.removeAll()
+    sigmask = noSignals
+
+    // Reset all signals to default behavior.
+    var mostSignals = SignalSet()
+    #if canImport(Darwin)
+    mostSignals.fillAll()
+    mostSignals.delete(signal: SIGKILL)
+    mostSignals.delete(signal: SIGSTOP)
+    #else
+    mostSignals.removeAll()
+    for i in 1 ..< SIGSYS {
+      if i == SIGKILL || i == SIGSTOP {
+        continue
+      }
+      mostSignals.add(signal: i)
+    }
+    #endif
+
+    sigdefault = mostSignals
+
+    flags.formUnion([.setSigmask, .setSigdefault])
+  }
+}

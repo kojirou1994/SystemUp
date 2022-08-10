@@ -119,6 +119,10 @@ extension SystemFileManager {
       }
   }
 
+  public static func nullDeviceFD() throws -> FileDescriptor {
+    try .open("/dev/null", .readWrite)
+  }
+
 }
 
 // MARK: File Contents
