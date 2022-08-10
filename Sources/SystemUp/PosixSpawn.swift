@@ -12,7 +12,11 @@ public extension PosixSpawn {
 
   @inlinable
   static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, arguments: CStringArray, environment: CStringArray, searchPATH: Bool) -> Result<WaitPID.PID, Errno> {
-    spawn(path, fileActions: fileActions, attributes: attributes, argv: arguments.cArray, envp: environment.cArray, searchPATH: searchPATH)
+    withExtendedLifetime(arguments) {
+      withExtendedLifetime(environment) {
+        spawn(path, fileActions: fileActions, attributes: attributes, argv: arguments.cArray, envp: environment.cArray, searchPATH: searchPATH)
+      }
+    }
   }
 
   @inlinable
