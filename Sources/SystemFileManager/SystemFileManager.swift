@@ -129,8 +129,7 @@ extension SystemFileManager {
 public extension SystemFileManager {
 
   private static func length(fd: FileDescriptor) throws -> Int {
-    var status = FileStatus(rawValue: .init())
-    try FileSyscalls.fileStatus(fd, into: &status).get()
+    let status = try fileStatus(fd).get()
     return Int(status.size)
   }
 
@@ -154,11 +153,47 @@ public extension SystemFileManager {
   static func contents(ofFileDescriptor fd: FileDescriptor) throws -> Data {
     let size = try length(fd: fd)
 
+    guard size > 0 else {
+      return .init()
+    }
+
     let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
 
-    let count = try fd.read(into: buffer)
+    do {
+      let count = try fd.read(into: buffer)
+      return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
+    } catch {
+      buffer.deallocate()
+      throw error
+    }
+  }
 
-    return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
+}
+
+// MARK: Determining Access to Files
+public extension SystemFileManager {
+  static func fileExists(atPath option: FilePathOption) -> Bool {
+    switch fileStatus(option) {
+    case .success: return true
+    case .failure: return false
+    }
+  }
+}
+
+
+// MARK: Getting and Setting Attributes
+public extension SystemFileManager {
+
+  static func fileStatus(_ fd: FileDescriptor) -> Result<FileStatus, Errno> {
+    var result = FileStatus()
+    return FileSyscalls.fileStatus(fd, into: &result)
+      .map { result }
+  }
+
+  static func fileStatus(_ option: FilePathOption, flags: FileSyscalls.AtFlags = []) -> Result<FileStatus, Errno> {
+    var result = FileStatus()
+    return FileSyscalls.fileStatus(option, flags: flags, into: &result)
+      .map { result }
   }
 
 }

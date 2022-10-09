@@ -15,6 +15,10 @@ public struct FileSystemStatistics: RawRepresentable {
     self.rawValue = rawValue
   }
 
+  public init() {
+    self.init(rawValue: .init())
+  }
+
 }
 
 @available(macOS 10.15, iOS 13.0, *)

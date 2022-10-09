@@ -10,6 +10,11 @@ public struct FileSystemInformation: RawRepresentable {
   public init(rawValue: statvfs) {
     self.rawValue = rawValue
   }
+
+  public init() {
+    self.init(rawValue: .init())
+  }
+
   public var rawValue: statvfs
 }
 

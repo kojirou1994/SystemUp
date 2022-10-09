@@ -11,6 +11,10 @@ public struct FileStatus {
     self.rawValue = rawValue
   }
 
+  public init() {
+    self.init(rawValue: .init())
+  }
+
   public var rawValue: CInterop.UpStat
 }
 
