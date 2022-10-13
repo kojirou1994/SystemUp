@@ -7,14 +7,18 @@ import Glibc
 import SyscallValue
 
 public extension FilePermissions {
+  @inlinable @inline(__always)
   static var directoryDefault: Self { [.ownerReadWriteExecute, .groupReadExecute, .otherReadExecute] }
 
+  @inlinable @inline(__always)
   static var fileDefault: Self { [.ownerReadWrite, .groupRead, .otherRead] }
 
+  @inlinable @inline(__always)
   static var executableDefault: Self { [.ownerReadWriteExecute, .groupReadExecute, .otherReadExecute] }
 }
 
 extension Errno {
+  @inlinable @inline(__always)
   public static var current: Self { .init(rawValue: errno) }
 }
 
@@ -65,6 +69,15 @@ public func neverError<R, E>(_ body: () -> Result<R, E>) {
 }
 
 @inlinable @inline(__always)
+internal func syscallUnwrap<T>(_ body: () -> T?) -> Result<T, Errno> {
+  if let value  = body() {
+    return .success(value)
+  } else {
+    return .failure(.current)
+  }
+}
+
+@inlinable @inline(__always)
 internal func withOptionalUnsafePointer<T, R, Result>(to v: T?, _ body: (UnsafePointer<R>?) throws -> Result) rethrows -> Result {
   assert(MemoryLayout<T>.size == MemoryLayout<R>.size)
   if let v = v {
@@ -80,5 +93,6 @@ extension FileDescriptor {
     }
   }
 
+  @inlinable @inline(__always)
   public static var currentWorkingDirectory: Self { .init(rawValue: AT_FDCWD) }
 }
