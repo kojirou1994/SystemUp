@@ -291,6 +291,7 @@ extension FileStream {
 
 public extension FileStream.Mode {
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func read(write: Bool = false, binary: Bool = false, closeOnExec: Bool = false) -> Self {
     var v = "r"
     if write {
@@ -306,6 +307,7 @@ public extension FileStream.Mode {
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func write(read: Bool = false, binary: Bool = false, exclusive: Bool = false, closeOnExec: Bool = false) -> Self {
     var v = "w"
     if read {
@@ -324,6 +326,7 @@ public extension FileStream.Mode {
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func append(read: Bool = false, binary: Bool = false, closeOnExec: Bool = false) -> Self {
     var v = "a"
     if read {

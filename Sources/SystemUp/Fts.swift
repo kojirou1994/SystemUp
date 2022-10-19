@@ -195,10 +195,10 @@ extension Fts {
     }
 
     public var name: String {
-      #if compiler(>=5.7) && !os(macOS)
-      .init(cString: ptr.pointer(to: \.fts_name).unsafelyUnwrapped)
-      #else
+      #if compiler(<5.7) && os(macOS)
       .init(cString: &ptr.pointee.fts_name)
+      #else
+      .init(cString: ptr.pointer(to: \.fts_name).unsafelyUnwrapped)
       #endif
     }
 
