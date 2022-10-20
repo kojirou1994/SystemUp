@@ -15,6 +15,8 @@ public extension LazyCopiedCString {
 }
 
 public extension FileStream {
+  @inlinable
+  @discardableResult
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
     withVaList(args) { va in
       SystemLibc.vfprintf(rawValue, format, va)
@@ -22,8 +24,9 @@ public extension FileStream {
   }
 }
 
-
 public extension FileDescriptor {
+  @inlinable
+  @discardableResult
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
     withVaList(args) { va in
       SystemLibc.vdprintf(rawValue, format, va)
