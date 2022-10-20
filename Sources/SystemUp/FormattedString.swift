@@ -4,13 +4,13 @@ import SystemPackage
 
 public extension LazyCopiedCString {
   convenience init(format: UnsafePointer<CChar>, _ args: CVarArg...) throws {
-    var size: Int32 = 0
+    var length: Int32 = 0
     let cString = try safeInitialize { str in
       withVaList(args) { va in
-        size = SystemLibc.vasprintf(&str, format, va)
+        length = SystemLibc.vasprintf(&str, format, va)
       }
     }
-    self.init(cString: cString, forceLength: Int(size), freeWhenDone: true)
+    self.init(cString: cString, forceLength: Int(length), freeWhenDone: true)
   }
 }
 
