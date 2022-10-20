@@ -12,6 +12,15 @@ public struct FileStream: RawRepresentable {
 
 }
 
+extension FileStream {
+  public struct Position: RawRepresentable {
+    public var rawValue: fpos_t
+    public init(rawValue: fpos_t) {
+      self.rawValue = rawValue
+    }
+  }
+}
+
 // MARK: Open and Close
 public extension FileStream {
 
@@ -98,21 +107,21 @@ public extension FileStream {
   }
 
   @inlinable @inline(__always)
-  func seek(toOffset offset: Int64, from origin: FileDescriptor.SeekOrigin) throws {
+  func seek(toOffset offset: Int, from origin: FileDescriptor.SeekOrigin) throws {
     try voidOrErrno {
-      SystemLibc.fseeko(rawValue, offset, origin.rawValue)
+      SystemLibc.fseek(rawValue, offset, origin.rawValue)
     }.get()
   }
 
   @inlinable @inline(__always)
-  func tell() -> Int64 {
-    SystemLibc.ftello(rawValue)
+  func tell() -> Int {
+    SystemLibc.ftell(rawValue)
   }
 
   @inlinable @inline(__always)
-  var currentPosition: Int64 {
+  var currentPosition: Position {
     set {
-      withUnsafePointer(to: newValue) { pos in
+      withUnsafePointer(to: newValue.rawValue) { pos in
         neverError {
           voidOrErrno {
             SystemLibc.fsetpos(rawValue, pos)
@@ -121,10 +130,10 @@ public extension FileStream {
       }
     }
     get {
-      var v: Int64 = 0
+      var v: Position = .init(rawValue: .init())
       neverError {
         voidOrErrno {
-          SystemLibc.fgetpos(rawValue, &v)
+          SystemLibc.fgetpos(rawValue, &v.rawValue)
         }
       }
       return v
