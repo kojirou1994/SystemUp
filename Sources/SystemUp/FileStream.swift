@@ -99,9 +99,9 @@ public extension FileStream {
   @inlinable @inline(__always)
   func rewind() {
     neverError {
-      voidOrErrno {
+      voidOrErrno { () -> Int32 in
         SystemLibc.rewind(rawValue)
-        return errno
+        return SystemLibc.errno
       }
     }
   }
