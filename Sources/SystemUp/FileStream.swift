@@ -50,7 +50,7 @@ public extension FileStream {
   @inlinable @inline(__always)
   static func reopen(_ rawValue: Self, path: FilePath? = nil, mode: Mode) -> Result<Self, Errno> {
     let v: UnsafeMutablePointer<FILE>?
-    if let path {
+    if let path = path {
       v = path.withPlatformString { path in
         SystemLibc.freopen(path, mode.rawValue, rawValue.rawValue)
       }
