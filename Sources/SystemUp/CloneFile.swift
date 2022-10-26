@@ -7,7 +7,7 @@ public extension FileSyscalls {
 
   /// create copy on write clones of files
   static func cloneFile(from src: FilePathOption, to dst: FilePathOption, flags: CloneFlags = []) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       src.path.withPlatformString { srcPath in
         dst.path.withPlatformString { dstPath in
           clonefileat(
@@ -22,7 +22,7 @@ public extension FileSyscalls {
 
   /// create copy on write clones of files
   static func cloneFile(from fd: FileDescriptor, to dst: FilePathOption, flags: CloneFlags = []) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       dst.path.withPlatformString { dstPath in
         fclonefileat(
           fd.rawValue,

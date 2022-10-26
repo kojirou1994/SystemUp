@@ -25,7 +25,7 @@ public extension PosixSpawn {
     var pid: pid_t = 0
     assert(argv[0] != nil, "At least argv[0] must be present in the array")
 
-    return voidOrErrno {
+    return SyscallUtilities.voidOrErrno {
       withOptionalUnsafePointer(to: fileActions) { (fap: UnsafePointer<FileActions.CType>?) in
         withOptionalUnsafePointer(to: attributes) { (attrp: UnsafePointer<Attributes.CType>?) -> Int32 in
           if searchPATH {
@@ -59,14 +59,14 @@ extension PosixSpawn {
       #if canImport(Darwin)
       assert(attributes == nil, "destroy first")
       #endif
-      try zeroOrErrnoOnReturn {
+      try SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawnattr_init(&attributes)
       }.get()
     }
 
     public mutating func destroy() {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_destroy(&attributes)
         }
       }
@@ -96,14 +96,14 @@ extension PosixSpawn {
     }
 
     public mutating func reinitialize() throws {
-      try zeroOrErrnoOnReturn {
+      try SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawn_file_actions_init(&fileActions)
       }.get()
     }
 
     public mutating func destroy() {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawn_file_actions_destroy(&fileActions)
         }
       }
@@ -119,16 +119,16 @@ extension PosixSpawn {
        https://sourceware.org/git/gitweb.cgi?p=glibc.git;h=89e435f3559c53084498e9baad22172b64429362
        */
       let oFlag = mode.rawValue | options.rawValue
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawn_file_actions_addopen(&fileActions, fd.rawValue, path, oFlag, permissions?.rawValue ?? 0)
         }
       }
     }
 
     public mutating func dup2(fd: FileDescriptor, newFD: FileDescriptor) {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawn_file_actions_adddup2(&fileActions, fd.rawValue, newFD.rawValue)
         }
       }
@@ -136,8 +136,8 @@ extension PosixSpawn {
 
     #if canImport(Darwin)
     public mutating func markInheritance(fd: FileDescriptor) {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawn_file_actions_addinherit_np(&fileActions, fd.rawValue)
         }
       }
@@ -147,8 +147,8 @@ extension PosixSpawn {
     #if os(macOS)
     @available(macOS 10.15, *)
     public mutating func chdir(_ path: FilePath) {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           path.withPlatformString { path in
             posix_spawn_file_actions_addchdir_np(&fileActions, path)
           }
@@ -170,16 +170,16 @@ public extension PosixSpawn.Attributes {
   var sigdefault: SignalSet {
     mutating get {
       var result = SignalSet(rawValue: .init())
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_getsigdefault(&attributes, &result.rawValue)
         }
       }
       return result
     }
     set {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           withUnsafePointer(to: newValue.rawValue) { sigset in
             posix_spawnattr_setsigdefault(&attributes, sigset)
           }
@@ -191,16 +191,16 @@ public extension PosixSpawn.Attributes {
   var flags: Flags {
     mutating get {
       var result = Flags(rawValue: 0)
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_getflags(&attributes, &result.rawValue)
         }
       }
       return result
     }
     set {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_setflags(&attributes, newValue.rawValue)
         }
       }
@@ -211,16 +211,16 @@ public extension PosixSpawn.Attributes {
   var sigmask: SignalSet {
     mutating get {
       var result = SignalSet(rawValue: .init())
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_getsigmask(&attributes, &result.rawValue)
         }
       }
       return result
     }
     set {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           withUnsafePointer(to: newValue.rawValue) { sigset in
             posix_spawnattr_setsigmask(&attributes, sigset)
           }
@@ -232,16 +232,16 @@ public extension PosixSpawn.Attributes {
   var pgroup: pid_t {
     mutating get {
       var result: pid_t = 0
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_getpgroup(&attributes, &result)
         }
       }
       return result
     }
     set {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_setpgroup(&attributes, newValue)
         }
       }
@@ -254,15 +254,15 @@ public extension PosixSpawn.Attributes {
 // MARK: Darwin-specific extensions below
 public extension PosixSpawn.Attributes {
   mutating func get(universalBinaryPreference: UnsafeMutableBufferPointer<cpu_type_t>, count: inout Int) -> Result<Void, Errno> {
-    zeroOrErrnoOnReturn {
+    SyscallUtilities.errnoOrZeroOnReturn {
       posix_spawnattr_getbinpref_np(&attributes, universalBinaryPreference.count, universalBinaryPreference.baseAddress, &count)
     }
   }
 
   mutating func set(universalBinaryPreference: UnsafeBufferPointer<cpu_type_t>) -> Int {
     var count = 0
-    neverError {
-      zeroOrErrnoOnReturn {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawnattr_setbinpref_np(&attributes, universalBinaryPreference.count, .init(mutating: universalBinaryPreference.baseAddress), &count)
       }
     }
@@ -271,7 +271,7 @@ public extension PosixSpawn.Attributes {
 
   @available(macOS 11.0, iOS 14.0, *)
   mutating func get(cpuPreference: UnsafeMutableBufferPointer<cpu_type_t>, subcpuPreference: UnsafeMutablePointer<cpu_subtype_t>, count: inout Int) -> Result<Void, Errno> {
-    zeroOrErrnoOnReturn {
+    SyscallUtilities.errnoOrZeroOnReturn {
       posix_spawnattr_getarchpref_np(&attributes, cpuPreference.count, cpuPreference.baseAddress, subcpuPreference, &count)
     }
   }
@@ -279,8 +279,8 @@ public extension PosixSpawn.Attributes {
   @available(macOS 11.0, iOS 14.0, *)
   mutating func set(cpuPreference: UnsafeBufferPointer<cpu_type_t>, subcpuPreference: UnsafePointer<cpu_subtype_t>) -> Int {
     var count = 0
-    neverError {
-      zeroOrErrnoOnReturn {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawnattr_setarchpref_np(&attributes, cpuPreference.count, .init(mutating: cpuPreference.baseAddress), .init(mutating: subcpuPreference), &count)
       }
     }
@@ -288,24 +288,24 @@ public extension PosixSpawn.Attributes {
   }
 
   mutating func set(auditsessionport: mach_port_t) {
-    neverError {
-      zeroOrErrnoOnReturn {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawnattr_setauditsessionport_np(&attributes, auditsessionport)
       }
     }
   }
 
   mutating func set(specialport: mach_port_t, which: CInt) {
-    neverError {
-      zeroOrErrnoOnReturn {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawnattr_setspecialport_np(&attributes, specialport, which)
       }
     }
   }
 
   mutating func set(exceptionports new_port: mach_port_t, mask: exception_mask_t, behavior: exception_behavior_t, flavor: thread_state_flavor_t) {
-    neverError {
-      zeroOrErrnoOnReturn {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawnattr_setexceptionports_np(&attributes, mask, new_port, behavior, flavor)
       }
     }
@@ -316,16 +316,16 @@ public extension PosixSpawn.Attributes {
   var qualityOfService: QualityOfService {
     mutating get {
       var result: QualityOfService = .unspecified
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_get_qos_class_np(&attributes, &result)
         }
       }
       return result
     }
     set {
-      neverError {
-        zeroOrErrnoOnReturn {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawnattr_set_qos_class_np(&attributes, newValue)
         }
       }
@@ -413,6 +413,16 @@ public extension PosixSpawn.Attributes {
     #endif
 
     sigdefault = mostSignals
+
+    flags.formUnion([.setSigmask, .setSigdefault])
+  }
+
+  mutating func resetSignalsLikeRustStd() {
+    var set = SignalSet()
+    set.removeAll()
+    sigmask = set
+    set.add(signal: SIGPIPE)
+    sigdefault = set
 
     flags.formUnion([.setSigmask, .setSigdefault])
   }

@@ -14,7 +14,7 @@ public enum FileSyscalls {}
 public extension FileSyscalls {
 
   static func createDirectory(_ option: FilePathOption, permissions: FilePermissions = .directoryDefault) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       option.path.withPlatformString { path in
         mkdirat(option.relativedDirFD.rawValue, path, permissions.rawValue)
       }
@@ -23,7 +23,7 @@ public extension FileSyscalls {
 
   static func unlink(_ option: FilePathOption, flags: AtFlags = []) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.removeDir]))
-    return voidOrErrno {
+    return SyscallUtilities.voidOrErrno {
       option.path.withPlatformString { path in
         unlinkat(option.relativedDirFD.rawValue, path, flags.rawValue)
       }
@@ -31,14 +31,14 @@ public extension FileSyscalls {
   }
 
   static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       fstat(fd.rawValue, &status.rawValue)
     }
   }
 
   static func fileStatus(_ option: FilePathOption, flags: AtFlags = [], into status: inout FileStatus) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.noFollow]))
-    return voidOrErrno {
+    return SyscallUtilities.voidOrErrno {
       option.path.withPlatformString { path in
         fstatat(option.relativedDirFD.rawValue, path, &status.rawValue, flags.rawValue)
       }
@@ -46,13 +46,13 @@ public extension FileSyscalls {
   }
 
   static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       fstatfs(fd.rawValue, &s.rawValue)
     }
   }
 
   static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
         statfs(path, &s.rawValue)
       }
@@ -60,13 +60,13 @@ public extension FileSyscalls {
   }
 
   static func fileSystemInformation(_ fd: FileDescriptor, into s: inout FileSystemInformation) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       fstatvfs(fd.rawValue, &s.rawValue)
     }
   }
 
   static func fileSystemInformation(_ path: FilePath, into s: inout FileSystemInformation) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
         statvfs(path, &s.rawValue)
       }
@@ -78,7 +78,7 @@ public extension FileSyscalls {
 public extension FileSyscalls {
 
   static func createSymbolicLink(_ option: FilePathOption, toDestination dest: FilePath) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       option.path.withPlatformString { path in
         dest.withPlatformString { dest in
           symlinkat(dest, option.relativedDirFD.rawValue, path)
@@ -93,7 +93,7 @@ public extension FileSyscalls {
       try option.path.withPlatformString { path in
         let newCount = readlinkat(option.relativedDirFD.rawValue, path, ptr, count)
         if newCount == -1 {
-          throw Errno.current
+          throw Errno.systemCurrent
         }
         return newCount
       }
@@ -106,7 +106,7 @@ public extension FileSyscalls {
         let cstr = buffer.assumingMemoryBound(to: CChar.self)
         let ptr = realpath(path, cstr)
         if ptr == nil {
-          throw Errno.current
+          throw Errno.systemCurrent
         }
         assert(ptr == cstr)
         return strlen(cstr)
@@ -120,7 +120,7 @@ public extension FileSyscalls {
 
   static func set(_ option: FilePathOption, permissions: FilePermissions, flags: AtFlags = []) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.noFollow]))
-    return voidOrErrno {
+    return SyscallUtilities.voidOrErrno {
       option.path.withPlatformString { path in
         fchmodat(option.relativedDirFD.rawValue, path, permissions.rawValue, flags.rawValue)
       }
@@ -128,7 +128,7 @@ public extension FileSyscalls {
   }
 
   static func set(_ fd: FileDescriptor, permissions: FilePermissions) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       fchmod(fd.rawValue, permissions.rawValue)
     }
   }
@@ -186,7 +186,7 @@ public extension FileSyscalls {
   }
 
   static func set(_ path: FilePath, flags: FileFlags) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
         chflags(path, flags.rawValue)
       }
@@ -194,7 +194,7 @@ public extension FileSyscalls {
   }
 
   static func set(_ fd: FileDescriptor, flags: FileFlags) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       fchflags(fd.rawValue, flags.rawValue)
     }
   }
@@ -205,7 +205,7 @@ public extension FileSyscalls {
 public extension FileSyscalls {
 
   static func truncate(_ path: FilePath, size: Int) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
         system_truncate(path, off_t(size))
       }
@@ -213,7 +213,7 @@ public extension FileSyscalls {
   }
 
   static func truncate(_ fd: FileDescriptor, size: Int) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       system_ftruncate(fd.rawValue, off_t(size))
     }
   }
@@ -361,7 +361,7 @@ public extension FileSyscalls {
   ///   - newPath: dst path
   ///   - tofd: dst path relative opened directory fd
   static func rename(_ src: FilePathOption, to dst: FilePathOption) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       src.path.withPlatformString { old in
         dst.path.withPlatformString { new in
           renameat(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new)
@@ -373,7 +373,7 @@ public extension FileSyscalls {
   #if canImport(Darwin)
   @available(macOS 10.12, *)
   static func rename(_ src: FilePathOption, to dst: FilePathOption, flags: RenameFlags) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       src.path.withPlatformString { old in
         dst.path.withPlatformString { new -> Int32 in
           renameatx_np(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new, flags.rawValue)
@@ -397,7 +397,7 @@ public extension FileSyscalls {
   }
 
   static func changeCurrentDirectoryPath(_ path: FilePath) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
         chdir(path)
       }
@@ -405,7 +405,7 @@ public extension FileSyscalls {
   }
 
   static func changeCurrentDirectoryPath(_ fd: FileDescriptor) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       fchdir(fd.rawValue)
     }
   }

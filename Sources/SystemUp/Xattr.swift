@@ -1,19 +1,5 @@
-#if os(macOS) || os(iOS)
-import Darwin
-#elseif os(Linux)
-import Glibc
-import CSystemUp
-#endif
+import SystemLibc
 import SystemPackage
-
-@discardableResult
-private func checkXattrError<T: FixedWidthInteger>(_ body: () -> T) throws -> T {
-  let result = body()
-  if result == -1 {
-    throw Errno.current
-  }
-  return result
-}
 
 extension Xattr.XattrType {
   fileprivate func forEachKeyCString(_ body: (String, UnsafePointer<CChar>) throws -> Void) rethrows {
@@ -88,7 +74,7 @@ public enum Xattr {
   public static func set(_ value: XattrType, for key: UnsafePointer<Int8>, path: UnsafePointer<Int8>, options: Options) throws {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
     try value.withUnsafeBytes { buffer in
-      _ = try checkXattrError { () -> Int32 in
+      try SyscallUtilities.voidOrErrno { () -> Int32 in
         #if os(macOS) || os(iOS)
         return setxattr(path, key, buffer.baseAddress, buffer.count, 0, options.rawValue)
         #elseif os(Linux)
@@ -98,7 +84,7 @@ public enum Xattr {
           return setxattr(path, key, buffer.baseAddress, buffer.count, options.rawValue)
         }
         #endif
-      }
+      }.get()
     }
   }
 
@@ -126,7 +112,7 @@ public enum Xattr {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
-    let size = try checkXattrError { () -> Int in
+    let size = try SyscallUtilities.valueOrErrno { () -> Int in
       #if os(macOS) || os(iOS)
       return getxattr(path, key, nil, 0, position, options.rawValue)
       #elseif os(Linux)
@@ -136,12 +122,12 @@ public enum Xattr {
         return getxattr(path, key, nil, 0)
       }
       #endif
-    }
+    }.get()
     guard size > 0 else {
       return XattrType()
     }
     return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try checkXattrError { () -> Int in
+      let newSize = try SyscallUtilities.valueOrErrno { () -> Int in
         #if os(macOS) || os(iOS)
         return getxattr(path, key, buffer.baseAddress!, size, position, options.rawValue)
         #elseif os(Linux)
@@ -151,7 +137,7 @@ public enum Xattr {
           return getxattr(path, key, buffer.baseAddress!, size)
         }
         #endif
-      }
+      }.get()
       assert(newSize <= size)
       initializedCount = newSize
     }
@@ -161,7 +147,7 @@ public enum Xattr {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
-    try checkXattrError { () -> Int32 in
+    try SyscallUtilities.voidOrErrno { () -> Int32 in
       #if os(macOS) || os(iOS)
       return removexattr(path, name, options.rawValue)
       #elseif os(Linux)
@@ -171,14 +157,14 @@ public enum Xattr {
         return removexattr(path, name)
       }
       #endif
-    }
+    }.get()
   }
 
   private static func _listxattr(_ path: UnsafePointer<Int8>, options: Options) throws -> XattrType {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
-    let size = try checkXattrError { () -> Int in
+    let size = try SyscallUtilities.valueOrErrno { () -> Int in
       #if os(macOS) || os(iOS)
       return listxattr(path, nil, 0, options.rawValue)
       #elseif os(Linux)
@@ -188,12 +174,12 @@ public enum Xattr {
         return listxattr(path, nil, 0)
       }
       #endif
-    }
+    }.get()
     guard size > 0 else {
       return XattrType()
     }
     return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try checkXattrError { () -> Int in
+      let newSize = try SyscallUtilities.valueOrErrno { () -> Int in
         #if os(macOS) || os(iOS)
         return listxattr(path, buffer.baseAddress, size, options.rawValue)
         #elseif os(Linux)
@@ -203,7 +189,7 @@ public enum Xattr {
           return listxattr(path, buffer.baseAddress, size)
         }
         #endif
-      }
+      }.get()
       assert(newSize <= size)
       initializedCount = newSize
     }

@@ -45,7 +45,7 @@ public struct Fts {
     assert(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
 
     guard let ptr = fts_open(array, options.rawValue, nil) else {
-      return .failure(Errno.current)
+      return .failure(Errno.systemCurrent)
     }
     return .success(.init(ptr))
   }
@@ -54,7 +54,7 @@ public struct Fts {
     if let ptr = ptr {
       return .init(ptr)
     }
-    let errno = Errno.current
+    let errno = Errno.systemCurrent
     if errno.rawValue != 0 {
       throw errno
     }
@@ -70,14 +70,14 @@ public struct Fts {
   }
 
   public func set(entry: Fts.Entry, option: SetOption) throws {
-    try voidOrErrno {
+    try SyscallUtilities.voidOrErrno {
       fts_set(handle, entry.ptr, option.rawValue)
     }.get()
   }
 
   public func close() {
-    neverError {
-      voidOrErrno {
+    assertNoFailure {
+      SyscallUtilities.voidOrErrno {
         fts_close(handle)
       }
     }

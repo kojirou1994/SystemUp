@@ -26,7 +26,7 @@ public extension FileStream {
 
   @inlinable @inline(__always)
   static func open(_ path: FilePath, mode: Mode) -> Result<Self, Errno> {
-    syscallUnwrap {
+    SyscallUtilities.unwrap {
       path.withPlatformString { path in
         SystemLibc.fopen(path, mode.rawValue)
       }
@@ -35,14 +35,14 @@ public extension FileStream {
 
   @inlinable @inline(__always)
   static func open(_ fd: FileDescriptor, mode: Mode) -> Result<Self, Errno> {
-    syscallUnwrap {
+    SyscallUtilities.unwrap {
       SystemLibc.fdopen(fd.rawValue, mode.rawValue)
     }.map(Self.init)
   }
 
   @inlinable @inline(__always)
   static func open(_ buffer: UnsafeMutableRawBufferPointer, mode: Mode) -> Result<Self, Errno> {
-    syscallUnwrap {
+    SyscallUtilities.unwrap {
       SystemLibc.fmemopen(buffer.baseAddress, buffer.count, mode.rawValue)
     }.map(Self.init)
   }
@@ -57,13 +57,13 @@ public extension FileStream {
     } else {
       v = SystemLibc.freopen(nil, mode.rawValue, rawValue.rawValue)
     }
-    return syscallUnwrap { v }.map(Self.init)
+    return SyscallUtilities.unwrap { v }.map(Self.init)
   }
 
   @discardableResult
   @inlinable @inline(__always)
   func close() -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       SystemLibc.fclose(rawValue)
     }
   }
@@ -98,8 +98,8 @@ public extension FileStream {
 
   @inlinable @inline(__always)
   func rewind() {
-    neverError {
-      voidOrErrno { () -> Int32 in
+    assertNoFailure {
+      SyscallUtilities.voidOrErrno { () -> Int32 in
         SystemLibc.rewind(rawValue)
         return SystemLibc.errno
       }
@@ -108,7 +108,7 @@ public extension FileStream {
 
   @inlinable @inline(__always)
   func seek(toOffset offset: Int, from origin: FileDescriptor.SeekOrigin) throws {
-    try voidOrErrno {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.fseek(rawValue, offset, origin.rawValue)
     }.get()
   }
@@ -122,8 +122,8 @@ public extension FileStream {
   var currentPosition: Position {
     set {
       withUnsafePointer(to: newValue.rawValue) { pos in
-        neverError {
-          voidOrErrno {
+        assertNoFailure {
+          SyscallUtilities.voidOrErrno {
             SystemLibc.fsetpos(rawValue, pos)
           }
         }
@@ -131,8 +131,8 @@ public extension FileStream {
     }
     get {
       var v: Position = .init(rawValue: .init())
-      neverError {
-        voidOrErrno {
+      assertNoFailure {
+        SyscallUtilities.voidOrErrno {
           SystemLibc.fgetpos(rawValue, &v.rawValue)
         }
       }
@@ -147,7 +147,7 @@ public extension FileStream {
   @discardableResult
   @inlinable @inline(__always)
   func flush() -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       SystemLibc.fflush(rawValue)
     }
   }
@@ -155,7 +155,7 @@ public extension FileStream {
   @discardableResult
   @inlinable @inline(__always)
   static func flushAll() -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       SystemLibc.fflush(nil)
     }
   }
@@ -282,7 +282,7 @@ public extension FileStream {
 
   @inlinable @inline(__always)
   static func tempFile() -> Result<Self, Errno> {
-    syscallUnwrap {
+    SyscallUtilities.unwrap {
       SystemLibc.tmpfile()
     }.map(Self.init)
   }

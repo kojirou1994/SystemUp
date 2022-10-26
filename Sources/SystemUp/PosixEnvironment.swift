@@ -45,21 +45,21 @@ public extension PosixEnvironment {
 
   @discardableResult
   static func set(key: UnsafePointer<CChar>, value: UnsafePointer<CChar>, overwrite: Bool = true) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       setenv(key, value, .init(cBool: overwrite))
     }
   }
 
   @available(*, unavailable, message: "memory leak")
   static func put<T: StringProtocol>(_ string: T) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       string.withCString { putenv(strdup($0)) }
     }
   }
 
   @discardableResult
   static func unset(key: UnsafePointer<CChar>) -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       unsetenv(key)
     }
   }

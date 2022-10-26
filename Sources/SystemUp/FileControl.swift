@@ -4,7 +4,7 @@ import SystemPackage
 public extension FileDescriptor {
   @inlinable @inline(__always)
   func sync() -> Result<Void, Errno> {
-    voidOrErrno {
+    SyscallUtilities.voidOrErrno {
       SystemLibc.fsync(rawValue)
     }
   }
@@ -16,21 +16,21 @@ public extension FileControl {
 
   @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, command: Command) -> Result<Int32, Errno> {
-    valueOrErrno {
+    SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue)
     }
   }
 
   @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, command: Command, value: Int32) -> Result<Int32, Errno> {
-    valueOrErrno {
+    SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue, value)
     }
   }
 
   @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, command: Command, ptr: UnsafeMutableRawPointer) -> Result<Int32, Errno> {
-    valueOrErrno {
+    SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue, ptr)
     }
   }

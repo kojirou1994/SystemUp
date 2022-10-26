@@ -12,7 +12,7 @@ public enum WaitPID {}
 public extension WaitPID {
   static func wait(pid: PID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
                    rusage: UnsafeMutablePointer<rusage>? = nil) -> Result<PID, Errno> {
-    valueOrErrno {
+    SyscallUtilities.valueOrErrno {
       wait4(pid.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage)
     }.map(PID.init)
   }

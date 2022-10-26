@@ -22,21 +22,21 @@ public struct Directory {
 
   public static func open(_ path: FilePath) -> Result<Self, Errno> {
     guard let dir = path.withPlatformString(opendir) else {
-      return .failure(.current)
+      return .failure(.systemCurrent)
     }
     return .success(.init(dir))
   }
 
   public static func open(_ fd: FileDescriptor) -> Result<Self, Errno> {
     guard let dir = fdopendir(fd.rawValue) else {
-      return .failure(.current)
+      return .failure(.systemCurrent)
     }
     return .success(.init(dir))
   }
 
   public func close() {
-    neverError {
-      voidOrErrno { closedir(dir) }
+    assertNoFailure {
+      SyscallUtilities.voidOrErrno { closedir(dir) }
     }
   }
 
@@ -61,7 +61,7 @@ public struct Directory {
   @available(*, deprecated, message: "unsafe")
   public func read(into entry: inout Directory.Entry) -> Result<Bool, Errno> {
     var entryPtr: UnsafeMutablePointer<dirent>?
-    return voidOrErrno {
+    return SyscallUtilities.voidOrErrno {
       readdir_r(dir, &entry.entry, &entryPtr)
     }
     .map { _ in
@@ -79,7 +79,7 @@ public struct Directory {
     errno = 0
     let entry = readdir(dir)
     if entry == nil,
-       case let err = Errno.current,
+       case let err = Errno.systemCurrent,
        err.rawValue != 0 {
       return .failure(err)
     }
