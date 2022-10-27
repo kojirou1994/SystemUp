@@ -3,7 +3,7 @@
 #elseif canImport(Glibc)
 @_exported import Glibc
 #endif
-
+@_exported import CSystemUp
 
 #if os(Linux)
 @_silgen_name("vasprintf")

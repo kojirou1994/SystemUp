@@ -19,11 +19,13 @@ let package = Package(
     .target(
       name: "CProc"),
     .target(
-      name: "SystemLibc"),
+      name: "SystemLibc",
+      dependencies: [
+        "CSystemUp",
+      ]),
     .target(
       name: "SystemUp",
       dependencies: [
-        "CSystemUp",
         "SystemLibc",
         .product(name: "SyscallValue", package: "SyscallValue"),
         .product(name: "CUtility", package: "CUtility"),
