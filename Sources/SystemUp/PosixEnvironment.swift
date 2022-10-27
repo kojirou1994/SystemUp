@@ -1,8 +1,4 @@
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
+import SystemLibc
 import CUtility
 import SystemPackage
 
@@ -26,7 +22,7 @@ public extension PosixEnvironment {
 
     var result = Self(environment: .init())
 
-    for entry in NullTerminatedArray(environ) {
+    for entry in NullTerminatedArray(SystemLibc.environ) {
       let entry = entry.pointee
       if let finish = strchr(entry, Int32(UInt8(ascii: "="))) {
         let key = UnsafeRawBufferPointer(start: entry, count: finish - entry)
@@ -39,28 +35,32 @@ public extension PosixEnvironment {
   }
 
   /// set() may invalidate the result cstring
+  @_alwaysEmitIntoClient
   static func get(key: UnsafePointer<CChar>) -> String? {
-    getenv(key).map { String(cString: $0) }
+    SystemLibc.getenv(key).map { String(cString: $0) }
   }
 
   @discardableResult
+  @_alwaysEmitIntoClient
   static func set(key: UnsafePointer<CChar>, value: UnsafePointer<CChar>, overwrite: Bool = true) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      setenv(key, value, .init(cBool: overwrite))
+      SystemLibc.setenv(key, value, .init(cBool: overwrite))
     }
   }
 
   @available(*, unavailable, message: "memory leak")
+  @_alwaysEmitIntoClient
   static func put<T: StringProtocol>(_ string: T) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      string.withCString { putenv(strdup($0)) }
+      string.withCString { SystemLibc.putenv(strdup($0)) }
     }
   }
 
   @discardableResult
+  @_alwaysEmitIntoClient
   static func unset(key: UnsafePointer<CChar>) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      unsetenv(key)
+      SystemLibc.unsetenv(key)
     }
   }
 
