@@ -1,5 +1,6 @@
 import SystemLibc
 import SystemPackage
+import CUtility
 
 public extension FileDescriptor {
   @inlinable @inline(__always)
@@ -35,7 +36,7 @@ public extension FileControl {
     }
   }
 
-  struct Command: RawRepresentable {
+  struct Command: MacroRawRepresentable {
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -177,7 +178,7 @@ public extension FileControl {
         rawValue.fst_flags = newValue.rawValue
       }
     }
-    public struct Flags: OptionSet {
+    public struct Flags: OptionSet, MacroRawRepresentable {
       public var rawValue: UInt32
       public init(rawValue: UInt32) {
         self.rawValue = rawValue
@@ -198,7 +199,7 @@ public extension FileControl {
         rawValue.fst_posmode = newValue.rawValue
       }
     }
-    public struct PositionMode: RawRepresentable {
+    public struct PositionMode: MacroRawRepresentable {
       public let rawValue: Int32
       public init(rawValue: Int32) {
         self.rawValue = rawValue

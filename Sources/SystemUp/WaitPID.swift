@@ -1,8 +1,4 @@
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
+import SystemLibc
 import SystemPackage
 import CSystemUp
 import CUtility
@@ -28,7 +24,7 @@ extension WaitPID {
     public let rawValue: Int32
   }
 
-  public struct Options: OptionSet {
+  public struct Options: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -76,8 +72,7 @@ public extension WaitPID.ExitStatus {
 
   @_alwaysEmitIntoClient
   var exitStatus: Int32 {
-    precondition(exited)
-    return swift_WEXITSTATUS(rawValue)
+    swift_WEXITSTATUS(rawValue)
   }
 
   @_alwaysEmitIntoClient
@@ -87,8 +82,7 @@ public extension WaitPID.ExitStatus {
 
   @_alwaysEmitIntoClient
   var terminationSignal: Int32 {
-    precondition(signaled)
-    return swift_WTERMSIG(rawValue)
+    swift_WTERMSIG(rawValue)
   }
 
   @_alwaysEmitIntoClient

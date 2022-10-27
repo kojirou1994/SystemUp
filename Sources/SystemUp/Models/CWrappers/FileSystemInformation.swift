@@ -1,9 +1,5 @@
 import CUtility
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
+import SystemLibc
 
 /// POSIX filesystem information
 public struct FileSystemInformation: RawRepresentable {
@@ -74,7 +70,7 @@ public extension FileSystemInformation {
     rawValue.f_namemax
   }
 
-  struct Flags: OptionSet {
+  struct Flags: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: UInt) {
       self.rawValue = rawValue

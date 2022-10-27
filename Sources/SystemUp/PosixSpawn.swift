@@ -1,8 +1,4 @@
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
+import SystemLibc
 import SystemPackage
 import CUtility
 
@@ -72,7 +68,7 @@ extension PosixSpawn {
       }
     }
 
-    public struct Flags: OptionSet {
+    public struct Flags: OptionSet, MacroRawRepresentable {
 
       public init(rawValue: Int16) {
         self.rawValue = rawValue

@@ -1,6 +1,7 @@
 #if canImport(Darwin)
-import Darwin
+import SystemLibc
 import SystemPackage
+import CUtility
 
 @available(macOS 10.12, iOS 10.0, tvOS 10.0, watchOS 3.0, *)
 public extension FileSyscalls {
@@ -33,7 +34,7 @@ public extension FileSyscalls {
     }
   }
 
-  struct CloneFlags: OptionSet {
+  struct CloneFlags: OptionSet, MacroRawRepresentable {
     public init(rawValue: UInt32) {
       self.rawValue = rawValue
     }

@@ -1,10 +1,6 @@
 import SystemPackage
-import CSystemUp
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
+import CUtility
+import SystemLibc
 
 public struct Fts {
   private init(_ handle: UnsafeMutablePointer<FTS>) {
@@ -91,7 +87,7 @@ public struct Fts {
 
 extension Fts {
 
-  public struct OpenOptions: OptionSet {
+  public struct OpenOptions: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -269,7 +265,7 @@ extension Fts {
 
   }
 
-  public struct ChildrenOptions: OptionSet {
+  public struct ChildrenOptions: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -283,7 +279,7 @@ extension Fts {
     public static var nameOnly: Self { .init(macroValue: FTS_NAMEONLY) }
   }
 
-  public struct SetOption: RawRepresentable {
+  public struct SetOption: MacroRawRepresentable {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -317,7 +313,7 @@ extension Fts {
     public static var skip: Self { .init(macroValue: FTS_SKIP) }
   }
 
-  public struct Info: RawRepresentable, Equatable {
+  public struct Info: MacroRawRepresentable, Equatable {
 
     public init(rawValue: UInt16) {
       self.rawValue = rawValue

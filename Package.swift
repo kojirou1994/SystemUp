@@ -11,7 +11,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
     .package(url: "https://github.com/kojirou1994/SyscallValue.git", from: "0.0.1"),
-    .package(url: "https://github.com/kojirou1994/CUtility.git", from: "0.0.1"),
+    .package(url: "https://github.com/kojirou1994/CUtility.git", from: "0.2.0"),
   ],
   targets: [
     .target(

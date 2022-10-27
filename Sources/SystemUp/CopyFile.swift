@@ -1,8 +1,9 @@
 #if canImport(Darwin)
-import Darwin
+import SystemLibc
 import SystemPackage
+import CUtility
 
-public struct CopyFileReturn: RawRepresentable {
+public struct CopyFileReturn: MacroRawRepresentable {
   public init(rawValue: CInt) {
     self.rawValue = rawValue
   }
@@ -20,7 +21,7 @@ public struct CopyFileReturn: RawRepresentable {
   public static var quit: Self { .init(macroValue: COPYFILE_QUIT) }
 }
 
-public struct CopyFileStage: RawRepresentable, Equatable {
+public struct CopyFileStage: MacroRawRepresentable, Equatable {
   public init(rawValue: CInt) {
     self.rawValue = rawValue
   }
@@ -175,7 +176,7 @@ public final class CopyFileState {
 
 }
 
-public struct CopyFileWhat: RawRepresentable, Equatable {
+public struct CopyFileWhat: MacroRawRepresentable, Equatable {
   public init(rawValue: CInt) {
     self.rawValue = rawValue
   }
@@ -249,7 +250,7 @@ extension FileSyscalls {
 
 }
 
-public struct CopyFlags: OptionSet {
+public struct CopyFlags: OptionSet, MacroRawRepresentable {
   public init(rawValue: copyfile_flags_t) {
     self.rawValue = rawValue
   }

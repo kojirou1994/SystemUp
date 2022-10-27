@@ -1,10 +1,6 @@
 import SystemPackage
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-import CSystemUp
-#endif
+import SystemLibc
+import CUtility
 
 public struct Directory {
 
@@ -172,7 +168,7 @@ extension Directory {
 }
 
 extension Directory {
-  public struct DirectoryType: RawRepresentable, Equatable {
+  public struct DirectoryType: MacroRawRepresentable, Equatable {
 
     public init(rawValue: UInt8) {
       self.rawValue = rawValue

@@ -1,9 +1,5 @@
 import SystemPackage
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#endif
+import SystemLibc
 import CUtility
 
 public struct FileStatus {
@@ -112,7 +108,7 @@ public extension FileStatus {
   }
   #endif
 
-  struct FileType: RawRepresentable, Equatable {
+  struct FileType: MacroRawRepresentable, Equatable {
 
     public init(rawValue: CInterop.Mode) {
       self.rawValue = rawValue

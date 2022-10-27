@@ -1,10 +1,5 @@
 import SystemPackage
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-import CSystemUp
-#endif
+import SystemLibc
 import Foundation
 import SyscallValue
 import CUtility
@@ -139,7 +134,7 @@ public extension FileSyscalls {
 #if canImport(Darwin)
 public extension FileSyscalls {
 
-  struct FileFlags: OptionSet {
+  struct FileFlags: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: UInt32) {
       self.rawValue = rawValue
@@ -223,7 +218,7 @@ public extension FileSyscalls {
 // MARK: access
 public extension FileSyscalls {
 
-  struct Accessibility: OptionSet {
+  struct Accessibility: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -259,7 +254,7 @@ public extension FileSyscalls {
 }
 
 public extension FileSyscalls {
-  struct AtFlags: OptionSet {
+  struct AtFlags: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -301,7 +296,7 @@ public extension FileSyscalls {
 // MARK: rename
 public extension FileSyscalls {
 
-  struct RenameFlags: OptionSet {
+  struct RenameFlags: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: UInt32) {
       self.rawValue = rawValue
