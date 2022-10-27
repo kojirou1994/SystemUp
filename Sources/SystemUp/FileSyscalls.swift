@@ -202,14 +202,14 @@ public extension FileSyscalls {
   static func truncate(_ path: FilePath, size: Int) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
-        system_truncate(path, off_t(size))
+        SystemLibc.truncate(path, off_t(size))
       }
     }
   }
 
   static func truncate(_ fd: FileDescriptor, size: Int) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      system_ftruncate(fd.rawValue, off_t(size))
+      SystemLibc.ftruncate(fd.rawValue, off_t(size))
     }
   }
 
@@ -247,7 +247,7 @@ public extension FileSyscalls {
     assert(!option.path.isEmpty)
     assert(flags.isSubset(of: [.noFollow, .effectiveAccess]))
     return option.path.withPlatformString { path in
-      system_access(option.relativedDirFD.rawValue, path, accessibility.rawValue, flags.rawValue) == 0
+      SystemLibc.faccessat(option.relativedDirFD.rawValue, path, accessibility.rawValue, flags.rawValue) == 0
     }
   }
 

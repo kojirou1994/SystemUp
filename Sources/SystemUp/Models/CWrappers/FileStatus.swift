@@ -7,6 +7,7 @@ public struct FileStatus {
     self.rawValue = rawValue
   }
 
+  @_alwaysEmitIntoClient
   public init() {
     self.init(rawValue: .init())
   }
@@ -24,34 +25,42 @@ extension FileStatus: CustomStringConvertible {
 
 public extension FileStatus {
 
+  @_alwaysEmitIntoClient
   var deviceID: CInterop.UpDev {
     rawValue.st_dev
   }
 
+  @_alwaysEmitIntoClient
   var fileType: FileType {
     .init(rawValue: rawValue.st_mode & S_IFMT)
   }
 
+  @_alwaysEmitIntoClient
   var permissions: FilePermissions {
     .init(rawValue: rawValue.st_mode & ~S_IFMT)
   }
 
+  @_alwaysEmitIntoClient
   var hardLinksCount: CInterop.UpNumberOfLinks {
     rawValue.st_nlink
   }
 
+  @_alwaysEmitIntoClient
   var fileSerialNumber: CInterop.UpInodeNumber {
     rawValue.st_ino
   }
 
+  @_alwaysEmitIntoClient
   var userID: UInt32 {
     rawValue.st_uid
   }
 
+  @_alwaysEmitIntoClient
   var rDeviceID: CInterop.UpDev {
     rawValue.st_rdev
   }
 
+  @_alwaysEmitIntoClient
   var lastAccessTime: CInterop.UpTimespec {
     #if canImport(Darwin)
     rawValue.st_atimespec
@@ -60,6 +69,7 @@ public extension FileStatus {
     #endif
   }
 
+  @_alwaysEmitIntoClient
   var lastModificationTime: CInterop.UpTimespec {
     #if canImport(Darwin)
     rawValue.st_mtimespec
@@ -68,6 +78,7 @@ public extension FileStatus {
     #endif
   }
 
+  @_alwaysEmitIntoClient
   var lastStatusChangedTime: CInterop.UpTimespec {
     #if canImport(Darwin)
     rawValue.st_ctimespec
@@ -77,32 +88,38 @@ public extension FileStatus {
   }
 
   #if canImport(Darwin)
+  @_alwaysEmitIntoClient
   var creationTime: CInterop.UpTimespec {
     rawValue.st_birthtimespec
   }
   #endif
 
+  @_alwaysEmitIntoClient
   var size: CInterop.UpSize {
     rawValue.st_size
   }
 
   /// The actual number of blocks allocated for the file in 512-byte units.  As short symbolic links are stored in the inode, this number may be zero.
+  @_alwaysEmitIntoClient
   var blocksCount: CInterop.UpBlocksCount {
     rawValue.st_blocks
   }
 
   /// The optimal I/O block size for the file.
+  @_alwaysEmitIntoClient
   var blockSize: CInterop.UpBlockSize {
     rawValue.st_blksize
   }
 
   #if canImport(Darwin)
+  @_alwaysEmitIntoClient
   var flags: UInt32 {
     rawValue.st_flags
   }
   #endif
 
   #if canImport(Darwin)
+  @_alwaysEmitIntoClient
   var fileGenerationNumber: UInt32 {
     rawValue.st_gen
   }

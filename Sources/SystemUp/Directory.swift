@@ -4,18 +4,24 @@ import CUtility
 
 public struct Directory {
 
+
   #if canImport(Darwin)
+  @usableFromInline
   typealias CDirectoryStream = UnsafeMutablePointer<DIR>
   #else
+  @usableFromInline
   typealias CDirectoryStream = OpaquePointer
   #endif
 
-  private init(_ dir: CDirectoryStream) {
+  @usableFromInline
+  internal init(_ dir: CDirectoryStream) {
     self.dir = dir
   }
 
-  private let dir: CDirectoryStream
+  @usableFromInline
+  internal let dir: CDirectoryStream
 
+  @_alwaysEmitIntoClient
   public static func open(_ path: FilePath) -> Result<Self, Errno> {
     guard let dir = path.withPlatformString(opendir) else {
       return .failure(.systemCurrent)
@@ -23,6 +29,7 @@ public struct Directory {
     return .success(.init(dir))
   }
 
+  @_alwaysEmitIntoClient
   public static func open(_ fd: FileDescriptor) -> Result<Self, Errno> {
     guard let dir = fdopendir(fd.rawValue) else {
       return .failure(.systemCurrent)
@@ -30,25 +37,30 @@ public struct Directory {
     return .success(.init(dir))
   }
 
+  @_alwaysEmitIntoClient
   public func close() {
     assertNoFailure {
       SyscallUtilities.voidOrErrno { closedir(dir) }
     }
   }
 
+  @_alwaysEmitIntoClient
   public func tell() throws -> Int {
     telldir(dir)
   }
 
   /// resets the position of the named directory stream to the beginning of the directory.
+  @_alwaysEmitIntoClient
   public func rewind() throws {
     rewinddir(dir)
   }
 
+  @_alwaysEmitIntoClient
   public func seek(offset: Int) throws {
     seekdir(dir, offset)
   }
 
+  @_alwaysEmitIntoClient
   public var fd: FileDescriptor {
     .init(rawValue: dirfd(dir))
   }
@@ -71,6 +83,7 @@ public struct Directory {
     }
   }
 
+  @_alwaysEmitIntoClient
   public func read() -> Result<UnsafeMutablePointer<Directory.Entry>?, Errno> {
     errno = 0
     let entry = readdir(dir)
@@ -82,6 +95,7 @@ public struct Directory {
     return .success(.init(OpaquePointer(entry)))
   }
 
+  @_alwaysEmitIntoClient
   public func closeAfter<R>(_ body: (Self) throws -> R) throws -> R {
     defer { close() }
     return try body(self)
@@ -90,7 +104,8 @@ public struct Directory {
 }
 
 extension dirent {
-  var isDot: Bool {
+  @usableFromInline
+  internal var isDot: Bool {
     let point = UInt8(ascii: ".")
     return (d_name.0 == point && d_name.1 == 0)
     || (d_name.0 == point && d_name.1 == point && d_name.2 == 0)
@@ -101,8 +116,10 @@ extension Directory {
 
   public struct Entry: CustomStringConvertible {
 
+    @_alwaysEmitIntoClient
     fileprivate var entry: dirent
 
+    @_alwaysEmitIntoClient
     public init() {
       entry = .init()
     }
@@ -111,10 +128,12 @@ extension Directory {
       "DirectoryEntry(entryFileNumber: \(entryFileNumber), seekOffset: \(seekOffset), recordLength: \(recordLength), fileType: \(fileType), name: \"\(name)\")"
     }
 
+    @_alwaysEmitIntoClient
     public var entryFileNumber: CInterop.UpInodeNumber {
       entry.d_ino
     }
 
+    @_alwaysEmitIntoClient
     public var seekOffset: CInterop.UpSeekOffset {
       #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
       return entry.d_seekoff
@@ -123,29 +142,35 @@ extension Directory {
       #endif
     }
 
+    @_alwaysEmitIntoClient
     public var recordLength: UInt16 {
       entry.d_reclen
     }
 
+    @_alwaysEmitIntoClient
     public var fileType: DirectoryType {
       DirectoryType(rawValue: entry.d_type)
     }
 
+    @_alwaysEmitIntoClient
     public var isHidden: Bool {
       entry.d_name.0 == UInt8(ascii: ".")
     }
 
     /// is "." or ".."
+    @_alwaysEmitIntoClient
     public var isDot: Bool {
       entry.isDot
     }
 
     @available(*, deprecated, renamed: "isDot")
+    @_alwaysEmitIntoClient
     public var isInvalid: Bool {
       isDot
     }
 
     /// entry name (up to MAXPATHLEN bytes)
+    @_alwaysEmitIntoClient
     public var name: String {
       #if canImport(Darwin)
       withNameBuffer { buffer in
@@ -157,6 +182,7 @@ extension Directory {
     }
 
     #if canImport(Darwin)
+    @_alwaysEmitIntoClient
     public func withNameBuffer<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
       try withUnsafeBytes(of: entry.d_name) { buffer in
         try body(.init(rebasing: buffer.prefix(Int(entry.d_namlen))))

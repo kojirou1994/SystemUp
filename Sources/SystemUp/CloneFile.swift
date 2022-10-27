@@ -7,6 +7,7 @@ import CUtility
 public extension FileSyscalls {
 
   /// create copy on write clones of files
+  @_alwaysEmitIntoClient
   static func cloneFile(from src: FilePathOption, to dst: FilePathOption, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       src.path.withPlatformString { srcPath in
@@ -22,6 +23,7 @@ public extension FileSyscalls {
   }
 
   /// create copy on write clones of files
+  @_alwaysEmitIntoClient
   static func cloneFile(from fd: FileDescriptor, to dst: FilePathOption, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       dst.path.withPlatformString { dstPath in
