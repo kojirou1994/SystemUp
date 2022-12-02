@@ -91,9 +91,9 @@ public extension PosixThread {
 // MARK: Pthread Helpers
 public extension PosixThread {
 
-  static func create(main: PthreadMain, attributes: Attributes? = nil) throws -> ThreadID {
+  static func create(main: ThreadMain, attributes: Attributes? = nil) throws -> ThreadID {
     try create(context: Unmanaged.passRetained(main).toOpaque(), attributes: attributes) { context in
-      let main = Unmanaged<PthreadMain>.fromOpaque(context.unsafelyUnwrapped)
+      let main = Unmanaged<ThreadMain>.fromOpaque(context.unsafelyUnwrapped)
       main.takeUnretainedValue().main()
       main.release()
       return nil
@@ -110,15 +110,15 @@ public extension PosixThread {
     attr.detachState = .detached
     return try create(main: .init(main: block), attributes: attr)
   }
-}
 
-public final class PthreadMain {
-  @inlinable @inline(__always)
-  public init(main: @escaping () -> Void) {
-    self.main = main
+  final class ThreadMain {
+    @inlinable @inline(__always)
+    public init(main: @escaping () -> Void) {
+      self.main = main
+    }
+
+    public let main: () -> Void
   }
-
-  public let main: () -> Void
 }
 
 extension PosixThread.ThreadID: Equatable {
