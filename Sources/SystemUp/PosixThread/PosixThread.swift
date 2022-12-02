@@ -100,15 +100,14 @@ public extension PosixThread {
     }
   }
 
-  @discardableResult
-  static func detachNewThread(_ block: @escaping () -> Void) throws -> ThreadID {
+  static func detach(_ block: @escaping () -> Void) throws {
     var attr = try Attributes()
     defer {
       attr.destroy()
     }
     attr.scope = .system
     attr.detachState = .detached
-    return try create(main: .init(main: block), attributes: attr)
+    _ = try create(main: .init(main: block), attributes: attr)
   }
 
   final class ThreadMain {
