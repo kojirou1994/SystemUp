@@ -286,6 +286,7 @@ public extension PosixThread.Attributes {
     }
   }
 
+  #if !os(Linux)
   @inlinable
   var stackAddress: UnsafeMutableRawPointer {
     mutating get {
@@ -295,7 +296,7 @@ public extension PosixThread.Attributes {
           pthread_attr_getstackaddr(&rawValue, &value)
         }
       }
-      return value!
+      return value.unsafelyUnwrapped
     }
     set {
       assertNoFailure {
@@ -305,6 +306,7 @@ public extension PosixThread.Attributes {
       }
     }
   }
+  #endif
 
   @inlinable
   var detachState: DetachState {
