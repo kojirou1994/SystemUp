@@ -47,28 +47,65 @@ public extension PosixThread {
 
   @inlinable
   static func create(context: UnsafeMutableRawPointer? = nil, attributes: Attributes? = nil,
-                     body: @convention(c) (UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer?) throws -> ThreadID {
+                     body: @convention(c) (UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer?) -> Result<ThreadID, Errno> {
     #if canImport(Darwin)
     let body = unsafeBitCast(body, to: (@convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer?).self)
-    let thread = try safeInitialize { thread in
-      withOptionalUnsafePointer(to: attributes) { attributes in
-        _ = pthread_create(&thread, attributes, body, context)
-      }
-    }
+    var thread: pthread_t?
     #else
     var thread: pthread_t = .init()
-    withOptionalUnsafePointer(to: attributes) { attributes in
-      _ = pthread_create(&thread, attributes, body, context)
-    }
     #endif
 
-    return .init(rawValue: thread)
+    return SyscallUtilities.errnoOrZeroOnReturn {
+      if let attributes = attributes {
+        return withCastedUnsafePointer(to: attributes) { pthread_create(&thread, $0, body, context) }
+      } else {
+        return pthread_create(&thread, nil, body, context)
+      }
+    }.map {
+      #if canImport(Darwin)
+      return .init(rawValue: thread.unsafelyUnwrapped)
+      #else
+      return .init(rawValue: thread)
+      #endif
+    }
+
   }
 
   @inlinable @inline(__always)
   static func exit(value: UnsafeMutableRawPointer? = nil) -> Never {
     pthread_exit(value)
   }
+
+  @inlinable
+  static func set(cancelState: CancelState, oldValue: UnsafeMutablePointer<CancelState>? = nil) {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn {
+        pthread_setcancelstate(cancelState.rawValue, oldValue?.pointer(to: \.rawValue))
+      }
+    }
+  }
+
+  @inlinable
+  static func set(cancelType: CancelType, oldValue: UnsafeMutablePointer<CancelType>? = nil) {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn {
+        pthread_setcanceltype(cancelType.rawValue, oldValue?.pointer(to: \.rawValue))
+      }
+    }
+  }
+
+  @inlinable @inline(__always)
+  static func testCancel() {
+    pthread_testcancel()
+  }
+
+  #if canImport(Darwin)
+  /// yield control of the current thread
+  @inlinable @inline(__always)
+  static func yield() {
+    pthread_yield_np()
+  }
+  #endif
 
   /// send a signal to a specified thread
   /// - Parameters:
@@ -86,6 +123,22 @@ public extension PosixThread {
   static var current: ThreadID {
     .init(rawValue: pthread_self())
   }
+
+  #if !os(Linux)
+  @inlinable @inline(__always)
+  static var concurrency: Int32 {
+    set {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
+          pthread_setconcurrency(newValue)
+        }
+      }
+    }
+    get {
+      pthread_getconcurrency()
+    }
+  }
+  #endif
 }
 
 // MARK: Pthread Helpers
@@ -97,17 +150,17 @@ public extension PosixThread {
       main.takeUnretainedValue().main()
       main.release()
       return nil
-    }
+    }.get()
   }
 
-  static func detach(_ block: @escaping () -> Void) throws {
-    var attr = try Attributes()
+  static func detach(_ block: @escaping () -> Void) throws -> ThreadID {
+    var attr = try Attributes.create().get()
     defer {
       attr.destroy()
     }
     attr.scope = .system
     attr.detachState = .detached
-    _ = try create(main: .init(main: block), attributes: attr)
+    return try create(main: .init(main: block), attributes: attr)
   }
 
   final class ThreadMain {
@@ -131,13 +184,19 @@ extension PosixThread {
   public struct Attributes {
 
     @usableFromInline
-    internal var rawValue: pthread_attr_t = .init()
+    internal init(rawValue: pthread_attr_t) {
+      self.rawValue = rawValue
+    }
+
+    @usableFromInline
+    internal var rawValue: pthread_attr_t
 
     @inlinable
-    public init() throws {
-      try SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_attr_init(&rawValue)
-      }.get()
+    public static func create() -> Result<Self, Errno> {
+      var attr = Self.init(rawValue: .init())
+      return SyscallUtilities.errnoOrZeroOnReturn {
+        pthread_attr_init(&attr.rawValue)
+      }.map { attr }
     }
 
     @inlinable
@@ -221,6 +280,34 @@ extension PosixThread {
       @_alwaysEmitIntoClient
       public static var process: Self { .init(macroValue: PTHREAD_SCOPE_PROCESS) }
     }
+  }
+
+  public struct CancelState: MacroRawRepresentable {
+
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    public var rawValue: Int32
+
+    @_alwaysEmitIntoClient
+    public static var enable: Self { .init(macroValue: PTHREAD_CANCEL_ENABLE) }
+    @_alwaysEmitIntoClient
+    public static var disable: Self { .init(macroValue: PTHREAD_CANCEL_DISABLE) }
+  }
+
+  public struct CancelType: MacroRawRepresentable {
+
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    public var rawValue: Int32
+
+    @_alwaysEmitIntoClient
+    public static var deferred: Self { .init(macroValue: PTHREAD_CANCEL_DEFERRED) }
+    @_alwaysEmitIntoClient
+    public static var asynchronous: Self { .init(macroValue: PTHREAD_CANCEL_ASYNCHRONOUS) }
   }
 }
 
