@@ -26,10 +26,8 @@ public extension PosixMutex {
 
   @inlinable
   mutating func destroy() {
-    assertNoFailure {
-      SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_mutex_destroy(&rawValue)
-      }
+    PosixThread.call {
+      pthread_mutex_destroy(&rawValue)
     }
   }
 
@@ -78,10 +76,8 @@ extension PosixMutex {
 
     @inlinable
     public mutating func destroy() {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_destroy(&rawValue)
-        }
+      PosixThread.call {
+        pthread_mutexattr_destroy(&rawValue)
       }
     }
 
@@ -150,45 +146,35 @@ extension PosixMutex {
     public static var `private`: Self { .init(macroValue: PTHREAD_PROCESS_PRIVATE) }
   }
 }
+
 public extension PosixMutex {
   @inlinable
   var prioceiling: Int32 {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutex_getprioceiling(&rawValue, &value)
-        }
+      PosixThread.get {
+        pthread_mutex_getprioceiling(&rawValue, $0)
       }
-      return value
     }
     set {
       var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutex_setprioceiling(&rawValue, newValue, &value)
-        }
+      PosixThread.call {
+        pthread_mutex_setprioceiling(&rawValue, newValue, &value)
       }
     }
   }
 }
+
 public extension PosixMutex.Attributes {
   @inlinable
   var prioceiling: Int32 {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_getprioceiling(&rawValue, &value)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getprioceiling(&rawValue, $0)
       }
-      return value
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_setprioceiling(&rawValue, newValue)
-        }
+      PosixThread.call {
+        pthread_mutexattr_setprioceiling(&rawValue, newValue)
       }
     }
   }
@@ -196,19 +182,13 @@ public extension PosixMutex.Attributes {
   @inlinable
   var `protocol`: Int32 {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_getprotocol(&rawValue, &value)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getprotocol(&rawValue, $0)
       }
-      return value
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_setprotocol(&rawValue, newValue)
-        }
+      PosixThread.call {
+        pthread_mutexattr_setprotocol(&rawValue, newValue)
       }
     }
   }
@@ -216,19 +196,13 @@ public extension PosixMutex.Attributes {
   @inlinable
   var processShared: PosixMutex.ProcessShared {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_getpshared(&rawValue, &value)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getpshared(&rawValue, $0)
       }
-      return .init(rawValue: value)
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_setpshared(&rawValue, newValue.rawValue)
-        }
+      PosixThread.call {
+        pthread_mutexattr_setpshared(&rawValue, newValue.rawValue)
       }
     }
   }
@@ -236,19 +210,13 @@ public extension PosixMutex.Attributes {
   @inlinable
   var type: MutexType {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_gettype(&rawValue, &value)
-        }
+      PosixThread.get {
+        pthread_mutexattr_gettype(&rawValue, $0)
       }
-      return .init(rawValue: value)
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_settype(&rawValue, newValue.rawValue)
-        }
+      PosixThread.call {
+        pthread_mutexattr_settype(&rawValue, newValue.rawValue)
       }
     }
   }
@@ -257,19 +225,13 @@ public extension PosixMutex.Attributes {
   @inlinable
   var policy: Policy {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_getpolicy_np(&rawValue, &value)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getpolicy_np(&rawValue, $0)
       }
-      return .init(rawValue: value)
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_setpolicy_np(&rawValue, newValue.rawValue)
-        }
+      PosixThread.call {
+        pthread_mutexattr_setpolicy_np(&rawValue, newValue.rawValue)
       }
     }
   }

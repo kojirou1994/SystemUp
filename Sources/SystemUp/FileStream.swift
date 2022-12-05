@@ -237,7 +237,7 @@ public extension FileStream {
 
   @discardableResult
   @inlinable @inline(__always)
-  func put(line: UnsafePointer<CChar>?) -> Int32? {
+  func put(line: UnsafePointer<CChar>) -> Int32? {
     let result = SystemLibc.fputs(line, rawValue)
     guard result != EOF else {
       return nil

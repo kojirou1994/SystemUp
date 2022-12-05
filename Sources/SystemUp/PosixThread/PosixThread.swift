@@ -78,19 +78,15 @@ public extension PosixThread {
 
   @inlinable
   static func set(cancelState: CancelState, oldValue: UnsafeMutablePointer<CancelState>? = nil) {
-    assertNoFailure {
-      SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_setcancelstate(cancelState.rawValue, oldValue?.pointer(to: \.rawValue))
-      }
+    PosixThread.call {
+      pthread_setcancelstate(cancelState.rawValue, oldValue?.pointer(to: \.rawValue))
     }
   }
 
   @inlinable
   static func set(cancelType: CancelType, oldValue: UnsafeMutablePointer<CancelType>? = nil) {
-    assertNoFailure {
-      SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_setcanceltype(cancelType.rawValue, oldValue?.pointer(to: \.rawValue))
-      }
+    PosixThread.call {
+      pthread_setcanceltype(cancelType.rawValue, oldValue?.pointer(to: \.rawValue))
     }
   }
 
@@ -128,10 +124,8 @@ public extension PosixThread {
   @inlinable @inline(__always)
   static var concurrency: Int32 {
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_setconcurrency(newValue)
-        }
+      PosixThread.call {
+        pthread_setconcurrency(newValue)
       }
     }
     get {
@@ -202,10 +196,8 @@ extension PosixThread {
 
     @inlinable
     public mutating func destroy() {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_destroy(&rawValue)
-        }
+      PosixThread.call {
+        pthread_attr_destroy(&rawValue)
       }
     }
 
@@ -318,59 +310,33 @@ public extension PosixThread.Attributes {
     mutating get {
       var start: UnsafeMutableRawPointer?
       var count: Int = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getstack(&rawValue, &start, &count)
-        }
+      PosixThread.call {
+        pthread_attr_getstack(&rawValue, &start, &count)
       }
       return .init(start: start, count: count)
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setstack(&rawValue, newValue.baseAddress.unsafelyUnwrapped, newValue.count)
-        }
-      }
+      PosixThread.call { pthread_attr_setstack(&rawValue, newValue.baseAddress.unsafelyUnwrapped, newValue.count) }
     }
   }
 
   @inlinable
   var stackSize: Int {
     mutating get {
-      var value: Int = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getstacksize(&rawValue, &value)
-        }
-      }
-      return value
+      PosixThread.get { pthread_attr_getstacksize(&rawValue, $0) }
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setstacksize(&rawValue, newValue)
-        }
-      }
+      PosixThread.call { pthread_attr_setstacksize(&rawValue, newValue) }
     }
   }
 
   @inlinable
   var guardSize: Int {
     mutating get {
-      var value: Int = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getguardsize(&rawValue, &value)
-        }
-      }
-      return value
+      PosixThread.get { pthread_attr_getguardsize(&rawValue, $0) }
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setguardsize(&rawValue, newValue)
-        }
-      }
+      PosixThread.call { pthread_attr_setguardsize(&rawValue, newValue) }
     }
   }
 
@@ -378,20 +344,10 @@ public extension PosixThread.Attributes {
   @inlinable
   var stackAddress: UnsafeMutableRawPointer {
     mutating get {
-      var value: UnsafeMutableRawPointer?
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getstackaddr(&rawValue, &value)
-        }
-      }
-      return value.unsafelyUnwrapped
+      PosixThread.get { pthread_attr_getstackaddr(&rawValue, $0) }
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setstackaddr(&rawValue, newValue)
-        }
-      }
+      PosixThread.call { pthread_attr_setstackaddr(&rawValue, newValue) }
     }
   }
   #endif
@@ -399,40 +355,20 @@ public extension PosixThread.Attributes {
   @inlinable
   var detachState: DetachState {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getdetachstate(&rawValue, &value)
-        }
-      }
-      return .init(rawValue: value)
+      PosixThread.get { pthread_attr_getdetachstate(&rawValue, $0) }
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setdetachstate(&rawValue, newValue.rawValue)
-        }
-      }
+      PosixThread.call { pthread_attr_setdetachstate(&rawValue, newValue.rawValue) }
     }
   }
 
   @inlinable
   var inheritsched: Inheritsched {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getinheritsched(&rawValue, &value)
-        }
-      }
-      return .init(rawValue: value)
+      PosixThread.get { pthread_attr_getinheritsched(&rawValue, $0) }
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setinheritsched(&rawValue, newValue.rawValue)
-        }
-      }
+      PosixThread.call { pthread_attr_setinheritsched(&rawValue, newValue.rawValue) }
     }
   }
 
@@ -440,19 +376,15 @@ public extension PosixThread.Attributes {
   var schedParam: SchedParam {
     mutating get {
       var value: sched_param = .init()
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getschedparam(&rawValue, &value)
-        }
+      PosixThread.call {
+        pthread_attr_getschedparam(&rawValue, &value)
       }
       return .init(rawValue: value)
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          withUnsafePointer(to: newValue.rawValue) { param in
-            pthread_attr_setschedparam(&rawValue, param)
-          }
+      PosixThread.call {
+        withUnsafePointer(to: newValue.rawValue) { param in
+          pthread_attr_setschedparam(&rawValue, param)
         }
       }
     }
@@ -461,40 +393,44 @@ public extension PosixThread.Attributes {
   @inlinable
   var schedPolicy: SchedulingPolicy {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getschedpolicy(&rawValue, &value)
-        }
-      }
-      return .init(rawValue: value)
+      PosixThread.get { pthread_attr_getschedpolicy(&rawValue, $0) }
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setschedpolicy(&rawValue, newValue.rawValue)
-        }
-      }
+      PosixThread.call { pthread_attr_setschedpolicy(&rawValue, newValue.rawValue) }
     }
   }
 
   @inlinable
   var scope: Scope {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_getscope(&rawValue, &value)
-        }
-      }
-      return .init(rawValue: value)
+      PosixThread.get { pthread_attr_getscope(&rawValue, $0) }
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_attr_setscope(&rawValue, newValue.rawValue)
-        }
-      }
+      PosixThread.call { pthread_attr_setscope(&rawValue, newValue.rawValue) }
     }
   }
+}
+
+// MARK: Utility
+extension PosixThread {
+
+  @inlinable @inline(__always)
+  static func get<T, R>(_ body: (UnsafeMutablePointer<R>) -> Int32) -> T {
+    return withUnsafeTemporaryAllocation(of: R.self, capacity: 1) { dst in
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
+          body(dst.baseAddress.unsafelyUnwrapped)
+        }
+      }
+      return unsafeBitCast(dst[0], to: T.self)
+    }
+  }
+
+  @inlinable @inline(__always)
+  static func call(_ body: () -> Int32) {
+    assertNoFailure {
+      SyscallUtilities.errnoOrZeroOnReturn(body)
+    }
+  }
+
 }

@@ -26,10 +26,8 @@ public extension PosixRWLock {
 
   @inlinable
   mutating func destroy() {
-    assertNoFailure {
-      SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_rwlock_destroy(&rawValue)
-      }
+    PosixThread.call {
+      pthread_rwlock_destroy(&rawValue)
     }
   }
 
@@ -88,10 +86,8 @@ extension PosixRWLock {
 
     @inlinable
     public mutating func destroy() {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_rwlockattr_destroy(&rawValue)
-        }
+      PosixThread.call {
+        pthread_rwlockattr_destroy(&rawValue)
       }
     }
   }
@@ -101,19 +97,13 @@ public extension PosixRWLock.Attributes {
   @inlinable
   var processShared: PosixMutex.ProcessShared {
     mutating get {
-      var value: Int32 = 0
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_rwlockattr_getpshared(&rawValue, &value)
-        }
+      PosixThread.get {
+        pthread_rwlockattr_getpshared(&rawValue, $0)
       }
-      return .init(rawValue: value)
     }
     set {
-      assertNoFailure {
-        SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_rwlockattr_setpshared(&rawValue, newValue.rawValue)
-        }
+      PosixThread.call {
+        pthread_rwlockattr_setpshared(&rawValue, newValue.rawValue)
       }
     }
   }
