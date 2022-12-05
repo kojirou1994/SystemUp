@@ -153,6 +153,7 @@ public extension PosixThread {
     }.get()
   }
 
+  @discardableResult
   static func detach(_ block: @escaping () -> Void) throws -> ThreadID {
     var attr = try Attributes.create().get()
     defer {

@@ -50,7 +50,6 @@ public extension PosixMutex {
   }
 
   @inlinable
-  @discardableResult
   mutating func tryLock() -> Bool {
     pthread_mutex_trylock(&rawValue) == 0
   }
@@ -59,16 +58,14 @@ public extension PosixMutex {
 extension PosixMutex {
   public struct Attributes {
     @usableFromInline
-    internal init(rawValue: pthread_mutexattr_t) {
-      self.rawValue = rawValue
-    }
+    internal init() {}
 
     @usableFromInline
-    internal var rawValue: pthread_mutexattr_t
+    internal var rawValue: pthread_mutexattr_t = .init()
 
     @inlinable
     public static func create(type: MutexType? = nil) -> Result<Self, Errno> {
-      var attr = Self.init(rawValue: .init())
+      var attr = Self.init()
       return SyscallUtilities.errnoOrZeroOnReturn {
         pthread_mutexattr_init(&attr.rawValue)
       }.map {
@@ -138,6 +135,20 @@ extension PosixMutex {
       public static var protect: Self { .init(macroValue: PTHREAD_PRIO_PROTECT) }
     }
   }
+
+  public struct ProcessShared: MacroRawRepresentable {
+
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    public let rawValue: Int32
+
+    @_alwaysEmitIntoClient
+    public static var shared: Self { .init(macroValue: PTHREAD_PROCESS_SHARED) }
+    @_alwaysEmitIntoClient
+    public static var `private`: Self { .init(macroValue: PTHREAD_PROCESS_PRIVATE) }
+  }
 }
 public extension PosixMutex {
   @inlinable
@@ -203,7 +214,7 @@ public extension PosixMutex.Attributes {
   }
 
   @inlinable
-  var pshared: Int32 {
+  var processShared: PosixMutex.ProcessShared {
     mutating get {
       var value: Int32 = 0
       assertNoFailure {
@@ -211,12 +222,12 @@ public extension PosixMutex.Attributes {
           pthread_mutexattr_getpshared(&rawValue, &value)
         }
       }
-      return value
+      return .init(rawValue: value)
     }
     set {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          pthread_mutexattr_setpshared(&rawValue, newValue)
+          pthread_mutexattr_setpshared(&rawValue, newValue.rawValue)
         }
       }
     }
