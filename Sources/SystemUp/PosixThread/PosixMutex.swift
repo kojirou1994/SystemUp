@@ -222,6 +222,7 @@ public extension PosixMutex.Attributes {
   }
 
   #if canImport(Darwin)
+  @available(macOS 10.13.4, iOS 11.3, watchOS 4.3, tvOS 11.3, *)
   @inlinable
   var policy: Policy {
     mutating get {
