@@ -379,29 +379,31 @@ public extension FileSyscalls {
   #endif
 }
 
-// MARK: cwd
+// MARK: working directory
 public extension FileSyscalls {
-  static var currentDirectoryPath: FilePath? {
-    guard let path = getcwd(nil, 0) else {
-      return nil
+
+  static func getWorkingDirectory() -> Result<FilePath, Errno> {
+    SyscallUtilities.unwrap {
+      SystemLibc.getcwd(nil, 0)
+    }.map { path in
+      defer {
+        path.deallocate()
+      }
+      return .init(platformString: path)
     }
-    defer {
-      free(path)
-    }
-    return .init(platformString: path)
   }
 
-  static func changeCurrentDirectoryPath(_ path: FilePath) -> Result<Void, Errno> {
+  static func changeWorkingDirectory(_ path: FilePath) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
-        chdir(path)
+        SystemLibc.chdir(path)
       }
     }
   }
 
-  static func changeCurrentDirectoryPath(_ fd: FileDescriptor) -> Result<Void, Errno> {
+  static func changeWorkingDirectory(_ fd: FileDescriptor) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      fchdir(fd.rawValue)
+      SystemLibc.fchdir(fd.rawValue)
     }
   }
 }
