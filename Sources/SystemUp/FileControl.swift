@@ -184,10 +184,15 @@ public extension FileControl {
         self.rawValue = rawValue
       }
 
+      /// Allocate contiguous space. (Note that the file system may ignore this request if length is very large.)
       @_alwaysEmitIntoClient
       public static var contiguous: Self { .init(macroValue: F_ALLOCATECONTIG) }
+      /// Allocate all requested space or no space at all.
       @_alwaysEmitIntoClient
       public static var all: Self { .init(macroValue: F_ALLOCATEALL) }
+      /// Allocate space that is not freed when close(2) is called. (Note that the file system may ignore this request.)
+      @_alwaysEmitIntoClient
+      public static var persist: Self { .init(macroValue: F_ALLOCATEPERSIST) }
     }
 
     @inlinable @inline(__always)
@@ -205,12 +210,15 @@ public extension FileControl {
         self.rawValue = rawValue
       }
 
+      /// Allocate from the physical end of file.  In this case, fst_length indicates the number of newly allocated bytes desired.
       @_alwaysEmitIntoClient
       public static var endOfFile: Self { .init(macroValue: F_PEOFPOSMODE) }
+      /// Allocate from the volume offset.
       @_alwaysEmitIntoClient
       public static var volume: Self { .init(macroValue: F_VOLPOSMODE) }
     }
 
+    /// start of the region
     @inlinable @inline(__always)
     public var offset: Int64 {
       get {
@@ -221,6 +229,7 @@ public extension FileControl {
       }
     }
 
+    /// size of the region
     @inlinable @inline(__always)
     public var length: Int64 {
       get {
@@ -231,6 +240,7 @@ public extension FileControl {
       }
     }
 
+    /// number of bytes allocated
     @inlinable @inline(__always)
     public var allocatedBytes: Int64 {
       rawValue.fst_bytesalloc
