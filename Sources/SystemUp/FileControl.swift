@@ -53,6 +53,7 @@ public extension FileControl.Command {
   static var getFlags: Self { .init(macroValue: F_GETFD) }
   @_alwaysEmitIntoClient
   static var setFlags: Self { .init(macroValue: F_SETFD) }
+  @_alwaysEmitIntoClient
   static var getStatusFlags: Self { .init(macroValue: F_GETFL) }
   @_alwaysEmitIntoClient
   static var setStatusFlags: Self { .init(macroValue: F_SETFL) }
@@ -75,13 +76,23 @@ public extension FileControl {
   }
 
   @inlinable @inline(__always)
-  static func flags(for fd: FileDescriptor) throws -> Int32 {
-    try control(fd, command: .getFlags).get()
+  static func flags(for fd: FileDescriptor) throws -> FileDescriptorFlags {
+    try .init(rawValue: control(fd, command: .getFlags).get())
   }
 
   @inlinable @inline(__always)
-  static func set(_ fd: FileDescriptor, flags: Int32) throws {
-    _ = try control(fd, command: .setFlags, value: flags).get()
+  static func set(_ fd: FileDescriptor, flags: FileDescriptorFlags) throws {
+    _ = try control(fd, command: .setFlags, value: flags.rawValue).get()
+  }
+
+  struct FileDescriptorFlags: OptionSet, MacroRawRepresentable {
+    public var rawValue: Int32
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient
+    public static var closeOnExec: Self { .init(macroValue: FD_CLOEXEC) }
   }
 
   @inlinable @inline(__always)
