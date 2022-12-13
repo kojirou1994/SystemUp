@@ -4,7 +4,6 @@ import CUtility
 
 public struct Directory {
 
-
   #if canImport(Darwin)
   @usableFromInline
   typealias CDirectoryStream = UnsafeMutablePointer<DIR>
@@ -114,19 +113,10 @@ extension dirent {
 
 extension Directory {
 
-  public struct Entry: CustomStringConvertible {
+  public struct Entry {
 
-    @_alwaysEmitIntoClient
-    fileprivate var entry: dirent
-
-    @_alwaysEmitIntoClient
-    public init() {
-      entry = .init()
-    }
-
-    public var description: String {
-      "DirectoryEntry(entryFileNumber: \(entryFileNumber), seekOffset: \(seekOffset), recordLength: \(recordLength), fileType: \(fileType), name: \"\(name)\")"
-    }
+    @usableFromInline
+    internal var entry: dirent
 
     @_alwaysEmitIntoClient
     public var entryFileNumber: CInterop.UpInodeNumber {
@@ -161,12 +151,6 @@ extension Directory {
     @_alwaysEmitIntoClient
     public var isDot: Bool {
       entry.isDot
-    }
-
-    @available(*, deprecated, renamed: "isDot")
-    @_alwaysEmitIntoClient
-    public var isInvalid: Bool {
-      isDot
     }
 
     /// entry name (up to MAXPATHLEN bytes)
