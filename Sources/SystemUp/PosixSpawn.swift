@@ -140,7 +140,7 @@ extension PosixSpawn {
     }
     #endif
 
-    #if os(macOS)
+    #if os(macOS) || os(Linux)
     @available(macOS 10.15, *)
     public mutating func chdir(_ path: FilePath) {
       assertNoFailure {
@@ -154,10 +154,23 @@ extension PosixSpawn {
 
     @available(macOS 10.15, *)
     public mutating func chdir(_ fd: FileDescriptor) {
-      posix_spawn_file_actions_addfchdir_np(&fileActions, fd.rawValue)
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
+          posix_spawn_file_actions_addfchdir_np(&fileActions, fd.rawValue)
+        }
+      }
     }
     #endif
 
+    #if os(Linux)
+    public mutating func close(fromMinFD fd: FileDescriptor) {
+      assertNoFailure {
+        SyscallUtilities.errnoOrZeroOnReturn {
+          posix_spawn_file_actions_addclosefrom_np(&fileActions, fd.rawValue)
+        }
+      }
+    }
+    #endif
   }
 }
 
@@ -372,7 +385,7 @@ public extension PosixSpawn.Attributes.Flags {
   static var startSuspended: Self { .init(macroValue: POSIX_SPAWN_START_SUSPENDED) }
 
   @_alwaysEmitIntoClient
-  static var cloExecDefault: Self { .init(macroValue: POSIX_SPAWN_CLOEXEC_DEFAULT) }
+  static var closeOnExecDefault: Self { .init(macroValue: POSIX_SPAWN_CLOEXEC_DEFAULT) }
   #endif
 
   #if canImport(Glibc)

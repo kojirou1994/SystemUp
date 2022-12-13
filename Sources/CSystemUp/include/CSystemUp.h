@@ -5,6 +5,8 @@
 
 #ifdef __linux__
 
+#define __USE_GNU 1
+#include <spawn.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/vfs.h>
