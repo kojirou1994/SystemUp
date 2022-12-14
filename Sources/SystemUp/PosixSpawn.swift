@@ -21,7 +21,7 @@ public extension PosixSpawn {
     var pid: pid_t = 0
     assert(argv[0] != nil, "At least argv[0] must be present in the array")
 
-    return SyscallUtilities.voidOrErrno {
+    return SyscallUtilities.errnoOrZeroOnReturn {
       withOptionalUnsafePointer(to: fileActions) { (fap: UnsafePointer<FileActions.CType>?) in
         withOptionalUnsafePointer(to: attributes) { (attrp: UnsafePointer<Attributes.CType>?) -> Int32 in
           if searchPATH {

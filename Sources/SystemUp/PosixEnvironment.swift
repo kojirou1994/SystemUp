@@ -18,6 +18,7 @@ public struct PosixEnvironment {
 
 public extension PosixEnvironment {
 
+  /// not thread-safe
   static var global: Self {
 
     var result = Self(environment: .init())
