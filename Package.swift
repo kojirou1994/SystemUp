@@ -4,9 +4,13 @@ import PackageDescription
 
 let package = Package(
   name: "SystemUp",
+  platforms: [
+    .macOS(.v10_15),
+  ],
   products: [
     .library(name: "SystemUp", targets: ["SystemUp"]),
     .library(name: "SystemFileManager", targets: ["SystemFileManager"]),
+    .library(name: "Command", targets: ["Command"]),
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
