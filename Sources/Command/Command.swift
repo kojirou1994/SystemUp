@@ -155,12 +155,27 @@ extension Command {
       try setupFD(method: self.stderr, dst: .standardError, write: true, \.stderr)
     }
 
+    var restoreCWD: FilePath?
     if let cwd = self.cwd {
-      #if os(macOS) || os(Linux)
+      var manualCWD = false
+      #if os(macOS)
+      if #available(macOS 10.15, *) {
+        fileActions.chdir(cwd)
+      } else {
+        manualCWD = true
+      }
+      #elseif os(Linux)
       fileActions.chdir(cwd)
       #else
-      fatalError("chdir not supported!")
+      manualCWD = true
       #endif
+      if manualCWD {
+        restoreCWD = try FileSyscalls.getWorkingDirectory().get()
+        try FileSyscalls.changeWorkingDirectory(cwd).get()
+      }
+    }
+    defer {
+      try! restoreCWD.map(FileSyscalls.changeWorkingDirectory)?.get()
     }
 
     #if os(macOS)

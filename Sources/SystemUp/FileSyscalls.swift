@@ -393,10 +393,12 @@ public extension FileSyscalls {
   }
 
   static func changeWorkingDirectory(_ path: FilePath) -> Result<Void, Errno> {
+    path.withPlatformString(changeWorkingDirectory)
+  }
+
+  static func changeWorkingDirectory(_ path: UnsafePointer<CChar>) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      path.withPlatformString { path in
-        SystemLibc.chdir(path)
-      }
+      SystemLibc.chdir(path)
     }
   }
 

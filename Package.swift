@@ -4,9 +4,6 @@ import PackageDescription
 
 let package = Package(
   name: "SystemUp",
-  platforms: [
-    .macOS(.v10_15),
-  ],
   products: [
     .library(name: "SystemUp", targets: ["SystemUp"]),
     .library(name: "SystemFileManager", targets: ["SystemFileManager"]),
