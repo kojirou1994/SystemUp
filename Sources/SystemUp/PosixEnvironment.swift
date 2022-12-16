@@ -18,8 +18,14 @@ public struct PosixEnvironment {
 
 public extension PosixEnvironment {
 
+  static var lock = try! PosixMutex.create().get()
+
   /// not thread-safe
   static var global: Self {
+    lock.lock()
+    defer {
+      lock.unlock()
+    }
 
     var result = Self(environment: .init())
 

@@ -109,6 +109,12 @@ extension PosixSpawn {
       posix_spawn_file_actions_addclose(&fileActions, fd.rawValue)
     }
 
+    public mutating func open(_ path: FilePath, _ mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions = .init(), permissions: FilePermissions? = nil, fd: FileDescriptor) {
+      path.withPlatformString { path in
+        open(path, mode, options: options, permissions: permissions, fd: fd)
+      }
+    }
+
     public mutating func open(_ path: UnsafePointer<CChar>, _ mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions = .init(), permissions: FilePermissions? = nil, fd: FileDescriptor) {
       /*
        path is not copied on old platforms:
@@ -142,14 +148,17 @@ extension PosixSpawn {
 
     #if os(macOS) || os(Linux)
     @available(macOS 10.15, *)
-    public mutating func chdir(_ path: FilePath) {
+    public mutating func chdir(_ path: UnsafePointer<CChar>) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          path.withPlatformString { path in
-            posix_spawn_file_actions_addchdir_np(&fileActions, path)
-          }
+          posix_spawn_file_actions_addchdir_np(&fileActions, path)
         }
       }
+    }
+
+    @available(macOS 10.15, *)
+    public mutating func chdir(_ path: FilePath) {
+      path.withPlatformString { chdir($0) }
     }
 
     @available(macOS 10.15, *)

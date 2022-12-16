@@ -79,3 +79,24 @@ public enum Poll {
     }
   }
 }
+
+#if canImport(Darwin) || os(FreeBSD)
+public extension Poll.PollFD.Events {
+  /// file may have been extended
+  @_alwaysEmitIntoClient
+  static var fileExtended: Self { .init(macroValue: POLLEXTEND) }
+
+  /// file attributes may have changed
+  @_alwaysEmitIntoClient
+  static var fileAttributesChanges: Self { .init(macroValue: POLLATTRIB) }
+
+  /// (un)link/rename may have happened
+  @_alwaysEmitIntoClient
+  static var linkHappened: Self { .init(macroValue: POLLNLINK) }
+
+  /// file's contents may have changed
+  @_alwaysEmitIntoClient
+  static var fileContentsChanged: Self { .init(macroValue: POLLWRITE) }
+}
+#endif
+

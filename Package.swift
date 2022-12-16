@@ -36,6 +36,11 @@ let package = Package(
       dependencies: [
         "SystemUp",
       ]),
+    .target(
+      name: "Command",
+      dependencies: [
+        "SystemUp",
+      ]),
     .testTarget(
       name: "SystemExtensionTests",
       dependencies: ["SystemUp"]),
