@@ -157,22 +157,21 @@ extension Command {
 
     var restoreCWD: FilePath?
     if let cwd = self.cwd {
-      var manualCWD = false
+      func backupCWD() throws {
+        restoreCWD = try FileSyscalls.getWorkingDirectory().get()
+        try FileSyscalls.changeWorkingDirectory(cwd).get()
+      }
       #if os(macOS)
       if #available(macOS 10.15, *) {
         fileActions.chdir(cwd)
       } else {
-        manualCWD = true
+        try backupCWD()
       }
       #elseif os(Linux)
       fileActions.chdir(cwd)
       #else
-      manualCWD = true
+      try backupCWD()
       #endif
-      if manualCWD {
-        restoreCWD = try FileSyscalls.getWorkingDirectory().get()
-        try FileSyscalls.changeWorkingDirectory(cwd).get()
-      }
     }
     defer {
       try! restoreCWD.map(FileSyscalls.changeWorkingDirectory)?.get()
