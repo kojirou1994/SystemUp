@@ -106,6 +106,16 @@ public extension WaitPID.ExitStatus {
   }
 }
 
+public extension WaitPID.PID {
+  @discardableResult
+  @inlinable @inline(__always)
+  func send(signal: Int32) -> Result<Void, Errno> {
+    SyscallUtilities.voidOrErrno {
+      SystemLibc.kill(rawValue, signal)
+    }
+  }
+}
+
 extension WaitPID.ExitStatus: CustomStringConvertible {
   public var description: String {
     if exited {
