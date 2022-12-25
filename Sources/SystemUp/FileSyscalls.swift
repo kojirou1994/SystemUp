@@ -71,11 +71,11 @@ public extension FileSyscalls {
 // MARK: symbolic link
 public extension FileSyscalls {
 
-  static func createSymbolicLink(_ option: FilePathOption, toDestination dest: FilePath) -> Result<Void, Errno> {
+  static func createSymbolicLink(_ newLink: FilePathOption, toDestination dest: FilePath) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      option.path.withPlatformString { path in
-        dest.withPlatformString { dest in
-          symlinkat(dest, option.relativedDirFD.rawValue, path)
+      newLink.path.withPlatformString { linkPath in
+        dest.withPlatformString { destPath in
+          symlinkat(destPath, newLink.relativedDirFD.rawValue, linkPath)
         }
       }
     }
@@ -106,6 +106,20 @@ public extension FileSyscalls {
         return strlen(cstr)
       }
     }))
+  }
+}
+
+// MARK: hard link
+public extension FileSyscalls {
+  static func createHardLink(_ newLink: FilePathOption, toDestination dest: FilePathOption, flags: AtFlags = []) -> Result<Void, Errno> {
+    assert(flags.isSubset(of: [.follow]))
+    return SyscallUtilities.voidOrErrno {
+      newLink.path.withPlatformString { linkPath in
+        dest.path.withPlatformString { destPath in
+          linkat(dest.relativedDirFD.rawValue, destPath, newLink.relativedDirFD.rawValue, linkPath, flags.rawValue)
+        }
+      }
+    }
   }
 }
 
