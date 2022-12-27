@@ -14,6 +14,9 @@
 
 #include <sys/xattr.h>
 
+#define _GNU_SOURCE
+#include <unistd.h>
+
 #endif // linux end
 
 
