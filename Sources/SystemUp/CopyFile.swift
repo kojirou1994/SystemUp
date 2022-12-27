@@ -1,8 +1,8 @@
-#if canImport(Darwin)
 import SystemLibc
 import SystemPackage
 import CUtility
 
+#if canImport(Darwin)
 public struct CopyFileReturn: MacroRawRepresentable {
   public init(rawValue: CInt) {
     self.rawValue = rawValue
@@ -391,7 +391,7 @@ extension FileSyscalls {
        The flags argument is provided to allow for future extensions and
        currently must be set to 0.
        */
-      copy_file_range(inputFD.rawValue, inputOffset, outputFD.rawValue, outputOffset, length, 0)
+      SystemLibc.copy_file_range(inputFD.rawValue, inputOffset, outputFD.rawValue, outputOffset, length, 0)
     }
   }
 }
