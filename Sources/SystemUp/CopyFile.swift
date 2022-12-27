@@ -370,3 +370,29 @@ public struct CopyFlags: OptionSet, MacroRawRepresentable {
 }
 
 #endif // Darwin platform
+
+
+#if os(Linux)
+extension FileSyscalls {
+  /// Copy a range of data from one file to another
+  /// - Parameters:
+  ///   - inputFD: source file descriptor
+  ///   - inputOffset:
+  ///   - outputFD: target file descriptor
+  ///   - outputOffset:
+  ///   - length: bytes of data
+  /// - Returns: the number of bytes copied between files.
+  public static func copyFileRange(
+    inputFD: FileDescriptor, inputOffset: UnsafeMutablePointer<Int>? = nil,
+    outputFD: FileDescriptor, outputOffset: UnsafeMutablePointer<Int>? = nil,
+    length: Int) -> Result<Int, Errno> {
+    SyscallUtilities.valueOrErrno {
+      /*
+       The flags argument is provided to allow for future extensions and
+       currently must be set to 0.
+       */
+      copy_file_range(inputFD.rawValue, inputOffset, outputFD.rawValue, outputOffset, length, 0)
+    }
+  }
+}
+#endif
