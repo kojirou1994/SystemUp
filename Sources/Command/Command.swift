@@ -31,11 +31,11 @@ public struct Command {
 
   // TODO: Implement
   @available(*, unavailable)
-  public var uid: uid_t?
+  public var uid: UserID?
 //  @available(*, unavailable)
 //  public var gui: guid_t?
   @available(*, unavailable)
-  public var groups: gid_t?
+  public var groups: GroupProcessID?
 
   public enum EnvironmentSetting {
     case null

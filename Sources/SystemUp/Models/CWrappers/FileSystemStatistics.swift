@@ -90,8 +90,8 @@ public extension FileSystemStatistics {
   #if canImport(Darwin)
   /// user that mounted the filesystem
   @_alwaysEmitIntoClient
-  var owner: uid_t {
-    rawValue.f_owner
+  var owner: UserID {
+    .init(rawValue: rawValue.f_owner)
   }
   #endif
 
