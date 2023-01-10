@@ -434,3 +434,52 @@ extension PosixThread {
   }
 
 }
+
+// MARK: Darwin QOS
+#if canImport(Darwin)
+public extension PosixThread {
+  static func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> Result<Void, Errno> {
+    SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_set_qos_class_self_np(qos, relativePriority)
+    }
+  }
+}
+
+public extension PosixThread.ThreadID {
+  // moveOnly
+  struct QualityOfServiceOverride {
+    let rawValue: pthread_override_t
+
+    __consuming
+    public func end() {
+      pthread_override_qos_class_end_np(rawValue)
+    }
+  }
+
+  func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) -> Result<Void, Errno> {
+    SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_get_qos_class_np(rawValue, qos, relativePriority)
+    }
+  }
+
+  func overrideStart(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> QualityOfServiceOverride? {
+    unsafeBitCast(pthread_override_qos_class_start_np(rawValue, qos, relativePriority), to: OpaquePointer?.self)
+      .map(QualityOfServiceOverride.init)
+  }
+
+}
+
+public extension PosixThread.Attributes {
+  mutating func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) -> Result<Void, Errno> {
+    SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_attr_get_qos_class_np(&rawValue, qos, relativePriority)
+    }
+  }
+
+  mutating func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> Result<Void, Errno> {
+    SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_attr_set_qos_class_np(&rawValue, qos, relativePriority)
+    }
+  }
+}
+#endif
