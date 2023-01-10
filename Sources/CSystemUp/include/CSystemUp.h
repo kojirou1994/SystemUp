@@ -2,6 +2,7 @@
 
 #include <fts.h>
 #include <sys/ioctl.h>
+#include <sys/resource.h>
 
 #ifdef __linux__
 
@@ -88,3 +89,19 @@ SWIFT_INLINE unsigned long swift_FIODTYPE() {
   return FIODTYPE;
 }
 #endif
+
+SWIFT_INLINE rlim_t swift_RLIM_INFINITY() {
+  return RLIM_INFINITY;
+}
+
+SWIFT_INLINE int swift_RLIMIT_MEMLOCK() {
+  return RLIMIT_MEMLOCK;
+}
+
+SWIFT_INLINE int swift_RLIMIT_NPROC() {
+  return RLIMIT_NPROC;
+}
+
+SWIFT_INLINE int swift_RLIMIT_RSS() {
+  return RLIMIT_RSS;
+}
