@@ -13,13 +13,32 @@ internal func check(args: [CVarArg]) {
   #endif
 }
 
+public func withFixedCVarArgs<R>(_ args: [CVarArg], startIndex: Int = 0, _ body: ([CVarArg]) -> R) -> R {
+  for index in startIndex..<args.count {
+    let cStringHandler: (UnsafePointer<CChar>) -> R = { cString in
+      // TODO: reduce copies
+      var copy = args
+      copy[index] = cString
+      return withFixedCVarArgs(copy, startIndex: index+1, body)
+    }
+    if let string = args[index] as? String {
+      return string.withCString(cStringHandler)
+    }
+  }
+  return body(args)
+}
+
 // MARK: Output
 public extension LazyCopiedCString {
   convenience init(format: UnsafePointer<CChar>, _ args: CVarArg...) throws {
-    check(args: args)
+    try self.init(format: format, arguments: args)
+  }
+
+  convenience init(format: UnsafePointer<CChar>, arguments: [CVarArg]) throws {
+    check(args: arguments)
     var length: Int32 = 0
     let cString = try safeInitialize { str in
-      withVaList(args) { va in
+      withVaList(arguments) { va in
         length = SystemLibc.vasprintf(&str, format, va)
       }
     }
@@ -31,8 +50,14 @@ public extension FileStream {
   @inlinable
   @discardableResult
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
-    check(args: args)
-    return withVaList(args) { va in
+    write(format: format, arguments: args)
+  }
+
+  @inlinable
+  @discardableResult
+  func write(format: UnsafePointer<CChar>, arguments: [CVarArg]) -> Int32 {
+    check(args: arguments)
+    return withVaList(arguments) { va in
       SystemLibc.vfprintf(rawValue, format, va)
     }
   }
@@ -42,8 +67,14 @@ public extension FileDescriptor {
   @inlinable
   @discardableResult
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
-    check(args: args)
-    return withVaList(args) { va in
+    write(format: format, arguments: args)
+  }
+
+  @inlinable
+  @discardableResult
+  func write(format: UnsafePointer<CChar>, arguments: [CVarArg]) -> Int32 {
+    check(args: arguments)
+    return withVaList(arguments) { va in
       SystemLibc.vdprintf(rawValue, format, va)
     }
   }
