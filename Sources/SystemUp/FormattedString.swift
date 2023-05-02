@@ -2,9 +2,21 @@ import CUtility
 import SystemLibc
 import SystemPackage
 
+@usableFromInline
+internal func check(args: [CVarArg]) {
+  #if DEBUG
+  for arg in args {
+    if arg is String {
+      fatalError("String's conformance for CVarArg is from Foundation and it's bad for libc. Use withCString(_:) to pass C string.")
+    }
+  }
+  #endif
+}
+
 // MARK: Output
 public extension LazyCopiedCString {
   convenience init(format: UnsafePointer<CChar>, _ args: CVarArg...) throws {
+    check(args: args)
     var length: Int32 = 0
     let cString = try safeInitialize { str in
       withVaList(args) { va in
@@ -19,7 +31,8 @@ public extension FileStream {
   @inlinable
   @discardableResult
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
-    withVaList(args) { va in
+    check(args: args)
+    return withVaList(args) { va in
       SystemLibc.vfprintf(rawValue, format, va)
     }
   }
@@ -29,7 +42,8 @@ public extension FileDescriptor {
   @inlinable
   @discardableResult
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
-    withVaList(args) { va in
+    check(args: args)
+    return withVaList(args) { va in
       SystemLibc.vdprintf(rawValue, format, va)
     }
   }
