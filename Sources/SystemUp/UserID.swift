@@ -1,4 +1,5 @@
 import SystemLibc
+import SystemPackage
 
 public struct UserID: RawRepresentable {
   public let rawValue: uid_t
