@@ -169,8 +169,18 @@ public extension FileStream {
   }
 
   @inlinable @inline(__always)
-  func write(ptr: UnsafeMutableRawPointer, size: Int, count: Int) -> Int {
+  func write(ptr: UnsafeRawPointer, size: Int, count: Int) -> Int {
     SystemLibc.fwrite(ptr, size, count, rawValue)
+  }
+
+  @inlinable @inline(__always)
+  func read<T>(into buffer: UnsafeMutableBufferPointer<T>) -> Int {
+    read(ptr: buffer.baseAddress!, size: MemoryLayout<T>.stride, count: buffer.count)
+  }
+
+  @inlinable @inline(__always)
+  func write<T>(buffer: UnsafeBufferPointer<T>) -> Int {
+    write(ptr: buffer.baseAddress!, size: MemoryLayout<T>.stride, count: buffer.count)
   }
 }
 
