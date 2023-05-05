@@ -55,13 +55,17 @@ public struct Command {
 
 extension Command {
 
-  typealias Pipe = (local: FileDescriptor, remote: FileDescriptor?)
-
-  struct ChildPipes {
+  public struct ChildPipes {
     var stdin: Pipe?
     var stdout: Pipe?
     var stderr: Pipe?
     let safeMode: Bool
+
+    public struct Pipe {
+      public var local: FileDescriptor
+      /// nil if not safe mode
+      public var remote: FileDescriptor?
+    }
 
     var remoteClosed = false
     var localClosed = false
@@ -73,7 +77,7 @@ extension Command {
       precondition(stdinClosed)
     }
 
-    mutating func closeStdInPipe() {
+    public mutating func closeStdInPipe() {
       try! stdin?.remote?.close()
       try! stdin?.local.close()
       stdin = nil
@@ -86,6 +90,20 @@ extension Command {
       stdout = nil
       stderr = nil
       localClosed = true
+    }
+
+    // move ownership of stdout pipe
+    public mutating func takeStdOut() -> Pipe? {
+      let v = stdout
+      stdout = nil
+      return v
+    }
+
+    // move ownership of stderr pipe
+    public mutating func takeStdErr() -> Pipe? {
+      let v = stderr
+      stderr = nil
+      return v
     }
 
     mutating func closeRemote() {
@@ -129,7 +147,7 @@ extension Command {
 
     var pipes = ChildPipes(safeMode: keepPipeFD)
 
-    func setupFD(method: ChildIO?, dst: FileDescriptor, write: Bool, _ keyPath: WritableKeyPath<ChildPipes, Pipe?>) throws {
+    func setupFD(method: ChildIO?, dst: FileDescriptor, write: Bool, _ keyPath: WritableKeyPath<ChildPipes, ChildPipes.Pipe?>) throws {
       switch (method ?? defaultIO) {
       case .inherit:
         fileActions.dup2(fd: dst, newFD: dst)
@@ -141,7 +159,7 @@ extension Command {
         let (reader, writer) = try FileDescriptor.pipe()
         let (local, remote) = write ? (reader, writer) : (writer, reader)
         fileActions.dup2(fd: remote, newFD: dst)
-        pipes[keyPath: keyPath] = (local, remote)
+        pipes[keyPath: keyPath] = .init(local: local, remote: remote)
       case .fd(let fileDescriptor):
         fileActions.dup2(fd: fileDescriptor, newFD: dst)
       }
@@ -213,15 +231,17 @@ extension Command {
 
   public struct ChildProcess {
     public let pid: WaitPID.PID
-    internal var pipes: ChildPipes
+    public var pipes: ChildPipes
 
     /// don't call close() directly, call closeStdInPipe()
     public var stdin: FileDescriptor? {
       pipes.stdin?.local
     }
+    /// don't call close() directly, call pipes.takeStdOut()
     public var stdout: FileDescriptor? {
       pipes.stdout?.local
     }
+    /// don't call close() directly, call pipes.takeStdErr()
     public var stderr: FileDescriptor? {
       pipes.stderr?.local
     }
