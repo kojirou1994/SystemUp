@@ -21,6 +21,7 @@ public extension Signal {
   }
 
   @_alwaysEmitIntoClient
+  @inlinable
   func set(handler: SignalHandler) -> Result<SignalHandler, Errno> {
     assert(self != .kill && self != .stop)
     let result = SystemLibc.signal(rawValue, handler.body)
@@ -31,6 +32,7 @@ public extension Signal {
   }
 
   @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
   func raise() -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.raise(rawValue)
