@@ -418,8 +418,8 @@ public extension PosixSpawn.Attributes {
     var mostSignals = SignalSet()
     #if canImport(Darwin)
     mostSignals.fillAll()
-    mostSignals.delete(signal: SIGKILL)
-    mostSignals.delete(signal: SIGSTOP)
+    mostSignals.delete(signal: .kill)
+    mostSignals.delete(signal: .stop)
     #else
     mostSignals.removeAll()
     for i in 1 ..< SIGSYS {
@@ -439,7 +439,7 @@ public extension PosixSpawn.Attributes {
     var set = SignalSet()
     set.removeAll()
     sigmask = set
-    set.add(signal: SIGPIPE)
+    set.add(signal: .brokenPipe)
     sigdefault = set
 
     flags.formUnion([.setSigmask, .setSigdefault])

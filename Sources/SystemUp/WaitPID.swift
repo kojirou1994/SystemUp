@@ -6,10 +6,15 @@ import CUtility
 public enum WaitPID {}
 
 public extension WaitPID {
+  @inlinable
   static func wait(pid: PID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
                    rusage: UnsafeMutablePointer<rusage>? = nil) -> Result<PID, Errno> {
-    SyscallUtilities.valueOrErrno {
-      wait4(pid.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage)
+    SyscallUtilities.valueOrErrno { () -> pid_t in
+      if let rusage {
+        return wait4(pid.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage)
+      } else {
+        return waitpid(pid.rawValue, .init(OpaquePointer(status)), options.rawValue)
+      }
     }.map(PID.init)
   }
 }
@@ -81,8 +86,8 @@ public extension WaitPID.ExitStatus {
   }
 
   @_alwaysEmitIntoClient
-  var terminationSignal: Int32 {
-    swift_WTERMSIG(rawValue)
+  var terminationSignal: Signal {
+    .init(rawValue: swift_WTERMSIG(rawValue))
   }
 
   @_alwaysEmitIntoClient
@@ -96,8 +101,8 @@ public extension WaitPID.ExitStatus {
   }
 
   @_alwaysEmitIntoClient
-  var stopSignal: Int32 {
-    swift_WSTOPSIG(rawValue)
+  var stopSignal: Signal {
+    .init(rawValue: swift_WSTOPSIG(rawValue))
   }
 
   @_alwaysEmitIntoClient
@@ -109,9 +114,9 @@ public extension WaitPID.ExitStatus {
 public extension WaitPID.PID {
   @discardableResult
   @inlinable @inline(__always)
-  func send(signal: Int32) -> Result<Void, Errno> {
+  func send(signal: Signal) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      SystemLibc.kill(rawValue, signal)
+      SystemLibc.kill(rawValue, signal.rawValue)
     }
   }
 }

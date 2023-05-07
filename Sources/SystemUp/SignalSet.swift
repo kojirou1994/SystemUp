@@ -19,14 +19,14 @@ public struct SignalSet: RawRepresentable {
 public extension SignalSet {
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  mutating func add(signal: Int32) {
-    sigaddset(&rawValue, signal)
+  mutating func add(signal: Signal) {
+    sigaddset(&rawValue, signal.rawValue)
   }
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  mutating func delete(signal: Int32) {
-    sigdelset(&rawValue, signal)
+  mutating func delete(signal: Signal) {
+    sigdelset(&rawValue, signal.rawValue)
   }
 
   @inlinable @inline(__always)
@@ -43,9 +43,9 @@ public extension SignalSet {
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  func contains(signal: Int32) -> Bool {
+  func contains(signal: Signal) -> Bool {
     withUnsafePointer(to: rawValue) { sigset in
-      sigismember(sigset, signal) == 1
+      sigismember(sigset, signal.rawValue) == 1
     }
   }
 }
