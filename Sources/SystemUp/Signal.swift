@@ -1,10 +1,40 @@
 import SystemLibc
+import SystemPackage
 
 public struct Signal: RawRepresentable {
   public let rawValue: CInt
 
   public init(rawValue: CInt) {
     self.rawValue = rawValue
+  }
+}
+
+public extension Signal {
+
+  @inlinable
+  static func set(handler: SignalHandler, for signals: any Sequence<Self>) {
+    signals.forEach { signal in
+      assertNoFailure {
+        signal.set(handler: handler)
+      }
+    }
+  }
+
+  @_alwaysEmitIntoClient
+  func set(handler: SignalHandler) -> Result<SignalHandler, Errno> {
+    assert(self != .kill && self != .stop)
+    let result = SystemLibc.signal(rawValue, handler.body)
+    if unsafeBitCast(result, to: UnsafeRawPointer?.self) == unsafeBitCast(SystemLibc.SIG_ERR, to: UnsafeRawPointer?.self) {
+      return .failure(.systemCurrent)
+    }
+    return .success(.init(result))
+  }
+
+  @_alwaysEmitIntoClient
+  func raise() -> Result<Void, Errno> {
+    SyscallUtilities.voidOrErrno {
+      SystemLibc.raise(rawValue)
+    }
   }
 }
 
