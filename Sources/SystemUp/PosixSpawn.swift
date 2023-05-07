@@ -422,11 +422,12 @@ public extension PosixSpawn.Attributes {
     mostSignals.delete(signal: .stop)
     #else
     mostSignals.removeAll()
-    for i in Signal.hangup ..< .unknownSystemCall {
-      if i == .kill || i == .stop {
+    for i in 1 ..< Signal.unknownSystemCall.rawValue {
+      let signal = Signal(rawValue: i)
+      if signal == .kill || signal == .stop {
         continue
       }
-      mostSignals.add(signal: i)
+      mostSignals.add(signal: signal)
     }
     #endif
 

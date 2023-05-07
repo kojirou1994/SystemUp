@@ -9,12 +9,6 @@ public struct Signal: RawRepresentable {
   }
 }
 
-extension Signal: Comparable {
-  public static func < (lhs: Signal, rhs: Signal) -> Bool {
-    lhs.rawValue < rhs.rawValue
-  }
-}
-
 public extension Signal {
 
   @inlinable
