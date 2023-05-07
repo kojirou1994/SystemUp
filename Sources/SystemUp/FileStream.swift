@@ -78,8 +78,18 @@ public extension FileStream {
   }
 
   @inlinable @inline(__always)
+  func clearErrorIndicatorsUnlocked() {
+    SystemLibc.swift_clearerr_unlocked(rawValue)
+  }
+
+  @inlinable @inline(__always)
   var isEOF: Bool {
     SystemLibc.feof(rawValue) != 0
+  }
+
+  @inlinable @inline(__always)
+  var isEOFUnlocked: Bool {
+    SystemLibc.swift_feof_unlocked(rawValue) != 0
   }
 
   @inlinable @inline(__always)
@@ -88,8 +98,18 @@ public extension FileStream {
   }
 
   @inlinable @inline(__always)
+  var isErrorUnlocked: Bool {
+    SystemLibc.swift_ferror_unlocked(rawValue) != 0
+  }
+
+  @inlinable @inline(__always)
   var fileDescriptor: FileDescriptor {
     .init(rawValue: SystemLibc.fileno(rawValue))
+  }
+
+  @inlinable @inline(__always)
+  var fileDescriptorUnlocked: FileDescriptor {
+    .init(rawValue: SystemLibc.swift_fileno_unlocked(rawValue))
   }
 }
 

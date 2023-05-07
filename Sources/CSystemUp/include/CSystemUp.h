@@ -1,5 +1,6 @@
 #define SWIFT_INLINE static inline __attribute__((__always_inline__))
 
+#include <stdio.h>
 #include <fts.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h>
@@ -104,4 +105,20 @@ SWIFT_INLINE int swift_RLIMIT_NPROC() {
 
 SWIFT_INLINE int swift_RLIMIT_RSS() {
   return RLIMIT_RSS;
+}
+
+SWIFT_INLINE void swift_clearerr_unlocked(FILE *stream) {
+  return clearerr_unlocked(stream);
+}
+
+SWIFT_INLINE int swift_feof_unlocked(FILE *stream) {
+  return feof_unlocked(stream);
+}
+
+SWIFT_INLINE int swift_ferror_unlocked(FILE *stream) {
+  return ferror_unlocked(stream);
+}
+
+SWIFT_INLINE int swift_fileno_unlocked(FILE *stream) {
+  return fileno_unlocked(stream);
 }
