@@ -319,11 +319,15 @@ public extension FileStream {
 }
 
 extension FileStream {
-  public struct Mode: RawRepresentable {
+  public struct Mode: RawRepresentable, ExpressibleByStringLiteral, Equatable {
     public let rawValue: String
     @inlinable @inline(__always)
     public init(rawValue: String) {
       self.rawValue = rawValue
+    }
+    @inlinable @inline(__always)
+    public init(stringLiteral value: String) {
+      self.init(rawValue: value)
     }
   }
 }
