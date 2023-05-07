@@ -422,8 +422,8 @@ public extension PosixSpawn.Attributes {
     mostSignals.delete(signal: .stop)
     #else
     mostSignals.removeAll()
-    for i in 1 ..< SIGSYS {
-      if i == SIGKILL || i == SIGSTOP {
+    for i in Signal.hangup ..< .unknownSystemCall {
+      if i == .kill || i == .stop {
         continue
       }
       mostSignals.add(signal: i)

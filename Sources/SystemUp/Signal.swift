@@ -9,6 +9,12 @@ public struct Signal: RawRepresentable {
   }
 }
 
+extension Signal: Comparable {
+  public static func < (lhs: Signal, rhs: Signal) -> Bool {
+    lhs.rawValue < rhs.rawValue
+  }
+}
+
 public extension Signal {
 
   @inlinable
@@ -39,10 +45,6 @@ public extension Signal {
 }
 
 public extension Signal {
-  #if os(Linux)
-  @_alwaysEmitIntoClient
-  static var unused: Signal { .init(rawValue: SystemLibc.SIGUNUSED) }
-  #endif
 
   @_alwaysEmitIntoClient
   static var hangup: Signal { .init(rawValue: SystemLibc.SIGHUP) }
@@ -62,8 +64,10 @@ public extension Signal {
   @_alwaysEmitIntoClient
   static var abort: Signal { .init(rawValue: SystemLibc.SIGABRT) }
 
+  #if canImport(Darwin)
   @_alwaysEmitIntoClient
   static var emulatorTrap: Signal { .init(rawValue: SystemLibc.SIGEMT) }
+  #endif
 
   @_alwaysEmitIntoClient
   static var floatingPointException: Signal { .init(rawValue: SystemLibc.SIGFPE) }
@@ -128,8 +132,10 @@ public extension Signal {
   @_alwaysEmitIntoClient
   static var windowSizeChange: Signal { .init(rawValue: SystemLibc.SIGWINCH) }
 
+  #if canImport(Darwin)
   @_alwaysEmitIntoClient
   static var info: Signal { .init(rawValue: SystemLibc.SIGINFO) }
+  #endif
 
   @_alwaysEmitIntoClient
   static var user1: Signal { .init(rawValue: SystemLibc.SIGUSR1) }
