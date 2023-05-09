@@ -41,6 +41,15 @@ public extension PosixThread.ThreadID {
       pthread_join(rawValue, &value)
     }.map { value }
   }
+
+  /// send a signal to a specified thread
+  @inlinable
+  @discardableResult
+  func send(signal: Signal) -> Result<Void, Errno> {
+    SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_kill(rawValue, signal.rawValue)
+    }
+  }
 }
 
 public extension PosixThread {
@@ -102,18 +111,6 @@ public extension PosixThread {
     pthread_yield_np()
   }
   #endif
-
-  /// send a signal to a specified thread
-  /// - Parameters:
-  ///   - signal: signal
-  ///   - thread: target thread id
-  @inlinable
-  @discardableResult
-  static func send(signal: Signal, to thread: ThreadID) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_kill(thread.rawValue, signal.rawValue)
-    }
-  }
 
   @inlinable @inline(__always)
   static var current: ThreadID {
