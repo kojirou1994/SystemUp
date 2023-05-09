@@ -20,6 +20,12 @@ public extension WaitPID {
 }
 
 extension WaitPID {
+
+  public struct WaitResult {
+    public let pid: PID
+    public let status: ExitStatus
+  }
+
   public struct PID: RawRepresentable {
 
     public init(rawValue: Int32) {
@@ -117,6 +123,41 @@ public extension WaitPID.PID {
   func send(signal: Signal) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.kill(rawValue, signal.rawValue)
+    }
+  }
+}
+
+// MARK: Async Wait
+public extension WaitPID.PID {
+
+  /// create new thread to wait
+  @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+  func exitStatus(rusage: UnsafeMutablePointer<rusage>? = nil) async throws -> WaitPID.WaitResult {
+    try await withCheckedThrowingContinuation { continuation in
+      try! PosixThread.detach {
+        var status = WaitPID.ExitStatus(rawValue: 0)
+        let result = SyscallUtilities.retryWhileInterrupted {
+          WaitPID.wait(pid: self, status: &status, options: [], rusage: rusage)
+        }
+        continuation.resume(with: result.map { .init(pid: $0, status: status) })
+      }
+    }
+  }
+
+  /// check by interval
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  func exitStatus(checkInterval: Duration, rusage: UnsafeMutablePointer<rusage>? = nil) async throws -> WaitPID.WaitResult {
+    var status = WaitPID.ExitStatus(rawValue: 0)
+    while true {
+      let pid = try SyscallUtilities.retryWhileInterrupted {
+        WaitPID.wait(pid: self, status: &status, options: .noHang, rusage: rusage)
+      }.get()
+      if pid.rawValue == 0 {
+        // if WNOHANG is specified and there are no stopped or exited children, 0 is returned
+        try await Task.sleep(for: checkInterval)
+      } else {
+        return .init(pid: pid, status: status)
+      }
     }
   }
 }
