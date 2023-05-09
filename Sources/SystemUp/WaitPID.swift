@@ -62,6 +62,14 @@ public extension WaitPID.PID {
   static var myProcessGroup: Self { .init(rawValue: WAIT_MYPGRP) }
 }
 
+public extension WaitPID.PID {
+  @_alwaysEmitIntoClient
+  static var current: Self { .init(rawValue: getpid()) }
+
+  @_alwaysEmitIntoClient
+  static var parent: Self { .init(rawValue: getppid()) }
+}
+
 public extension WaitPID.Options {
   @_alwaysEmitIntoClient
   static var noHang: Self { .init(macroValue: WNOHANG) }
