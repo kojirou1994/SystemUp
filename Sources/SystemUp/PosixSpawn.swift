@@ -7,7 +7,7 @@ public enum PosixSpawn {}
 public extension PosixSpawn {
 
   @inlinable
-  static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, arguments: CStringArray, environment: CStringArray, searchPATH: Bool) -> Result<WaitPID.PID, Errno> {
+  static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, arguments: CStringArray, environment: CStringArray, searchPATH: Bool) -> Result<ProcessID, Errno> {
     arguments.withUnsafeCArrayPointer { argv in
       environment.withUnsafeCArrayPointer { envp in
         spawn(path, fileActions: fileActions, attributes: attributes, argv: argv, envp: envp, searchPATH: searchPATH)
@@ -16,7 +16,7 @@ public extension PosixSpawn {
   }
 
   @inlinable
-  static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, envp: UnsafePointer<UnsafeMutablePointer<CChar>?>? = nil, searchPATH: Bool) -> Result<WaitPID.PID, Errno> {
+  static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, envp: UnsafePointer<UnsafeMutablePointer<CChar>?>? = nil, searchPATH: Bool) -> Result<ProcessID, Errno> {
 
     var pid: pid_t = 0
     assert(argv[0] != nil, "At least argv[0] must be present in the array")

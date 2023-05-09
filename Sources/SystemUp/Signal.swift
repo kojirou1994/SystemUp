@@ -31,11 +31,51 @@ public extension Signal {
     return .success(.init(result))
   }
 
+  /// send a signal to the current thread
+  /// - Returns: void on success or any of the errors specified for the library functions getpid(2) and pthread_kill(2).
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   func raise() -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.raise(rawValue)
+    }
+  }
+}
+
+// MARK: kill
+extension Signal {
+  public struct SendTargetProcess {
+    @usableFromInline
+    internal let rawValue: Int32
+    @usableFromInline
+    internal init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient
+    public static var sameGroupID: Self { .init(rawValue: 0) }
+
+    @_alwaysEmitIntoClient
+    public static var all: Self { .init(rawValue: -1) }
+
+    @_alwaysEmitIntoClient
+    public static func processID(_ id: ProcessID) -> Self {
+      assert(id.rawValue > 0)
+      return .init(rawValue: id.rawValue)
+    }
+
+    @_alwaysEmitIntoClient
+    public static func groupID(_ id: Int32) -> Self {
+      assert(id < -1)
+      return .init(rawValue: id)
+    }
+  }
+
+  @discardableResult
+  @inlinable @inline(__always)
+  func send(to process: SendTargetProcess) -> Result<Void, Errno> {
+    SyscallUtilities.voidOrErrno {
+      SystemLibc.kill(process.rawValue, rawValue)
     }
   }
 }

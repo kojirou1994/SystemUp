@@ -230,7 +230,7 @@ extension Command {
   }
 
   public struct ChildProcess {
-    public let pid: WaitPID.PID
+    public let pid: ProcessID
     public var pipes: ChildPipes
 
     /// don't call close() directly, call closeStdInPipe()
@@ -262,7 +262,7 @@ extension Command {
 #endif
       var status = WaitPID.ExitStatus(rawValue: 0)
       _ = try SyscallUtilities.retryWhileInterrupted {
-        WaitPID.wait(pid: pid, status: &status)
+        WaitPID.wait(.processID(pid), status: &status)
       }.get()
 
       pipes.closeLocal()

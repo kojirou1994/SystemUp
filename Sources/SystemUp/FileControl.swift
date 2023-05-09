@@ -106,12 +106,12 @@ public extension FileControl {
   }
 
   @inlinable @inline(__always)
-  static func processID(for fd: FileDescriptor) throws -> WaitPID.PID {
-    try control(fd, command: .getProcessID).map(WaitPID.PID.init).get()
+  static func processID(for fd: FileDescriptor) throws -> ProcessID {
+    try control(fd, command: .getProcessID).map(ProcessID.init).get()
   }
 
   @inlinable @inline(__always)
-  static func set(_ fd: FileDescriptor, processID: WaitPID.PID) throws {
+  static func set(_ fd: FileDescriptor, processID: ProcessID) throws {
     _ = try control(fd, command: .setProcessID, value: processID.rawValue).get()
   }
 
