@@ -105,13 +105,13 @@ public extension PosixThread {
 
   /// send a signal to a specified thread
   /// - Parameters:
-  ///   - thread: target thread id
   ///   - signal: signal
+  ///   - thread: target thread id
   @inlinable
   @discardableResult
-  static func kill(_ thread: ThreadID, signal: CInt) -> Result<Void, Errno> {
+  static func send(signal: Signal, to thread: ThreadID) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_kill(thread.rawValue, signal)
+      pthread_kill(thread.rawValue, signal.rawValue)
     }
   }
 
