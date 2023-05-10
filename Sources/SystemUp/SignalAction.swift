@@ -1,0 +1,85 @@
+import SystemLibc
+import SystemPackage
+
+public struct SignalAction {
+  @usableFromInline
+  internal var rawValue: sigaction
+
+  @usableFromInline
+  internal init(rawValue: sigaction) {
+    self.rawValue = rawValue
+  }
+
+  public init(uninitialize: Void) {
+    self.rawValue = .init()
+  }
+}
+
+public extension SignalAction {
+
+  @_alwaysEmitIntoClient
+  init(mask: SignalSet = .init(), flags: Flags = [], simple handler: SignalHandler) {
+    precondition(!flags.contains(.siginfo), "is using simple handler, siginfo must not be set!")
+    #if canImport(Darwin)
+    let sigAction = sigaction(__sigaction_u: .init(__sa_handler: handler.body), sa_mask: mask.rawValue, sa_flags: flags.rawValue)
+    #elseif os(Linux)
+    let sigAction = sigaction(__sigaction_handler: .init(__sa_handler: handler.body), sa_mask: mask.rawValue, sa_flags: flags.rawValue)
+    #endif
+    self.init(rawValue: sigAction)
+  }
+
+  @_alwaysEmitIntoClient
+  init(mask: SignalSet = .init(), flags: Flags = [], complex handler: @convention(c) (_ signal: Int32, _ siginfo: UnsafeMutablePointer<siginfo_t>?, UnsafeMutableRawPointer?) -> Void) {
+    let realFlags = flags.union(.siginfo).rawValue
+    #if canImport(Darwin)
+    let sigAction = sigaction(__sigaction_u: .init(__sa_sigaction: handler), sa_mask: mask.rawValue, sa_flags: realFlags)
+    #elseif os(Linux)
+    let sigAction = sigaction(__sigaction_handler: .init(sa_sigaction: handler), sa_mask: mask.rawValue, sa_flags: realFlags)
+    #endif
+    self.init(rawValue: sigAction)
+  }
+
+  @_alwaysEmitIntoClient
+  var mask: SignalSet {
+    get { .init(rawValue: rawValue.sa_mask) }
+    set { rawValue.sa_mask = newValue.rawValue }
+  }
+
+  @_alwaysEmitIntoClient
+  var flags: Flags {
+    get { .init(rawValue: rawValue.sa_flags) }
+    set { rawValue.sa_flags = newValue.rawValue }
+  }
+}
+
+extension SignalAction {
+  public struct Flags: OptionSet {
+    public var rawValue: Int32
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+  }
+}
+
+public extension SignalAction.Flags {
+  @_alwaysEmitIntoClient
+  static var noChildStop: Self { .init(rawValue: SA_NOCLDSTOP) }
+
+  @_alwaysEmitIntoClient
+  static var noChildWait: Self { .init(rawValue: SA_NOCLDWAIT) }
+
+  @_alwaysEmitIntoClient
+  static var onStack: Self { .init(rawValue: SA_ONSTACK) }
+
+  @_alwaysEmitIntoClient
+  static var noDefer: Self { .init(rawValue: SA_NODEFER) }
+
+  @_alwaysEmitIntoClient
+  static var resetHandler: Self { .init(rawValue: SA_RESETHAND) }
+
+  @_alwaysEmitIntoClient
+  static var restart: Self { .init(rawValue: SA_RESTART) }
+
+  @_alwaysEmitIntoClient
+  internal static var siginfo: Self { .init(rawValue: SA_SIGINFO) }
+}

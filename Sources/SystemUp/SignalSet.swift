@@ -13,6 +13,7 @@ public struct SignalSet: RawRepresentable {
   @_alwaysEmitIntoClient
   public init() {
     self.rawValue = .init()
+    removeAll()
   }
 }
 

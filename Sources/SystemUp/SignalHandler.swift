@@ -18,7 +18,7 @@ public extension SignalHandler {
   static var `default`: Self { .init(SystemLibc.SIG_DFL) }
 
   @_alwaysEmitIntoClient
-  static func custom(_ body: @convention(c) (Int32) -> Void) -> Self {
+  static func custom(_ body: @convention(c) (_ signal: Int32) -> Void) -> Self {
     .init(body)
   }
 }

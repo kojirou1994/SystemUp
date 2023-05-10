@@ -31,6 +31,24 @@ public extension Signal {
     return .success(.init(result))
   }
 
+  @_alwaysEmitIntoClient
+  @inlinable
+  func set(action: SignalAction) -> Result<SignalAction, Errno> {
+    var old = SignalAction(uninitialize: ())
+    return set(action: action, oldAction: &old)
+      .map { old }
+  }
+
+  @_alwaysEmitIntoClient
+  @inlinable
+  func set(action: SignalAction, oldAction: UnsafeMutablePointer<SignalAction>?) -> Result<Void, Errno> {
+    SyscallUtilities.voidOrErrno {
+      withUnsafePointer(to: action.rawValue) { action in
+        sigaction(rawValue, action, oldAction?.pointer(to: \.rawValue))
+      }
+    }
+  }
+
   /// send a signal to the current thread
   /// - Returns: void on success or any of the errors specified for the library functions getpid(2) and pthread_kill(2).
   @_alwaysEmitIntoClient
