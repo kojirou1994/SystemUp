@@ -1,5 +1,6 @@
 import SystemLibc
 import SystemPackage
+import CUtility
 
 public struct SignalAction {
   @usableFromInline
@@ -23,7 +24,7 @@ public extension SignalAction {
     #if canImport(Darwin)
     let sigAction = sigaction(__sigaction_u: .init(__sa_handler: handler.body), sa_mask: mask.rawValue, sa_flags: flags.rawValue)
     #elseif os(Linux)
-    let sigAction = sigaction(__sigaction_handler: .init(__sa_handler: handler.body), sa_mask: mask.rawValue, sa_flags: flags.rawValue)
+    let sigAction = sigaction(__sigaction_handler: .init(sa_handler: handler.body), sa_mask: mask.rawValue, sa_flags: flags.rawValue, sa_restorer: nil)
     #endif
     self.init(rawValue: sigAction)
   }
@@ -34,7 +35,7 @@ public extension SignalAction {
     #if canImport(Darwin)
     let sigAction = sigaction(__sigaction_u: .init(__sa_sigaction: handler), sa_mask: mask.rawValue, sa_flags: realFlags)
     #elseif os(Linux)
-    let sigAction = sigaction(__sigaction_handler: .init(sa_sigaction: handler), sa_mask: mask.rawValue, sa_flags: realFlags)
+    let sigAction = sigaction(__sigaction_handler: .init(sa_sigaction: handler), sa_mask: mask.rawValue, sa_flags: realFlags, sa_restorer: nil)
     #endif
     self.init(rawValue: sigAction)
   }
@@ -53,7 +54,7 @@ public extension SignalAction {
 }
 
 extension SignalAction {
-  public struct Flags: OptionSet {
+  public struct Flags: OptionSet, MacroRawRepresentable {
     public var rawValue: Int32
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -63,23 +64,23 @@ extension SignalAction {
 
 public extension SignalAction.Flags {
   @_alwaysEmitIntoClient
-  static var noChildStop: Self { .init(rawValue: SA_NOCLDSTOP) }
+  static var noChildStop: Self { .init(macroValue: SA_NOCLDSTOP) }
 
   @_alwaysEmitIntoClient
-  static var noChildWait: Self { .init(rawValue: SA_NOCLDWAIT) }
+  static var noChildWait: Self { .init(macroValue: SA_NOCLDWAIT) }
 
   @_alwaysEmitIntoClient
-  static var onStack: Self { .init(rawValue: SA_ONSTACK) }
+  static var onStack: Self { .init(macroValue: SA_ONSTACK) }
 
   @_alwaysEmitIntoClient
-  static var noDefer: Self { .init(rawValue: SA_NODEFER) }
+  static var noDefer: Self { .init(macroValue: SA_NODEFER) }
 
   @_alwaysEmitIntoClient
-  static var resetHandler: Self { .init(rawValue: SA_RESETHAND) }
+  static var resetHandler: Self { .init(macroValue: SA_RESETHAND) }
 
   @_alwaysEmitIntoClient
-  static var restart: Self { .init(rawValue: SA_RESTART) }
+  static var restart: Self { .init(macroValue: SA_RESTART) }
 
   @_alwaysEmitIntoClient
-  internal static var siginfo: Self { .init(rawValue: SA_SIGINFO) }
+  internal static var siginfo: Self { .init(macroValue: SA_SIGINFO) }
 }
