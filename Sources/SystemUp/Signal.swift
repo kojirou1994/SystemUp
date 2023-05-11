@@ -84,8 +84,8 @@ extension Signal {
 
     @_alwaysEmitIntoClient
     public static func groupID(_ id: Int32) -> Self {
-      assert(id < -1)
-      return .init(rawValue: id)
+      assert(id > 1)
+      return .init(rawValue: -id)
     }
   }
 
