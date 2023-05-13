@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <sys/sysmacros.h>
+
 #endif // linux end
 
 
