@@ -19,15 +19,16 @@ extension FileStatus: CustomStringConvertible {
 
   @inline(never)
   public var description: String {
-    "FileStatus(deviceID: \(deviceID), fileType: \(fileType), hardLinksCount: \(hardLinksCount), fileSerialNumber: \(fileSerialNumber), userID: \(String(userID, radix: 8, uppercase: true)), rDeviceID: \(rDeviceID), size: \(size), blocksCount: \(blocksCount), blockSize: \(blockSize))"
+    "FileStatus(deviceID: \(deviceID), fileType: \(fileType), hardLinksCount: \(hardLinksCount), fileSerialNumber: \(fileSerialNumber), userID: \(String(userID, radix: 8, uppercase: true)), specialDeviceID: \(specialDeviceID), size: \(size), blocksCount: \(blocksCount), blockSize: \(blockSize))"
   }
 }
 
 public extension FileStatus {
 
+  /// ID of device containing file
   @_alwaysEmitIntoClient
-  var deviceID: CInterop.UpDev {
-    rawValue.st_dev
+  var deviceID: DeviceID {
+    .init(rawValue: rawValue.st_dev)
   }
 
   @_alwaysEmitIntoClient
@@ -40,24 +41,28 @@ public extension FileStatus {
     .init(rawValue: rawValue.st_mode & ~S_IFMT)
   }
 
+  /// number of hard links to the file
   @_alwaysEmitIntoClient
   var hardLinksCount: CInterop.UpNumberOfLinks {
     rawValue.st_nlink
   }
 
+  /// inode's number
   @_alwaysEmitIntoClient
   var fileSerialNumber: CInterop.UpInodeNumber {
     rawValue.st_ino
   }
 
+  /// user-id of owner
   @_alwaysEmitIntoClient
   var userID: UInt32 {
     rawValue.st_uid
   }
 
+  /// device type, for special file inode, eg. block or character
   @_alwaysEmitIntoClient
-  var rDeviceID: CInterop.UpDev {
-    rawValue.st_rdev
+  var specialDeviceID: DeviceID {
+    .init(rawValue: rawValue.st_rdev)
   }
 
   @_alwaysEmitIntoClient

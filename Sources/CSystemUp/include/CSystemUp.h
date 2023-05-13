@@ -122,3 +122,15 @@ SWIFT_INLINE int swift_ferror_unlocked(FILE *stream) {
 SWIFT_INLINE int swift_fileno_unlocked(FILE *stream) {
   return fileno_unlocked(stream);
 }
+
+SWIFT_INLINE u_int32_t swift_major(dev_t dev) {
+  return major(dev);
+}
+
+SWIFT_INLINE u_int32_t swift_minor(dev_t dev) {
+  return minor(dev);
+}
+
+SWIFT_INLINE dev_t swift_makedev(u_int32_t major, u_int32_t minor) {
+  return makedev(major, minor);
+}
