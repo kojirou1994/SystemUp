@@ -30,7 +30,7 @@ public extension SignalAction {
   }
 
   @_alwaysEmitIntoClient
-  init(mask: SignalSet = .init(), flags: Flags = [], complex handler: @convention(c) (_ signal: Int32, _ siginfo: UnsafeMutablePointer<siginfo_t>?, UnsafeMutableRawPointer?) -> Void) {
+  init(mask: SignalSet = .init(), flags: Flags = [], complex handler: @convention(c) (_ signal: Int32, _ siginfo: UnsafeMutablePointer<siginfo_t>?, _ uap: UnsafeMutableRawPointer?) -> Void) {
     let realFlags = flags.union(.siginfo).rawValue
     #if canImport(Darwin)
     let sigAction = sigaction(__sigaction_u: .init(__sa_sigaction: handler), sa_mask: mask.rawValue, sa_flags: realFlags)

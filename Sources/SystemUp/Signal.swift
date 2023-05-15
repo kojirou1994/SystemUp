@@ -53,7 +53,7 @@ public extension Signal {
   /// - Returns: void on success or any of the errors specified for the library functions getpid(2) and pthread_kill(2).
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
-  func raise() -> Result<Void, Errno> {
+  func sendToCurrentThread() -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.raise(rawValue)
     }
