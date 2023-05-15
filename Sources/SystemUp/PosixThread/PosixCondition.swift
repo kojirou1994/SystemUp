@@ -47,6 +47,7 @@ public extension PosixCondition {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   mutating func wait(mutex: inout PosixMutex) -> Result<Void, Errno> {
@@ -55,6 +56,7 @@ public extension PosixCondition {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   mutating func timedwait(mutex: inout PosixMutex, abstime: UnsafePointer<timespec>) -> Result<Void, Errno> {

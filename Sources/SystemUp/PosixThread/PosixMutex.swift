@@ -31,6 +31,7 @@ public extension PosixMutex {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   mutating func lock() -> Result<Void, Errno> {
@@ -39,6 +40,7 @@ public extension PosixMutex {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   mutating func unlock() -> Result<Void, Errno> {
@@ -47,6 +49,7 @@ public extension PosixMutex {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   mutating func tryLock() -> Bool {
     pthread_mutex_trylock(&rawValue) == 0

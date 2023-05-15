@@ -31,6 +31,7 @@ public extension PosixRWLock {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   mutating func lockRead() -> Result<Void, Errno> {
@@ -39,11 +40,13 @@ public extension PosixRWLock {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   mutating func tryLockRead() -> Bool {
     pthread_rwlock_tryrdlock(&rawValue) == 0
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   mutating func lockWrite() -> Result<Void, Errno> {
@@ -52,11 +55,13 @@ public extension PosixRWLock {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   mutating func tryLockWrite() -> Bool {
     pthread_rwlock_trywrlock(&rawValue) == 0
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   mutating func unlock() -> Result<Void, Errno> {

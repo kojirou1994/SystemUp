@@ -33,6 +33,7 @@ public extension PosixThread.ThreadID {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   @discardableResult
   __consuming func join() -> Result<UnsafeMutableRawPointer?, Errno> {
@@ -80,11 +81,13 @@ public extension PosixThread {
 
   }
 
+  @available(*, noasync)
   @inlinable @inline(__always)
   static func exit(value: UnsafeMutableRawPointer? = nil) -> Never {
     pthread_exit(value)
   }
 
+  @available(*, noasync)
   @inlinable
   static func set(cancelState: CancelState, oldValue: UnsafeMutablePointer<CancelState>? = nil) {
     PosixThread.call {
@@ -92,6 +95,7 @@ public extension PosixThread {
     }
   }
 
+  @available(*, noasync)
   @inlinable
   static func set(cancelType: CancelType, oldValue: UnsafeMutablePointer<CancelType>? = nil) {
     PosixThread.call {
@@ -99,6 +103,7 @@ public extension PosixThread {
     }
   }
 
+  @available(*, noasync)
   @inlinable @inline(__always)
   static func testCancel() {
     pthread_testcancel()
@@ -106,6 +111,7 @@ public extension PosixThread {
 
   #if canImport(Darwin)
   /// yield control of the current thread
+  @available(*, noasync)
   @inlinable @inline(__always)
   static func yield() {
     pthread_yield_np()
