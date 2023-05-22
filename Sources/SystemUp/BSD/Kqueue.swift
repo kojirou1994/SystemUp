@@ -24,6 +24,13 @@ public struct Kqueue {
   }
 
   @_alwaysEmitIntoClient
+  public func register(change: __shared Kevent, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) -> Result<Int, Errno> {
+    withUnsafePointer(to: change) { e in
+      register(changes: .init(start: e, count: 1), eventsOutputTo: dest, timeout: timeout)
+    }
+  }
+
+  @_alwaysEmitIntoClient
   public func register(changes: UnsafeBufferPointer<Kevent>, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) -> Result<Int, Errno> {
     SyscallUtilities.valueOrErrno {
       kevent(
@@ -76,10 +83,16 @@ public struct Kqueue {
     }
   }
 
-  public struct Filter: MacroRawRepresentable {
+  public struct Filter: RawRepresentable {
     public let rawValue: Int16
+
     public init(rawValue: Int16) {
       self.rawValue = rawValue
+    }
+
+    @usableFromInline
+    internal init(macroValue: Int32) {
+      self.rawValue = numericCast(macroValue)
     }
 
     public struct Flags: MacroRawRepresentable, OptionSet {
