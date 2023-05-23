@@ -5,8 +5,39 @@ import CUtility
 
 public enum FileSyscalls {}
 
+// MARK: Open
 public extension FileSyscalls {
 
+  @_alwaysEmitIntoClient
+  static func open(_ option: FilePathOption, _ mode: FileDescriptor.AccessMode,
+                   options: FileDescriptor.OpenOptions = .init(),
+                   permissions: FilePermissions? = nil) -> Result<FileDescriptor, Errno> {
+
+    let oFlag = mode.rawValue | options.rawValue
+
+    return SyscallUtilities.valueOrErrno {
+      option.path.withPlatformString { path in
+        if let permissions {
+          return SystemLibc.openat(option.relativedDirFD.rawValue, path, oFlag, permissions.rawValue)
+        }
+        precondition(!options.contains(.create),
+                     "Create must be given permissions")
+        return SystemLibc.openat(option.relativedDirFD.rawValue, path, oFlag)
+      }
+    }.map(FileDescriptor.init)
+  }
+
+  @_alwaysEmitIntoClient
+  static func close(_ fd: Int32) -> Result<Void, Errno> {
+    SyscallUtilities.voidOrErrno {
+      SystemLibc.close(fd)
+    }
+  }
+}
+
+public extension FileSyscalls {
+
+  @_alwaysEmitIntoClient
   static func createDirectory(_ option: FilePathOption, permissions: FilePermissions = .directoryDefault) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       option.path.withPlatformString { path in
@@ -15,6 +46,7 @@ public extension FileSyscalls {
     }
   }
 
+  @_alwaysEmitIntoClient
   static func unlink(_ option: FilePathOption, flags: AtFlags = []) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.removeDir]))
     return SyscallUtilities.voidOrErrno {
@@ -24,12 +56,14 @@ public extension FileSyscalls {
     }
   }
 
+  @_alwaysEmitIntoClient
   static func fileStatus(_ fd: FileDescriptor, into status: inout FileStatus) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       fstat(fd.rawValue, &status.rawValue)
     }
   }
 
+  @_alwaysEmitIntoClient
   static func fileStatus(_ option: FilePathOption, flags: AtFlags = [], into status: inout FileStatus) -> Result<Void, Errno> {
     assert(flags.isSubset(of: [.noFollow]))
     return SyscallUtilities.voidOrErrno {
@@ -39,12 +73,14 @@ public extension FileSyscalls {
     }
   }
 
+  @_alwaysEmitIntoClient
   static func fileSystemStatistics(_ fd: FileDescriptor, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       fstatfs(fd.rawValue, &s.rawValue)
     }
   }
 
+  @_alwaysEmitIntoClient
   static func fileSystemStatistics(_ path: FilePath, into s: inout FileSystemStatistics) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
@@ -53,12 +89,14 @@ public extension FileSyscalls {
     }
   }
 
+  @_alwaysEmitIntoClient
   static func fileSystemInformation(_ fd: FileDescriptor, into s: inout FileSystemInformation) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       fstatvfs(fd.rawValue, &s.rawValue)
     }
   }
 
+  @_alwaysEmitIntoClient
   static func fileSystemInformation(_ path: FilePath, into s: inout FileSystemInformation) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       path.withPlatformString { path in
