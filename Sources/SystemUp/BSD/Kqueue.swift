@@ -5,22 +5,27 @@ import CUtility
 
 public struct Kqueue {
   @usableFromInline
-  internal init(rawValue: FileDescriptor) {
+  internal init(rawValue: Int32) {
     self.rawValue = rawValue
   }
 
   @usableFromInline
-  internal let rawValue: FileDescriptor
+  internal let rawValue: Int32
 
   @_alwaysEmitIntoClient
   public static func open() -> Result<Self, Errno> {
     SyscallUtilities.valueOrErrno {
       kqueue()
-    }.map(FileDescriptor.init).map(Self.init)
+    }.map(Self.init)
   }
 
-  __consuming public func close() throws {
-    try rawValue.close()
+  @_alwaysEmitIntoClient
+  __consuming public func close() {
+    assertNoFailure {
+      SyscallUtilities.retryWhileInterrupted {
+        FileSyscalls.close(rawValue)
+      }
+    }
   }
 
   @_alwaysEmitIntoClient
@@ -34,7 +39,7 @@ public struct Kqueue {
   public func register(changes: UnsafeBufferPointer<Kevent>, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) -> Result<Int, Errno> {
     SyscallUtilities.valueOrErrno {
       kevent(
-        rawValue.rawValue,
+        rawValue,
         UnsafeRawPointer(changes.baseAddress)?.assumingMemoryBound(to: kevent.self),
         numericCast(changes.count),
         UnsafeMutableRawPointer(dest.baseAddress)?.assumingMemoryBound(to: kevent.self),
