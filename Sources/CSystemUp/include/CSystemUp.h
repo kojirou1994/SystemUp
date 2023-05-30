@@ -1,6 +1,5 @@
 #define SWIFT_INLINE static inline __attribute__((__always_inline__))
 
-#include <stdio.h>
 #include <fts.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h>
@@ -24,7 +23,7 @@
 
 #endif // linux end
 
-
+#include <stdio.h>
 #include <sys/wait.h>
 
 SWIFT_INLINE int swift_WIFEXITED(int status) {

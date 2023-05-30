@@ -455,18 +455,20 @@ public extension FileSyscalls {
     }
   }
 
-  #if canImport(Darwin)
   @available(macOS 10.12, *)
   static func rename(_ src: FilePathOption, to dst: FilePathOption, flags: RenameFlags) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       src.path.withPlatformString { old in
         dst.path.withPlatformString { new -> Int32 in
+#if canImport(Darwin)
           renameatx_np(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new, flags.rawValue)
+#elseif os(Linux)
+          renameat2(src.relativedDirFD.rawValue, old, dst.relativedDirFD.rawValue, new, flags.rawValue)
+#endif
         }
       }
     }
   }
-  #endif
 }
 
 // MARK: working directory
