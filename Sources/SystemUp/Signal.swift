@@ -1,7 +1,7 @@
 import SystemLibc
 import SystemPackage
 
-public struct Signal: RawRepresentable {
+public struct Signal: RawRepresentable, Hashable {
   public let rawValue: CInt
 
   public init(rawValue: CInt) {
@@ -12,6 +12,7 @@ public struct Signal: RawRepresentable {
 public extension Signal {
 
   @inlinable
+  @_alwaysEmitIntoClient
   static func set(handler: SignalHandler, for signals: any Sequence<Self>) {
     signals.forEach { signal in
       assertNoFailure {
@@ -91,7 +92,7 @@ extension Signal {
 
   @discardableResult
   @inlinable @inline(__always)
-  func send(to process: SendTargetProcess) -> Result<Void, Errno> {
+  public func send(to process: SendTargetProcess) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.kill(process.rawValue, rawValue)
     }
