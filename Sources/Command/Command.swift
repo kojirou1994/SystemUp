@@ -30,12 +30,9 @@ public struct Command {
   public var defaultIO: ChildIO = .inherit
 
   // TODO: Implement
-  @available(*, unavailable)
-  public var uid: UserID?
-//  @available(*, unavailable)
-//  public var gui: guid_t?
-  @available(*, unavailable)
-  public var groups: GroupProcessID?
+  private var uid: UserID?
+//  private var gui: guid_t?
+  private var groups: GroupProcessID?
 
   public enum EnvironmentSetting {
     case null
