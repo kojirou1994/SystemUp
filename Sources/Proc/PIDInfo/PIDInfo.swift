@@ -113,7 +113,9 @@ internal func oneTimeSyscall<S: FixedWidthInteger, R>(
   validating: (S) -> Bool = { $0 > 0 },
   value: inout R) throws {
     assert(MemoryLayout<R>.size > 0)
-    let result = body(&value, numericCast(MemoryLayout<R>.size))
+    let result = withUnsafeMutableBytes(of: &value) { buffer in
+      body(buffer.baseAddress!, numericCast(buffer.count))
+    }
     guard validating(result) else {
       throw Errno(rawValue: errno)
     }

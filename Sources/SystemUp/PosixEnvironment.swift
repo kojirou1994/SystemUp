@@ -11,7 +11,7 @@ public struct PosixEnvironment {
   public var envCArray: CStringArray {
     let result = CStringArray()
     result.reserveCapacity(environment.count)
-    environment.forEach { result.append("\($0)=\($1)") }
+    environment.forEach { result.append(.copy(bytes: "\($0)=\($1)")) }
     return result
   }
 }

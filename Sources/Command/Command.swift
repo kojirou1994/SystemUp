@@ -200,7 +200,7 @@ extension Command {
     attrs.resetSignalsLikeTSC()
 
     let args = CStringArray()
-    args.append(arg0)
+    args.append(.copy(bytes: arg0))
     args.append(contentsOf: arguments)
 
     do {
