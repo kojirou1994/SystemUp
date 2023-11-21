@@ -191,7 +191,7 @@ extension Fts {
     #endif
   }
 
-  public struct Entry {
+  public struct Entry: Equatable {
     @usableFromInline
     internal init(_ ptr: UnsafeMutablePointer<FTSENT>) {
       self.ptr = ptr
