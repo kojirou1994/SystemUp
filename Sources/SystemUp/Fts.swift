@@ -3,13 +3,16 @@ import CUtility
 import SystemLibc
 
 public struct Fts {
-  private init(_ handle: UnsafeMutablePointer<FTS>) {
+  @usableFromInline
+  internal init(_ handle: UnsafeMutablePointer<FTS>) {
     self.handle = handle
   }
 
-  private let handle: UnsafeMutablePointer<FTS>
+  @usableFromInline
+  internal let handle: UnsafeMutablePointer<FTS>
 
-  public static func open(path: FilePath, options: OpenOptions = []) -> Result<Self, Errno> {
+  @_alwaysEmitIntoClient
+  public static func open(path: FilePath, options: OpenOptions) -> Result<Self, Errno> {
     path.withPlatformString { path in
       var array: (UnsafeMutablePointer<Int8>?, UnsafeMutablePointer<Int8>?) = (UnsafeMutablePointer(mutating: path), nil)
       return withUnsafeMutableBytes(of: &array) { pointer in
@@ -18,7 +21,7 @@ public struct Fts {
     }
   }
 
-  public static func open<C: Collection>(paths: C, options: OpenOptions = []) -> Result<Self, Errno> where C.Element == FilePath {
+  public static func open<C: Collection>(paths: C, options: OpenOptions) -> Result<Self, Errno> where C.Element == FilePath {
 
     let arraySize = paths.count + 1
     let pathArray = UnsafeMutableBufferPointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: arraySize)
@@ -37,6 +40,14 @@ public struct Fts {
     return _fts_open(pathArray.baseAddress, options)
   }
 
+  @_alwaysEmitIntoClient
+  public static func open(paths: CStringArray, options: OpenOptions) -> Result<Self, Errno> {
+    paths.withUnsafeCArrayPointer { array in
+      _fts_open(array, options)
+    }
+  }
+
+  @usableFromInline
   internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>?, _ options: OpenOptions) -> Result<Self, Errno> {
     assert(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
 
@@ -46,7 +57,8 @@ public struct Fts {
     return .success(.init(ptr))
   }
 
-  private func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws -> Fts.Entry? {
+  @usableFromInline
+  internal func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws -> Fts.Entry? {
     if let ptr = ptr {
       return .init(ptr)
     }
@@ -57,20 +69,24 @@ public struct Fts {
     return nil
   }
 
+  @_alwaysEmitIntoClient
   public func read() -> Fts.Entry? {
     fts_read(handle).map(Fts.Entry.init)
   }
 
+  @_alwaysEmitIntoClient
   public func children(options: ChildrenOptions = []) throws -> Fts.Entry? {
     try entryOrErrno(fts_children(handle, options.rawValue))
   }
 
+  @_alwaysEmitIntoClient
   public func set(entry: Fts.Entry, option: SetOption) throws {
     try SyscallUtilities.voidOrErrno {
       fts_set(handle, entry.ptr, option.rawValue)
     }.get()
   }
 
+  @_alwaysEmitIntoClient
   public func close() {
     assertNoFailure {
       SyscallUtilities.voidOrErrno {
@@ -79,6 +95,7 @@ public struct Fts {
     }
   }
 
+  @_alwaysEmitIntoClient
   public func closeAfter<R>(_ body: (Self) throws -> R) rethrows -> R {
     defer { close() }
     return try body(self)
@@ -156,15 +173,18 @@ extension Fts {
 
   public enum Level {
 
+    @_alwaysEmitIntoClient
     public static var rootParent: Int16 {
       .init(FTS_ROOTPARENTLEVEL)
     }
 
+    @_alwaysEmitIntoClient
     public static var root: Int16 {
       .init(FTS_ROOTLEVEL)
     }
 
     #if canImport(Darwin)
+    @_alwaysEmitIntoClient
     public static var max: Int16 {
       .init(FTS_MAXLEVEL)
     }
@@ -172,24 +192,30 @@ extension Fts {
   }
 
   public struct Entry {
-    fileprivate init(_ ptr: UnsafeMutablePointer<FTSENT>) {
+    @usableFromInline
+    internal init(_ ptr: UnsafeMutablePointer<FTSENT>) {
       self.ptr = ptr
     }
 
-    fileprivate let ptr: UnsafeMutablePointer<FTSENT>
+    @usableFromInline
+    internal let ptr: UnsafeMutablePointer<FTSENT>
 
+    @_alwaysEmitIntoClient
     public var info: Info {
       .init(rawValue: ptr.pointee.fts_info)
     }
 
+    @_alwaysEmitIntoClient
     public var pathToCurrentDirectory: FilePath {
       .init(platformString: ptr.pointee.fts_accpath)
     }
 
+    @_alwaysEmitIntoClient
     public var path: FilePath {
       .init(platformString: ptr.pointee.fts_path)
     }
 
+    @_alwaysEmitIntoClient
     public var name: String {
       #if compiler(<5.7)
       .init(cString: &ptr.pointee.fts_name)
@@ -198,19 +224,23 @@ extension Fts {
       #endif
     }
 
+    @_alwaysEmitIntoClient
     public var nameLength: UInt16 {
       ptr.pointee.fts_namelen
     }
 
+    @_alwaysEmitIntoClient
     public var level: Int16 {
       ptr.pointee.fts_level
     }
 
+    @_alwaysEmitIntoClient
     public var errno: Errno? {
       ptr.pointee.fts_errno == 0 ? nil : .init(rawValue: ptr.pointee.fts_errno)
     }
 
     /// local numeric value
+    @_alwaysEmitIntoClient
     public var number: Int {
       get {
         ptr.pointee.fts_number
@@ -221,6 +251,7 @@ extension Fts {
     }
 
     /// local address value
+    @_alwaysEmitIntoClient
     public var pointer: UnsafeMutableRawPointer? {
       get {
         ptr.pointee.fts_pointer
@@ -230,35 +261,44 @@ extension Fts {
       }
     }
 
+    @_alwaysEmitIntoClient
     public var parentDirectory: Self {
       .init(ptr.pointee.fts_parent)
     }
 
     /// next file in directory
+    @_alwaysEmitIntoClient
     public var nextFile: Self? {
       ptr.pointee.fts_link.map { .init($0) }
     }
 
+    @_alwaysEmitIntoClient
     public var cycleNode: Self? {
       ptr.pointee.fts_cycle.map { .init($0) }
     }
 
     /// fd for symlink or chdir
+    @_alwaysEmitIntoClient
     public var symbolicFileDescriptor: FileDescriptor {
       .init(rawValue: ptr.pointee.fts_symfd)
     }
+
+    @_alwaysEmitIntoClient
     public var inode: ino_t {
       ptr.pointee.fts_ino
     }
 
+    @_alwaysEmitIntoClient
     public var device: dev_t {
       ptr.pointee.fts_dev
     }
 
+    @_alwaysEmitIntoClient
     public var linkCount: CInterop.UpNumberOfLinks {
       ptr.pointee.fts_nlink
     }
 
+    @_alwaysEmitIntoClient
     public var fileStatus: UnsafePointer<FileStatus>? {
       .init(OpaquePointer(ptr.pointee.fts_statp))
     }
