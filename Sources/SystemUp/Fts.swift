@@ -13,31 +13,28 @@ public struct Fts {
 
   @_alwaysEmitIntoClient
   public static func open(path: FilePath, options: OpenOptions) -> Result<Self, Errno> {
-    path.withPlatformString { path in
-      var array: (UnsafeMutablePointer<Int8>?, UnsafeMutablePointer<Int8>?) = (UnsafeMutablePointer(mutating: path), nil)
-      return withUnsafeMutableBytes(of: &array) { pointer in
-        _fts_open(pointer.baseAddress?.assumingMemoryBound(to: UnsafeMutablePointer<Int8>?.self), options)
-      }
+    path.withPlatformString { open(path: $0, options: options) }
+  }
+
+  @_alwaysEmitIntoClient
+  public static func open(path: UnsafePointer<Int8>, options: OpenOptions) -> Result<Self, Errno> {
+    withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
+      array[0] = .init(mutating: path)
+      array[1] = nil
+      return _fts_open(array.baseAddress, options)
     }
   }
 
   public static func open<C: Collection>(paths: C, options: OpenOptions) -> Result<Self, Errno> where C.Element == FilePath {
-
-    let arraySize = paths.count + 1
-    let pathArray = UnsafeMutableBufferPointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: arraySize)
-    pathArray.initialize(repeating: nil)
-    defer {
-      pathArray.dropLast().forEach { $0?.deallocate() }
-      pathArray.initialize(repeating: nil)
-      pathArray.deallocate()
-    }
-    paths.enumerated().forEach { offset, path in
-      path.withPlatformString { path in
-        pathArray[offset] = strdup(path)
+    withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: paths.count + 1) { array in
+      paths.enumerated().forEach { offset, path in
+        path.withPlatformString { path in
+          array[offset] = .init(mutating: path)
+        }
       }
+      array[paths.count] = nil
+      return _fts_open(array.baseAddress, options)
     }
-
-    return _fts_open(pathArray.baseAddress, options)
   }
 
   @_alwaysEmitIntoClient
@@ -415,6 +412,6 @@ extension Fts {
 
 extension Fts.Entry: CustomStringConvertible {
   public var description: String {
-    "\(String(describing: Self.self))(ptr: \(ptr), name: \(name), level: \(level)"
+    "\(String(describing: Self.self))(ptr: \(ptr), name: \(name), level: \(level))"
   }
 }
