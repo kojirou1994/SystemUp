@@ -26,6 +26,12 @@
 #include <stdio.h>
 #include <sys/wait.h>
 
+#if __has_include(<sys/errno.h>)
+#include <sys/errno.h>
+#else
+#include <errno.h>
+#endif
+
 SWIFT_INLINE int swift_WIFEXITED(int status) {
   return WIFEXITED(status);
 }
@@ -134,4 +140,12 @@ SWIFT_INLINE u_int32_t swift_minor(dev_t dev) {
 
 SWIFT_INLINE dev_t swift_makedev(u_int32_t major, u_int32_t minor) {
   return makedev(major, minor);
+}
+
+SWIFT_INLINE int swift_get_errno() {
+  return errno;
+}
+
+SWIFT_INLINE void swift_set_errno(int value) {
+  errno = value;
 }
