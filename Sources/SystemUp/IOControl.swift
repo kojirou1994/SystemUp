@@ -7,6 +7,7 @@ public enum IOControl { }
 public extension IOControl {
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func control(_ fd: FileDescriptor, request: Request) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       ioctl(fd.rawValue, request.rawValue)
@@ -14,6 +15,7 @@ public extension IOControl {
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func control(_ fd: FileDescriptor, request: Request, value: Int32) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       ioctl(fd.rawValue, request.rawValue, value)
@@ -21,6 +23,7 @@ public extension IOControl {
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func control(_ fd: FileDescriptor, request: Request, ptr: UnsafeMutableRawPointer) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       ioctl(fd.rawValue, request.rawValue, ptr)

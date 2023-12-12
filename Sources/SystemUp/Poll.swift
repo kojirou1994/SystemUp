@@ -4,16 +4,20 @@ import CUtility
 
 public enum Poll {
   public struct PollFD {
-    private var rawValue: pollfd
+    @usableFromInline
+    internal var rawValue: pollfd
 
+    @_alwaysEmitIntoClient
     public init(fd: FileDescriptor, events: Events = []) {
       rawValue = .init(fd: fd.rawValue, events: events.rawValue, revents: 0)
     }
 
+    @_alwaysEmitIntoClient
     public var fd: FileDescriptor {
       .init(rawValue: rawValue.fd)
     }
 
+    @_alwaysEmitIntoClient
     public var events: Events {
       get {
         .init(rawValue: rawValue.events)
@@ -23,6 +27,7 @@ public enum Poll {
       }
     }
 
+    @_alwaysEmitIntoClient
     public var returnedEvents: Events {
       .init(rawValue: rawValue.events)
     }
@@ -70,8 +75,9 @@ public enum Poll {
   }
 
   /// return nil if the time limit expires
+  @_alwaysEmitIntoClient
   public static func call(fds: UnsafeMutableBufferPointer<PollFD>, timeout: Timeout) -> Result<FileDescriptor, Errno>? {
-    let ret = poll(.init(OpaquePointer(fds.baseAddress)), numericCast(fds.count), timeout.milliseconds)
+    let ret = poll(UnsafeMutableRawPointer(fds.baseAddress)?.assumingMemoryBound(to: pollfd.self), numericCast(fds.count), timeout.milliseconds)
     switch ret {
     case -1: return .failure(.systemCurrent)
     case 0: return nil

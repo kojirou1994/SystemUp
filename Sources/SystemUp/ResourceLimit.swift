@@ -28,6 +28,7 @@ public struct ResourceLimit {
 public extension ResourceLimit {
 
   @inlinable
+  @_alwaysEmitIntoClient
   var soft: Limit {
     _read {
       yield rawValue.rlim_cur
@@ -38,6 +39,7 @@ public extension ResourceLimit {
   }
 
   @inlinable
+  @_alwaysEmitIntoClient
   var hard: Limit {
     _read {
       yield rawValue.rlim_max
@@ -53,6 +55,7 @@ public extension ResourceLimit {
   }
 
   @inlinable
+  @_alwaysEmitIntoClient
   static func set(_ limit: Self, for resource: Resource) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: limit) { limit in
@@ -62,6 +65,7 @@ public extension ResourceLimit {
   }
 
   @inlinable
+  @_alwaysEmitIntoClient
   static func get(to limit: inout Self, for resource: Resource) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       withUnsafeMutablePointer(to: &limit) { limit in
@@ -71,6 +75,7 @@ public extension ResourceLimit {
   }
 
   @inlinable
+  @_alwaysEmitIntoClient
   static subscript(resource: Resource) -> Self {
     get {
       var result = Self()
