@@ -6,15 +6,12 @@ import CUtility
 public enum WaitPID {}
 
 public extension WaitPID {
-  @inlinable
+  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func wait(_ target: TargetID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
                    rusage: UnsafeMutablePointer<rusage>? = nil) -> Result<ProcessID, Errno> {
-    SyscallUtilities.valueOrErrno { () -> pid_t in
-      if let rusage {
-        return wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage)
-      } else {
-        return waitpid(target.rawValue, .init(OpaquePointer(status)), options.rawValue)
-      }
+    SyscallUtilities.valueOrErrno {
+      wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage)
     }.map(ProcessID.init)
   }
 }
@@ -35,7 +32,7 @@ extension WaitPID {
     }
   }
 
-  public struct Options: OptionSet, MacroRawRepresentable {
+  public struct Options: OptionSet {
     public var rawValue: Int32
     public init(rawValue: Int32) {
       self.rawValue = rawValue
@@ -65,14 +62,14 @@ public extension WaitPID.TargetID {
 
 public extension WaitPID.Options {
   @_alwaysEmitIntoClient
-  static var noHang: Self { .init(macroValue: WNOHANG) }
+  static var noHang: Self { .init(rawValue: WNOHANG) }
 
   @_alwaysEmitIntoClient
-  static var untraced: Self { .init(macroValue: WUNTRACED) }
+  static var untraced: Self { .init(rawValue: WUNTRACED) }
 
   #if os(Linux)
   @_alwaysEmitIntoClient
-  static var continued: Self { .init(macroValue: WCONTINUED) }
+  static var continued: Self { .init(rawValue: WCONTINUED) }
   #endif
 }
 
