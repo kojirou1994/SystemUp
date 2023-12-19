@@ -151,9 +151,13 @@ public extension SystemCall {
 
   @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeXattr(_ fd: FileDescriptor, attributeName: String) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      fremovexattr(fd.rawValue, attributeName, 0)
+  static func removeXattr(_ fd: FileDescriptor, attributeName: String, options: Xattr.Options) -> Result<Void, Errno> {
+    SyscallUtilities.voidOrErrno { () -> Int32 in
+      #if os(macOS) || os(iOS)
+      fremovexattr(fd.rawValue, attributeName, options.rawValue)
+      #elseif os(Linux)
+      fremovexattr(fd.rawValue, attributeName)
+      #endif
     }
   }
 }
