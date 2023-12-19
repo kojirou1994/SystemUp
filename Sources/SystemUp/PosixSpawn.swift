@@ -459,7 +459,7 @@ public extension PosixSpawn.Attributes {
       if signal == .kill || signal == .stop {
         continue
       }
-      mostSignals.insert(signal: signal)
+      mostSignals.insert(signal)
     }
     #endif
 
