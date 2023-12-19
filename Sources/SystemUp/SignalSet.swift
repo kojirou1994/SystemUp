@@ -2,53 +2,34 @@ import SystemLibc
 import CUtility
 import SystemPackage
 
-public struct SignalSet: RawRepresentable {
-  public var rawValue: sigset_t
-
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
-  public init(rawValue: sigset_t) {
-    self.rawValue = rawValue
-  }
-
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
-  public init() {
-    self.rawValue = .init()
-    removeAll()
-  }
-}
+public typealias SignalSet = sigset_t
 
 // MARK: Base APIs
 public extension SignalSet {
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
-  mutating func add(signal: Signal) {
-    sigaddset(&rawValue, signal.rawValue)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  mutating func insert(_ signal: Signal) {
+    sigaddset(&self, signal.rawValue)
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
-  mutating func delete(signal: Signal) {
-    sigdelset(&rawValue, signal.rawValue)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  mutating func remove(_ signal: Signal) {
+    sigdelset(&self, signal.rawValue)
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func removeAll() {
-    sigemptyset(&rawValue)
+    sigemptyset(&self)
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func fillAll() {
-    sigfillset(&rawValue)
+    sigfillset(&self)
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
-  func contains(signal: Signal) -> Bool {
-    withUnsafePointer(to: rawValue) { sigset in
+  // NOTE: mutating marked for performance
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  mutating func contains(_ signal: Signal) -> Bool {
+    withUnsafeMutablePointer(to: &self) { sigset in
       sigismember(sigset, signal.rawValue) == 1
     }
   }
@@ -56,59 +37,55 @@ public extension SignalSet {
 
 // MARK: Syscall APIs
 public extension SignalSet {
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func wait(clearedSignalOutput signal: UnsafeMutablePointer<Signal>) {
     assertNoFailure { // only fail if set specifies one or more invalid signal numbers.
       SyscallUtilities.voidOrErrno {
-        withUnsafePointer(to: rawValue) { sigset in
+        withUnsafePointer(to: self) { sigset in
           sigwait(sigset, .init(OpaquePointer(signal)))
         }
       }
     }
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func getPendingSignals() {
     assertNoFailure { // The sigpending function does not currently detect any errors.
       SyscallUtilities.voidOrErrno {
-        sigpending(&rawValue)
+        sigpending(&self)
       }
     }
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func suspend() -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      withUnsafePointer(to: rawValue) { sigset in
+      withUnsafePointer(to: self) { sigset in
         sigsuspend(sigset)
       }
     }
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var currentMask: Self {
     var v = Self.init()
     v.getCurrentMask()
     return v
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func getCurrentMask() {
     assertNoFailure {
       SyscallUtilities.voidOrErrno {
-        sigprocmask(0, nil, &rawValue)
+        sigprocmask(0, nil, &self)
       }
     }
   }
 
   struct ManipulateMethod: MacroRawRepresentable {
     public let rawValue: Int32
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -123,13 +100,12 @@ public extension SignalSet {
     public static var replace: Self { .init(macroValue: SIG_SETMASK) }
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func manipulateCurrentSignalMask(_ method: ManipulateMethod, oldOutput: UnsafeMutablePointer<Self>?) {
     assertNoFailure {
       SyscallUtilities.voidOrErrno {
-        withUnsafePointer(to: rawValue) { sigset in
-          sigprocmask(method.rawValue, sigset, oldOutput?.pointer(to: \.rawValue))
+        withUnsafePointer(to: self) { sigset in
+          sigprocmask(method.rawValue, sigset, oldOutput)
         }
       }
     }

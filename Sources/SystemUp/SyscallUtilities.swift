@@ -5,6 +5,7 @@ public enum SyscallUtilities {}
 
 public extension SyscallUtilities {
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func errnoOrZeroOnReturn(_ body: () -> Int32) -> Result<Void, Errno> {
     let code = body()
     if code == 0 {
@@ -15,6 +16,7 @@ public extension SyscallUtilities {
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func retryWhileInterrupted<T>(_ body: () -> Result<T, Errno>) -> Result<T, Errno> {
     while true {
       switch body() {
@@ -26,11 +28,13 @@ public extension SyscallUtilities {
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func voidOrErrno<I: FixedWidthInteger>(_ body: () -> I) -> Result<Void, Errno> {
     valueOrErrno(body).map { _ in () }
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func valueOrErrno<I: FixedWidthInteger>(_ body: () -> I) -> Result<I, Errno> {
     let i = body()
     if i == -1 {
@@ -42,6 +46,7 @@ public extension SyscallUtilities {
   }
 
   @inlinable @inline(__always)
+  @_alwaysEmitIntoClient
   static func unwrap<T>(_ body: () -> T?) -> Result<T, Errno> {
     if let value  = body() {
       return .success(value)
@@ -52,6 +57,7 @@ public extension SyscallUtilities {
 }
 
 @inlinable @inline(__always)
+@_alwaysEmitIntoClient
 public func assertNoFailure<R, E>(file: StaticString = #file, line: UInt = #line, _ body: () -> Result<R, E>) {
   switch body() {
   case .success: break

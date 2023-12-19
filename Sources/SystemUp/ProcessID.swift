@@ -3,6 +3,7 @@ import SystemLibc
 public struct ProcessID: RawRepresentable {
   public let rawValue: Int32
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: Int32) {
     self.rawValue = rawValue
   }

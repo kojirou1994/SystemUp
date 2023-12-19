@@ -66,24 +66,24 @@ public struct Fts {
     return nil
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func read() -> Fts.Entry? {
     fts_read(handle).map(Fts.Entry.init)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func children(options: ChildrenOptions = []) throws -> Fts.Entry? {
     try entryOrErrno(fts_children(handle, options.rawValue))
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func set(entry: Fts.Entry, option: SetOption) throws {
     try SyscallUtilities.voidOrErrno {
       fts_set(handle, entry.ptr, option.rawValue)
     }.get()
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func close() {
     assertNoFailure {
       SyscallUtilities.voidOrErrno {
@@ -92,7 +92,7 @@ public struct Fts {
     }
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func closeAfter<R>(_ body: (Self) throws -> R) rethrows -> R {
     defer { close() }
     return try body(self)
@@ -103,6 +103,7 @@ extension Fts {
 
   public struct OpenOptions: OptionSet, MacroRawRepresentable {
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -170,18 +171,18 @@ extension Fts {
 
   public enum Level {
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static var rootParent: Int16 {
       .init(FTS_ROOTPARENTLEVEL)
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static var root: Int16 {
       .init(FTS_ROOTLEVEL)
     }
 
     #if canImport(Darwin)
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static var max: Int16 {
       .init(FTS_MAXLEVEL)
     }
@@ -197,7 +198,7 @@ extension Fts {
     @usableFromInline
     internal let ptr: UnsafeMutablePointer<FTSENT>
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var info: Info {
       .init(rawValue: ptr.pointee.fts_info)
     }
@@ -221,23 +222,23 @@ extension Fts {
       #endif
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var nameLength: UInt16 {
       ptr.pointee.fts_namelen
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var level: Int16 {
       ptr.pointee.fts_level
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var errno: Errno? {
       ptr.pointee.fts_errno == 0 ? nil : .init(rawValue: ptr.pointee.fts_errno)
     }
 
     /// local numeric value
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var number: Int {
       get {
         ptr.pointee.fts_number
@@ -248,7 +249,7 @@ extension Fts {
     }
 
     /// local address value
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var pointer: UnsafeMutableRawPointer? {
       get {
         ptr.pointee.fts_pointer
@@ -258,44 +259,44 @@ extension Fts {
       }
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var parentDirectory: Self {
       .init(ptr.pointee.fts_parent)
     }
 
     /// next file in directory
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var nextFile: Self? {
       ptr.pointee.fts_link.map { .init($0) }
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var cycleNode: Self? {
       ptr.pointee.fts_cycle.map { .init($0) }
     }
 
     /// fd for symlink or chdir
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var symbolicFileDescriptor: FileDescriptor {
       .init(rawValue: ptr.pointee.fts_symfd)
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var inode: ino_t {
       ptr.pointee.fts_ino
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var device: dev_t {
       ptr.pointee.fts_dev
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var linkCount: CInterop.UpNumberOfLinks {
       ptr.pointee.fts_nlink
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var fileStatus: UnsafePointer<FileStatus>? {
       .init(OpaquePointer(ptr.pointee.fts_statp))
     }
@@ -304,6 +305,7 @@ extension Fts {
 
   public struct ChildrenOptions: OptionSet, MacroRawRepresentable {
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -318,6 +320,7 @@ extension Fts {
 
   public struct SetOption: MacroRawRepresentable {
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -352,6 +355,7 @@ extension Fts {
 
   public struct Info: MacroRawRepresentable, Equatable {
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: UInt16) {
       self.rawValue = rawValue
     }

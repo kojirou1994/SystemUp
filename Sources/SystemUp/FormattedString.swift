@@ -47,14 +47,14 @@ public extension LazyCopiedCString {
 }
 
 public extension FileStream {
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
     write(format: format, arguments: args)
   }
 
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func write(format: UnsafePointer<CChar>, arguments: [CVarArg]) -> Int32 {
     check(args: arguments)
     return withVaList(arguments) { va in
@@ -64,14 +64,14 @@ public extension FileStream {
 }
 
 public extension FileDescriptor {
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func write(format: UnsafePointer<CChar>, _ args: CVarArg...) -> Int32 {
     write(format: format, arguments: args)
   }
 
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func write(format: UnsafePointer<CChar>, arguments: [CVarArg]) -> Int32 {
     check(args: arguments)
     return withVaList(arguments) { va in
@@ -83,6 +83,7 @@ public extension FileDescriptor {
 // MARK: Input
 public enum InputFormatConversion {
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func scan(_ stream: FileStream, format: UnsafePointer<CChar>, _ args: UnsafeMutableRawPointer...) -> Int32 {
     withVaList(args) { va in
       SystemLibc.vfscanf(stream.rawValue, format, va)
@@ -90,6 +91,7 @@ public enum InputFormatConversion {
   }
 
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func scan(_ string: UnsafePointer<CChar>, format: UnsafePointer<CChar>, _ args: UnsafeMutableRawPointer...) -> Int32 {
     withVaList(args) { va in
       SystemLibc.vsscanf(string, format, va)

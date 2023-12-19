@@ -6,7 +6,7 @@ public struct ResourceLimit {
   @usableFromInline
   internal var rawValue: rlimit
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
     rawValue = .init()
   }
@@ -19,6 +19,7 @@ public struct ResourceLimit {
 
   public struct Resource: MacroRawRepresentable {
     public let rawValue: Int32
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -27,8 +28,7 @@ public struct ResourceLimit {
 
 public extension ResourceLimit {
 
-  @inlinable
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var soft: Limit {
     _read {
       yield rawValue.rlim_cur
@@ -38,8 +38,7 @@ public extension ResourceLimit {
     }
   }
 
-  @inlinable
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var hard: Limit {
     _read {
       yield rawValue.rlim_max
@@ -49,13 +48,12 @@ public extension ResourceLimit {
     }
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var infinityLimit: Limit {
     swift_RLIM_INFINITY()
   }
 
-  @inlinable
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(_ limit: Self, for resource: Resource) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: limit) { limit in
@@ -64,8 +62,7 @@ public extension ResourceLimit {
     }
   }
 
-  @inlinable
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func get(to limit: inout Self, for resource: Resource) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       withUnsafeMutablePointer(to: &limit) { limit in
@@ -74,8 +71,7 @@ public extension ResourceLimit {
     }
   }
 
-  @inlinable
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static subscript(resource: Resource) -> Self {
     get {
       var result = Self()

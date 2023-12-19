@@ -277,14 +277,14 @@ extension Command {
       switch (self.stdout, self.stderr) {
       case (let out?, let err?):
         var errError: Error?
-        let errThread = try PosixThread.create(main: .init(main: {
+        let errThread = try PosixThread.create {
           do {
             try readAll(fd: err, dst: &stderr)
           } catch {
             print("error output thread error: \(error)")
             errError = error
           }
-        }))
+        }
         do {
           try readAll(fd: out, dst: &stdout)
         } catch {

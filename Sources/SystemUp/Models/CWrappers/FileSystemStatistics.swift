@@ -11,11 +11,12 @@ public struct FileSystemStatistics: RawRepresentable {
   /// the c struct
   public var rawValue: statfs
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: statfs) {
     self.rawValue = rawValue
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
     self.init(rawValue: .init())
   }
@@ -34,51 +35,51 @@ public extension FileSystemStatistics {
   #endif
 
   /// fundamental file system block size
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var blockSize: BlockSize {
     rawValue.f_bsize
   }
 
   #if canImport(Darwin)
   /// optimal transfer block size
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var ioSize: Int32 {
     rawValue.f_iosize
   }
   #endif
 
   /// total data blocks in file system
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var blocks: some FixedWidthInteger {
     rawValue.f_blocks
   }
 
   /// free blocks in fs
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var freeBlocks: some FixedWidthInteger {
     rawValue.f_bfree
   }
 
   /// free blocks avail to non-superuser
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var availableBlocks: some FixedWidthInteger {
     rawValue.f_bavail
   }
 
   /// total file nodes in file system
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var nodes: some FixedWidthInteger {
     rawValue.f_files
   }
 
   /// free file nodes in fs
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var freeNodes: some FixedWidthInteger {
     rawValue.f_ffree
   }
 
   /// file system id
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var id: (Int32, Int32) {
     #if canImport(Darwin)
     rawValue.f_fsid.val
@@ -89,47 +90,47 @@ public extension FileSystemStatistics {
 
   #if canImport(Darwin)
   /// user that mounted the filesystem
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var owner: UserID {
     .init(rawValue: rawValue.f_owner)
   }
   #endif
 
   /// type of filesystem
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var type: some FixedWidthInteger {
     rawValue.f_type
   }
 
   #if canImport(Darwin)
   /// fs sub-type (flavor)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var subType: UInt32 {
     rawValue.f_fssubtype
   }
 
   /// fs type name
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var typeName: String {
     String(cStackString: rawValue.f_fstypename)
   }
   #endif
 
   /// copy of mount exported flags
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var flags: some FixedWidthInteger {
     rawValue.f_flags
   }
 
   #if canImport(Darwin)
   /// directory on which mounted
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var mountedOnName: String {
     String(cStackString: rawValue.f_mntonname)
   }
 
   /// mounted filesystem
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var mountedFileSystem: String {
     String.init(cStackString: rawValue.f_mntfromname)
   }

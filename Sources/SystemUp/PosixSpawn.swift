@@ -41,16 +41,20 @@ extension PosixSpawn {
 
     #if canImport(Darwin)
     public typealias CType = posix_spawnattr_t?
+    @_alwaysEmitIntoClient
     private var attributes: CType = nil
     #else
     public typealias CType = posix_spawnattr_t
+    @_alwaysEmitIntoClient
     private var attributes: CType = .init()
     #endif
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws {
       try reinitialize()
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func reinitialize() throws {
       #if canImport(Darwin)
       assert(attributes == nil, "destroy first")
@@ -60,6 +64,7 @@ extension PosixSpawn {
       }.get()
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func destroy() {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
@@ -70,6 +75,7 @@ extension PosixSpawn {
 
     public struct Flags: OptionSet, MacroRawRepresentable {
 
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int16) {
         self.rawValue = rawValue
       }
@@ -81,22 +87,27 @@ extension PosixSpawn {
   public struct FileActions {
     #if canImport(Darwin)
     public typealias CType = posix_spawn_file_actions_t?
+    @_alwaysEmitIntoClient
     private var fileActions: posix_spawn_file_actions_t?
     #else
     public typealias CType = posix_spawn_file_actions_t
+    @_alwaysEmitIntoClient
     private var fileActions: posix_spawn_file_actions_t = .init()
     #endif
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws {
       try reinitialize()
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func reinitialize() throws {
       try SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawn_file_actions_init(&fileActions)
       }.get()
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func destroy() {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
@@ -105,16 +116,19 @@ extension PosixSpawn {
       }
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func close(fd: FileDescriptor) {
       posix_spawn_file_actions_addclose(&fileActions, fd.rawValue)
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func open(_ path: FilePath, _ mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions = .init(), permissions: FilePermissions? = nil, fd: FileDescriptor) {
       path.withPlatformString { path in
         open(path, mode, options: options, permissions: permissions, fd: fd)
       }
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func open(_ path: UnsafePointer<CChar>, _ mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions = .init(), permissions: FilePermissions? = nil, fd: FileDescriptor) {
       /*
        path is not copied on old platforms:
@@ -128,6 +142,7 @@ extension PosixSpawn {
       }
     }
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func dup2(fd: FileDescriptor, newFD: FileDescriptor) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
@@ -137,6 +152,7 @@ extension PosixSpawn {
     }
 
     #if canImport(Darwin)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func markInheritance(fd: FileDescriptor) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
@@ -148,6 +164,7 @@ extension PosixSpawn {
 
     #if os(macOS) || os(Linux)
     @available(macOS 10.15, *)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func chdir(_ path: UnsafePointer<CChar>) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
@@ -157,11 +174,13 @@ extension PosixSpawn {
     }
 
     @available(macOS 10.15, *)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func chdir(_ path: FilePath) {
       path.withPlatformString { chdir($0) }
     }
 
     @available(macOS 10.15, *)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func chdir(_ fd: FileDescriptor) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
@@ -172,6 +191,7 @@ extension PosixSpawn {
     #endif
 
     #if os(Linux)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func close(fromMinFD fd: FileDescriptor) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
@@ -185,12 +205,13 @@ extension PosixSpawn {
 
 public extension PosixSpawn.Attributes {
   /// set or get the spawn-sigdefault attribute on a posix_spawnattr_t
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var sigdefault: SignalSet {
     mutating get {
-      var result = SignalSet(rawValue: .init())
+      var result = SignalSet()
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          posix_spawnattr_getsigdefault(&attributes, &result.rawValue)
+          posix_spawnattr_getsigdefault(&attributes, &result)
         }
       }
       return result
@@ -198,7 +219,7 @@ public extension PosixSpawn.Attributes {
     set {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          withUnsafePointer(to: newValue.rawValue) { sigset in
+          withUnsafePointer(to: newValue) { sigset in
             posix_spawnattr_setsigdefault(&attributes, sigset)
           }
         }
@@ -206,6 +227,7 @@ public extension PosixSpawn.Attributes {
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var flags: Flags {
     mutating get {
       var result = Flags(rawValue: 0)
@@ -226,12 +248,13 @@ public extension PosixSpawn.Attributes {
   }
 
   /// set or get the spawn-sigmask attribute on a posix_spawnattr_t
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var sigmask: SignalSet {
     mutating get {
-      var result = SignalSet(rawValue: .init())
+      var result = SignalSet()
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          posix_spawnattr_getsigmask(&attributes, &result.rawValue)
+          posix_spawnattr_getsigmask(&attributes, &result)
         }
       }
       return result
@@ -239,7 +262,7 @@ public extension PosixSpawn.Attributes {
     set {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          withUnsafePointer(to: newValue.rawValue) { sigset in
+          withUnsafePointer(to: newValue) { sigset in
             posix_spawnattr_setsigmask(&attributes, sigset)
           }
         }
@@ -247,6 +270,7 @@ public extension PosixSpawn.Attributes {
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var pgroup: pid_t {
     mutating get {
       var result: pid_t = 0
@@ -271,12 +295,14 @@ public extension PosixSpawn.Attributes {
 #if canImport(Darwin)
 // MARK: Darwin-specific extensions below
 public extension PosixSpawn.Attributes {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func get(universalBinaryPreference: UnsafeMutableBufferPointer<cpu_type_t>, count: inout Int) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       posix_spawnattr_getbinpref_np(&attributes, universalBinaryPreference.count, universalBinaryPreference.baseAddress, &count)
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func set(universalBinaryPreference: UnsafeBufferPointer<cpu_type_t>) -> Int {
     var count = 0
     assertNoFailure {
@@ -288,6 +314,7 @@ public extension PosixSpawn.Attributes {
   }
 
   @available(macOS 11.0, iOS 14.0, *)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func get(cpuPreference: UnsafeMutableBufferPointer<cpu_type_t>, subcpuPreference: UnsafeMutablePointer<cpu_subtype_t>, count: inout Int) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       posix_spawnattr_getarchpref_np(&attributes, cpuPreference.count, cpuPreference.baseAddress, subcpuPreference, &count)
@@ -295,6 +322,7 @@ public extension PosixSpawn.Attributes {
   }
 
   @available(macOS 11.0, iOS 14.0, *)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func set(cpuPreference: UnsafeBufferPointer<cpu_type_t>, subcpuPreference: UnsafePointer<cpu_subtype_t>) -> Int {
     var count = 0
     assertNoFailure {
@@ -305,6 +333,7 @@ public extension PosixSpawn.Attributes {
     return count
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func set(auditsessionport: mach_port_t) {
     assertNoFailure {
       SyscallUtilities.errnoOrZeroOnReturn {
@@ -313,6 +342,7 @@ public extension PosixSpawn.Attributes {
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func set(specialport: mach_port_t, which: CInt) {
     assertNoFailure {
       SyscallUtilities.errnoOrZeroOnReturn {
@@ -321,6 +351,7 @@ public extension PosixSpawn.Attributes {
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func set(exceptionports new_port: mach_port_t, mask: exception_mask_t, behavior: exception_behavior_t, flavor: thread_state_flavor_t) {
     assertNoFailure {
       SyscallUtilities.errnoOrZeroOnReturn {
@@ -331,6 +362,7 @@ public extension PosixSpawn.Attributes {
 
   typealias QualityOfService = qos_class_t
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var qualityOfService: QualityOfService {
     mutating get {
       var result: QualityOfService = .unspecified
@@ -418,8 +450,8 @@ public extension PosixSpawn.Attributes {
     var mostSignals = SignalSet()
     #if canImport(Darwin)
     mostSignals.fillAll()
-    mostSignals.delete(signal: .kill)
-    mostSignals.delete(signal: .stop)
+    mostSignals.remove(.kill)
+    mostSignals.remove(.stop)
     #else
     mostSignals.removeAll()
     for i in 1 ..< Signal.unknownSystemCall.rawValue {
@@ -440,7 +472,7 @@ public extension PosixSpawn.Attributes {
     var set = SignalSet()
     set.removeAll()
     sigmask = set
-    set.add(signal: .brokenPipe)
+    set.insert(.brokenPipe)
     sigdefault = set
 
     flags.formUnion([.setSigmask, .setSigdefault])

@@ -15,21 +15,21 @@ public enum FileControl { }
 
 public extension FileControl {
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, command: Command) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue)
     }
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, command: Command, value: Int32) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue, value)
     }
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, command: Command, ptr: UnsafeMutableRawPointer) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue, ptr)
@@ -37,6 +37,7 @@ public extension FileControl {
   }
 
   struct Command: MacroRawRepresentable {
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -65,28 +66,29 @@ public extension FileControl.Command {
 }
 
 public extension FileControl {
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func duplicate(_ fd: FileDescriptor) throws -> FileDescriptor {
     try control(fd, command: .duplicateFD).map(FileDescriptor.init).get()
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func duplicateCloseOnExec(_ fd: FileDescriptor) throws -> FileDescriptor {
     try control(fd, command: .duplicateFDCloseOnExec).map(FileDescriptor.init).get()
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func flags(for fd: FileDescriptor) throws -> FileDescriptorFlags {
     try .init(rawValue: control(fd, command: .getFlags).get())
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(_ fd: FileDescriptor, flags: FileDescriptorFlags) throws {
     _ = try control(fd, command: .setFlags, value: flags.rawValue).get()
   }
 
   struct FileDescriptorFlags: OptionSet, MacroRawRepresentable {
     public var rawValue: Int32
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -95,22 +97,22 @@ public extension FileControl {
     public static var closeOnExec: Self { .init(macroValue: FD_CLOEXEC) }
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func statusFlags(for fd: FileDescriptor) throws -> Int32 {
     try control(fd, command: .getStatusFlags).get()
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(_ fd: FileDescriptor, statusFlags: Int32) throws {
     _ = try control(fd, command: .setStatusFlags, value: statusFlags).get()
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func processID(for fd: FileDescriptor) throws -> ProcessID {
     try control(fd, command: .getProcessID).map(ProcessID.init).get()
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(_ fd: FileDescriptor, processID: ProcessID) throws {
     _ = try control(fd, command: .setProcessID, value: processID.rawValue).get()
   }
@@ -167,7 +169,7 @@ public extension FileControl {
     }
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func preAllocate(_ fd: FileDescriptor, options: inout PreAllocateOptions) throws {
     _ = try control(fd, command: .preAllocate, ptr: &options).get()
   }
@@ -176,11 +178,12 @@ public extension FileControl {
     @usableFromInline
     internal var rawValue: fstore
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() {
       rawValue = .init()
     }
 
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var flags: Flags {
       get {
         .init(rawValue: rawValue.fst_flags)
@@ -191,6 +194,7 @@ public extension FileControl {
     }
     public struct Flags: OptionSet, MacroRawRepresentable {
       public var rawValue: UInt32
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: UInt32) {
         self.rawValue = rawValue
       }
@@ -206,17 +210,14 @@ public extension FileControl {
       public static var persist: Self { .init(macroValue: F_ALLOCATEPERSIST) }
     }
 
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var positionMode: PositionMode {
-      get {
-        .init(rawValue: rawValue.fst_posmode)
-      }
-      set {
-        rawValue.fst_posmode = newValue.rawValue
-      }
+      get { .init(rawValue: rawValue.fst_posmode) }
+      set { rawValue.fst_posmode = newValue.rawValue }
     }
     public struct PositionMode: MacroRawRepresentable {
       public let rawValue: Int32
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -230,29 +231,21 @@ public extension FileControl {
     }
 
     /// start of the region
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var offset: Int64 {
-      get {
-        rawValue.fst_offset
-      }
-      set {
-        rawValue.fst_offset = newValue
-      }
+      _read { yield rawValue.fst_offset }
+      _modify { yield &rawValue.fst_offset }
     }
 
     /// size of the region
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var length: Int64 {
-      get {
-        rawValue.fst_length
-      }
-      set {
-        rawValue.fst_length = newValue
-      }
+      _read { yield rawValue.fst_length }
+      _modify { yield &rawValue.fst_length }
     }
 
     /// number of bytes allocated
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var allocatedBytes: Int64 {
       rawValue.fst_bytesalloc
     }

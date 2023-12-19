@@ -11,13 +11,13 @@ public struct SignalHandler {
 
 public extension SignalHandler {
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var ignore: Self { .init(SystemLibc.SIG_IGN) }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var `default`: Self { .init(SystemLibc.SIG_DFL) }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func custom(_ body: @convention(c) (_ signal: Int32) -> Void) -> Self {
     .init(body)
   }

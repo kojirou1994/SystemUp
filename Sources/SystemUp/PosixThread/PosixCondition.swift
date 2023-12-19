@@ -12,7 +12,7 @@ public struct PosixCondition {
 
 public extension PosixCondition {
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func create(attributes: Attributes? = nil) -> Result<Self, Errno> {
     var mutex = Self.init()
     return SyscallUtilities.errnoOrZeroOnReturn {
@@ -24,23 +24,23 @@ public extension PosixCondition {
     }.map { mutex }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func destroy() {
     PosixThread.call {
       pthread_cond_destroy(&rawValue)
     }
   }
 
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func broadcast() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_broadcast(&rawValue)
     }
   }
 
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func signal() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_signal(&rawValue)
@@ -48,8 +48,8 @@ public extension PosixCondition {
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func wait(mutex: inout PosixMutex) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_wait(&rawValue, &mutex.rawValue)
@@ -57,8 +57,8 @@ public extension PosixCondition {
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func timedwait(mutex: inout PosixMutex, abstime: UnsafePointer<timespec>) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_timedwait(&rawValue, &mutex.rawValue, abstime)
@@ -74,7 +74,7 @@ extension PosixCondition {
     @usableFromInline
     internal var rawValue: pthread_condattr_t = .init()
 
-    @inlinable
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static func create() -> Result<Self, Errno> {
       var attr = Self.init()
       return SyscallUtilities.errnoOrZeroOnReturn {
@@ -82,7 +82,7 @@ extension PosixCondition {
       }.map { attr }
     }
 
-    @inlinable
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func destroy() {
       PosixThread.call {
         pthread_condattr_destroy(&rawValue)
@@ -94,7 +94,7 @@ extension PosixCondition {
 
 public extension PosixCondition.Attributes {
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var processShared: PosixMutex.ProcessShared {
     mutating get {
       PosixThread.get {

@@ -6,8 +6,7 @@ import CUtility
 public enum WaitPID {}
 
 public extension WaitPID {
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func wait(_ target: TargetID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
                    rusage: UnsafeMutablePointer<rusage>? = nil) -> Result<ProcessID, Errno> {
     SyscallUtilities.valueOrErrno {
@@ -34,6 +33,7 @@ extension WaitPID {
 
   public struct Options: OptionSet {
     public var rawValue: Int32
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -41,6 +41,7 @@ extension WaitPID {
 
   public struct ExitStatus: RawRepresentable {
     public var rawValue: Int32
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -74,42 +75,42 @@ public extension WaitPID.Options {
 }
 
 public extension WaitPID.ExitStatus {
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var exited: Bool {
     swift_WIFEXITED(rawValue).cBool
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var exitStatus: Int32 {
     swift_WEXITSTATUS(rawValue)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var signaled: Bool {
     swift_WIFSIGNALED(rawValue).cBool
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var terminationSignal: Signal {
     .init(rawValue: swift_WTERMSIG(rawValue))
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var coreDumped: Bool {
     swift_WCOREDUMP(rawValue).cBool
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var stopped: Bool {
     swift_WIFSTOPPED(rawValue).cBool
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var stopSignal: Signal {
     .init(rawValue: swift_WSTOPSIG(rawValue))
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var continued: Bool {
     swift_WIFCONTINUED(rawValue).cBool
   }

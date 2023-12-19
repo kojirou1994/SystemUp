@@ -31,15 +31,16 @@ extension SystemFileManager {
   }
 
   public static func remove(_ path: FilePath) -> Result<Void, Errno> {
-    var status = FileStatus(rawValue: .init())
-    return FileSyscalls.fileStatus(.absolute(path), flags: .noFollow, into: &status)
-      .flatMap {
-        if status.fileType == .directory {
-          return removeDirectoryRecursive(path)
-        } else {
-          return FileSyscalls.unlink(.absolute(path))
+    withUnsafeTemporaryAllocation(of: FileStatus.self, capacity: 1) { buffer in
+      FileSyscalls.fileStatus(.absolute(path), flags: .noFollow, into: &buffer.baseAddress!.pointee)
+        .flatMap { () -> Result<Void, Errno> in
+          if buffer[0].fileType == .directory {
+            return removeDirectoryRecursive(path)
+          } else {
+            return FileSyscalls.unlink(.absolute(path))
+          }
         }
-      }
+    }
   }
 
   public static func removeDirectory(_ path: FilePath) -> Result<Void, Errno> {
@@ -63,28 +64,21 @@ extension SystemFileManager {
     case .failure(let e): return .failure(e)
     case .success(let directory):
       defer { directory.close() }
-      rootloop: while true {
-        switch directory.read() {
-        case .failure(let e): return .failure(e)
-        case .success(let entry):
-          if let entry = entry {
-            if entry.pointee.isDot {
-              continue rootloop
-            }
-            let entryName = entry.pointee.name
-            let childPath = path.appending(entryName)
-            let result: Result<Void, Errno>
-            switch entry.pointee.fileType {
-            case .directory: result = removeDirectoryRecursive(childPath)
-            default: result = FileSyscalls.unlink(.absolute(childPath))
-            }
-            switch result {
-            case .failure(let e): return .failure(e)
-            case .success: break
-            }
-          } else {
-            // read finished
-            break rootloop
+      while let result = directory.withNextEntry({ entry -> Result<Void, Errno> in
+        // remove each entry, return result
+        let entryName = entry.name
+        let childPath = path.appending(entryName)
+        switch entry.fileType {
+        case .directory: return removeDirectoryRecursive(childPath)
+        default: return FileSyscalls.unlink(.absolute(childPath))
+        }
+      }) {
+        switch result {
+        case .failure(let readError): return .failure(readError)
+        case .success(let removeResult):
+          switch removeResult {
+          case .success: break
+          case .failure(let removeError): return .failure(removeError)
           }
         }
       }
@@ -105,15 +99,18 @@ extension SystemFileManager {
     try Directory.open(path)
       .get()
       .closeAfter { directory in
-        while let nextEntry = try directory.read().get() {
-          if nextEntry.pointee.isDot {
-            continue
-          }
-          let entryName = nextEntry.pointee.name
-          let result = basePath.appending(entryName)
-          results.append(result)
-          if nextEntry.pointee.fileType == .directory {
-            try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
+        while true {
+          let result: ()? = try directory.withNextEntry { nextEntry in
+            let entryName = nextEntry.name
+            let result = basePath.appending(entryName)
+            results.append(result)
+            if nextEntry.fileType == .directory {
+              try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
+            }
+          }?.get()
+
+          if result == nil {
+            break
           }
         }
       }
@@ -133,38 +130,86 @@ public extension SystemFileManager {
     return Int(status.size)
   }
 
-  static func contents(ofFileDescriptor fd: FileDescriptor) throws -> [UInt8] {
-    let size = try length(fd: fd)
+  private static func streamRead<T: RangeReplaceableCollection>(fd: FileDescriptor, bufferSize: Int) throws -> T where T.Element == UInt8 {
+    precondition(bufferSize > 0)
+    var dest = T()
+    try withUnsafeTemporaryAllocation(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer in
+      while case let readSize = try fd.read(into: buffer), readSize > 0 {
+        dest.append(contentsOf: UnsafeMutableRawBufferPointer(rebasing: buffer.prefix(readSize)))
+      }
+    }
+    return dest
+  }
 
-    return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      initializedCount = try fd.read(into: .init(buffer))
+  enum FullContentLoadMode {
+    case length
+    case stream(bufferSize: Int)
+  }
+
+  static func contents(ofFile path: FilePath, mode: FullContentLoadMode = .length) throws -> [UInt8] {
+    let fd = try FileDescriptor.open(path, .readOnly)
+    return try fd.closeAfter {
+      try contents(ofFileDescriptor: fd, mode: mode)
     }
   }
 
   @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
-  static func contents(ofFileDescriptor fd: FileDescriptor) throws -> String {
-    let size = try length(fd: fd)
-
-    return try .init(unsafeUninitializedCapacity: size) { buffer in
-      try fd.read(into: UnsafeMutableRawBufferPointer(buffer))
+  static func contents(ofFile path: FilePath, mode: FullContentLoadMode = .length) throws -> String {
+    let fd = try FileDescriptor.open(path, .readOnly)
+    return try fd.closeAfter {
+      try contents(ofFileDescriptor: fd, mode: mode)
     }
   }
 
-  static func contents(ofFileDescriptor fd: FileDescriptor) throws -> Data {
-    let size = try length(fd: fd)
-
-    guard size > 0 else {
-      return .init()
+  static func contents(ofFile path: FilePath, mode: FullContentLoadMode = .length) throws -> Data {
+    let fd = try FileDescriptor.open(path, .readOnly)
+    return try fd.closeAfter {
+      try contents(ofFileDescriptor: fd, mode: mode)
     }
+  }
 
-    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
+  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> [UInt8] {
+    switch mode {
+    case .length:
+      let size = try length(fd: fd)
+      return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
+        initializedCount = try fd.read(into: .init(buffer))
+      }
+    case .stream(let bufferSize):
+      return try streamRead(fd: fd, bufferSize: bufferSize)
+    }
+  }
 
-    do {
-      let count = try fd.read(into: buffer)
-      return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
-    } catch {
-      buffer.deallocate()
-      throw error
+  @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
+  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> String {
+    switch mode {
+    case .length:
+      let size = try length(fd: fd)
+      return try .init(unsafeUninitializedCapacity: size) { buffer in
+        try fd.read(into: UnsafeMutableRawBufferPointer(buffer))
+      }
+    case .stream(let bufferSize):
+      return try .init(decoding: streamRead(fd: fd, bufferSize: bufferSize) as [UInt8], as: UTF8.self)
+    }
+  }
+
+  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> Data {
+    switch mode {
+    case .length:
+      let size = try length(fd: fd)
+      guard size > 0 else {
+        return .init()
+      }
+      let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
+      do {
+        let count = try fd.read(into: buffer)
+        return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
+      } catch {
+        buffer.deallocate()
+        throw error
+      }
+    case .stream(let bufferSize):
+      return try streamRead(fd: fd, bufferSize: bufferSize)
     }
   }
 

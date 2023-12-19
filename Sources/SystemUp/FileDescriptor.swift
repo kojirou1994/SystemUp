@@ -17,7 +17,7 @@ extension FileDescriptor {
 // MARK: TTY
 public extension FileDescriptor {
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func isatty() -> Result<Void, Errno> {
     let ret = SystemLibc.isatty(rawValue)
     assert([0, 1].contains(ret))
@@ -29,7 +29,7 @@ public extension FileDescriptor {
     }
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var isTerminal: Bool {
     switch isatty() {
     case .success: return true
@@ -38,12 +38,12 @@ public extension FileDescriptor {
   }
 
   /// name stored in a static buffer which will be overwritten on subsequent calls
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var unsafeTTYName: StaticCString? {
     ttyname(rawValue).map { StaticCString(cString: $0) }
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getTTYName(into buffer: UnsafeMutablePointer<CChar>, capacity: Int) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       ttyname_r(rawValue, buffer, capacity)

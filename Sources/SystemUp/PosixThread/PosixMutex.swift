@@ -3,7 +3,7 @@ import SystemPackage
 import CUtility
 
 public struct PosixMutex {
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   internal init() {}
 
   @usableFromInline
@@ -12,7 +12,7 @@ public struct PosixMutex {
 
 public extension PosixMutex {
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func create(attributes: Attributes? = nil) -> Result<Self, Errno> {
     var mutex = Self.init()
     return SyscallUtilities.errnoOrZeroOnReturn {
@@ -24,7 +24,7 @@ public extension PosixMutex {
     }.map { mutex }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func destroy() {
     PosixThread.call {
       pthread_mutex_destroy(&rawValue)
@@ -32,8 +32,8 @@ public extension PosixMutex {
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func lock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_mutex_lock(&rawValue)
@@ -41,8 +41,8 @@ public extension PosixMutex {
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func unlock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_mutex_unlock(&rawValue)
@@ -50,7 +50,7 @@ public extension PosixMutex {
   }
 
   @available(*, noasync)
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func tryLock() -> Bool {
     pthread_mutex_trylock(&rawValue) == 0
   }
@@ -58,13 +58,13 @@ public extension PosixMutex {
 
 extension PosixMutex {
   public struct Attributes {
-    @usableFromInline
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     internal init() {}
 
     @usableFromInline
     internal var rawValue: pthread_mutexattr_t = .init()
 
-    @inlinable
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static func create(type: MutexType? = nil) -> Result<Self, Errno> {
       var attr = Self.init()
       return SyscallUtilities.errnoOrZeroOnReturn {
@@ -77,7 +77,7 @@ extension PosixMutex {
       }
     }
 
-    @inlinable
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func destroy() {
       PosixThread.call {
         pthread_mutexattr_destroy(&rawValue)
@@ -85,7 +85,7 @@ extension PosixMutex {
     }
 
     public struct MutexType: MacroRawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -103,7 +103,7 @@ extension PosixMutex {
     }
 
     public struct Policy: MacroRawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -119,7 +119,7 @@ extension PosixMutex {
     }
 
     public struct MutexProtocol: MacroRawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -136,7 +136,7 @@ extension PosixMutex {
   }
 
   public struct ProcessShared: MacroRawRepresentable {
-
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -151,7 +151,7 @@ extension PosixMutex {
 }
 
 public extension PosixMutex {
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var prioceiling: Int32 {
     mutating get {
       PosixThread.get {
@@ -168,7 +168,7 @@ public extension PosixMutex {
 }
 
 public extension PosixMutex.Attributes {
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var prioceiling: Int32 {
     mutating get {
       PosixThread.get {
@@ -182,7 +182,7 @@ public extension PosixMutex.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var `protocol`: Int32 {
     mutating get {
       PosixThread.get {
@@ -196,7 +196,7 @@ public extension PosixMutex.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var processShared: PosixMutex.ProcessShared {
     mutating get {
       PosixThread.get {
@@ -210,7 +210,7 @@ public extension PosixMutex.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var type: MutexType {
     mutating get {
       PosixThread.get {
@@ -226,7 +226,7 @@ public extension PosixMutex.Attributes {
 
   #if canImport(Darwin)
   @available(macOS 10.13.4, iOS 11.3, watchOS 4.3, tvOS 11.3, *)
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var policy: Policy {
     mutating get {
       PosixThread.get {

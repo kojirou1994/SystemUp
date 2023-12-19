@@ -1,6 +1,7 @@
 import SystemPackage
 import SystemLibc
 import CUtility
+import CGeneric
 
 public struct Directory {
 
@@ -20,20 +21,19 @@ public struct Directory {
   @usableFromInline
   internal let dir: CDirectoryStream
 
+  @CStringGeneric()
   @_alwaysEmitIntoClient
-  public static func open(_ path: FilePath) -> Result<Self, Errno> {
-    guard let dir = path.withPlatformString(opendir) else {
-      return .failure(.systemCurrent)
+  public static func open(_ path: String) -> Result<Self, Errno> {
+    SyscallUtilities.unwrap {
+      .init(opendir(path))
     }
-    return .success(.init(dir))
   }
 
   @_alwaysEmitIntoClient
   public static func open(_ fd: FileDescriptor) -> Result<Self, Errno> {
-    guard let dir = fdopendir(fd.rawValue) else {
-      return .failure(.systemCurrent)
+    SyscallUtilities.unwrap {
+      .init(fdopendir(fd.rawValue))
     }
-    return .success(.init(dir))
   }
 
   @_alwaysEmitIntoClient
@@ -64,34 +64,45 @@ public struct Directory {
     .init(rawValue: dirfd(dir))
   }
 
-
   @available(*, deprecated, message: "unsafe")
-  public func read(into entry: inout Directory.Entry) -> Result<Bool, Errno> {
+  @_alwaysEmitIntoClient
+  public func read(into entry: UnsafeMutablePointer<dirent>) -> Result<Bool, Errno> {
     var entryPtr: UnsafeMutablePointer<dirent>?
     return SyscallUtilities.voidOrErrno {
-      readdir_r(dir, &entry.entry, &entryPtr)
+      readdir_r(dir, entry, &entryPtr)
     }
     .map { _ in
       if _slowPath(entryPtr == nil) {
         return false
       }
-      withUnsafeMutablePointer(to: &entry) { ptr in
-        assert(OpaquePointer(ptr) == OpaquePointer(entryPtr))
-      }
+      assert(OpaquePointer(entry) == OpaquePointer(entryPtr))
       return true
     }
   }
 
+  /// not thread-safe, dot . and .. is ignored
   @_alwaysEmitIntoClient
-  public func read() -> Result<UnsafeMutablePointer<Directory.Entry>?, Errno> {
-    errno = 0
-    let entry = readdir(dir)
-    if entry == nil,
-       case let err = Errno.systemCurrent,
-       err.rawValue != 0 {
-      return .failure(err)
+  public func withNextEntry<R>(_ body: (borrowing Entry) throws -> R) rethrows -> Result<R, Errno>? {
+    while true {
+      Errno.systemCurrent = .init(rawValue: 0)
+      let ptr = readdir(dir)
+      if let ptr {
+        let entry = Entry(ptr)
+        if entry.isDot {
+          continue
+        }
+        return try .success(body(entry))
+      } else {
+        if case let err = Errno.systemCurrent,
+           err.rawValue != 0 {
+          // errno changed, error happened!
+          return .failure(err)
+        } else {
+          // end of stream
+          return nil
+        }
+      }
     }
-    return .success(.init(OpaquePointer(entry)))
   }
 
   @_alwaysEmitIntoClient
@@ -103,7 +114,7 @@ public struct Directory {
 }
 
 extension dirent {
-  @usableFromInline
+  @inlinable
   internal var isDot: Bool {
     let point = UInt8(ascii: ".")
     return (d_name.0 == point && d_name.1 == 0)
@@ -113,66 +124,76 @@ extension dirent {
 
 extension Directory {
 
-  public struct Entry {
+  public struct Entry: ~Copyable {
 
     @usableFromInline
-    internal var entry: dirent
+    internal let entry: UnsafeMutablePointer<dirent>
+
+    @_alwaysEmitIntoClient
+    init(_ entry: UnsafeMutablePointer<dirent>) {
+      self.entry = entry
+    }
 
     @_alwaysEmitIntoClient
     public var entryFileNumber: CInterop.UpInodeNumber {
-      entry.d_ino
+      entry.pointee.d_ino
     }
 
     @_alwaysEmitIntoClient
     public var seekOffset: CInterop.UpSeekOffset {
       #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-      return entry.d_seekoff
+      return entry.pointee.d_seekoff
       #else
-      return entry.d_off
+      return entry.pointee.d_off
       #endif
     }
 
     @_alwaysEmitIntoClient
     public var recordLength: UInt16 {
-      entry.d_reclen
+      entry.pointee.d_reclen
     }
 
     @_alwaysEmitIntoClient
     public var fileType: DirectoryType {
-      DirectoryType(rawValue: entry.d_type)
+      DirectoryType(rawValue: entry.pointee.d_type)
     }
 
     @_alwaysEmitIntoClient
     public var isHidden: Bool {
-      entry.d_name.0 == UInt8(ascii: ".")
+      entry.pointee.d_name.0 == UInt8(ascii: ".")
     }
 
     /// is "." or ".."
     @_alwaysEmitIntoClient
-    public var isDot: Bool {
-      entry.isDot
+    internal var isDot: Bool {
+      entry.pointee.isDot
     }
 
     /// entry name (up to MAXPATHLEN bytes)
     @_alwaysEmitIntoClient
     public var name: String {
-      #if canImport(Darwin)
       withNameBuffer { buffer in
         String(decoding: buffer, as: UTF8.self)
       }
-      #else
-      String(cStackString: entry.d_name)
-      #endif
     }
 
-    #if canImport(Darwin)
     @_alwaysEmitIntoClient
     public func withNameBuffer<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
-      try withUnsafeBytes(of: entry.d_name) { buffer in
-        try body(.init(rebasing: buffer.prefix(Int(entry.d_namlen))))
+      try withNameCString { cString in
+        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+        let length = Int(entry.pointee.d_namlen)
+        #else
+        let length = strlen(cString)
+        #endif
+
+        return try body(.init(start: cString, count: length))
       }
     }
-    #endif
+
+    @_alwaysEmitIntoClient
+    public func withNameCString<R>(_ body: (UnsafePointer<CChar>) throws -> R) rethrows -> R {
+      try body(UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self))
+    }
   }
 
 }

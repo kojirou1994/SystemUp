@@ -12,7 +12,7 @@ public struct PosixRWLock {
 
 public extension PosixRWLock {
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func create(attributes: Attributes? = nil) -> Result<Self, Errno> {
     var lock = Self.init()
     return SyscallUtilities.errnoOrZeroOnReturn {
@@ -24,7 +24,7 @@ public extension PosixRWLock {
     }.map { lock }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func destroy() {
     PosixThread.call {
       pthread_rwlock_destroy(&rawValue)
@@ -32,8 +32,8 @@ public extension PosixRWLock {
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func lockRead() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_rwlock_rdlock(&rawValue)
@@ -41,14 +41,14 @@ public extension PosixRWLock {
   }
 
   @available(*, noasync)
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func tryLockRead() -> Bool {
     pthread_rwlock_tryrdlock(&rawValue) == 0
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func lockWrite() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_rwlock_wrlock(&rawValue)
@@ -56,14 +56,14 @@ public extension PosixRWLock {
   }
 
   @available(*, noasync)
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func tryLockWrite() -> Bool {
     pthread_rwlock_trywrlock(&rawValue) == 0
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func unlock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_rwlock_unlock(&rawValue)
@@ -79,7 +79,7 @@ extension PosixRWLock {
     @usableFromInline
     internal var rawValue: pthread_rwlockattr_t = .init()
     
-    @inlinable
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static func create() -> Result<Self, Errno> {
       var attr = Self.init()
       return SyscallUtilities.errnoOrZeroOnReturn {
@@ -89,7 +89,7 @@ extension PosixRWLock {
       }
     }
 
-    @inlinable
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func destroy() {
       PosixThread.call {
         pthread_rwlockattr_destroy(&rawValue)
@@ -99,7 +99,7 @@ extension PosixRWLock {
 }
 
 public extension PosixRWLock.Attributes {
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var processShared: PosixMutex.ProcessShared {
     mutating get {
       PosixThread.get {

@@ -6,24 +6,21 @@ public enum IOControl { }
 
 public extension IOControl {
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, request: Request) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       ioctl(fd.rawValue, request.rawValue)
     }
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, request: Request, value: Int32) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       ioctl(fd.rawValue, request.rawValue, value)
     }
   }
 
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func control(_ fd: FileDescriptor, request: Request, ptr: UnsafeMutableRawPointer) -> Result<Int32, Errno> {
     SyscallUtilities.valueOrErrno {
       ioctl(fd.rawValue, request.rawValue, ptr)
@@ -31,6 +28,7 @@ public extension IOControl {
   }
 
   struct Request: RawRepresentable {
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: UInt) {
       self.rawValue = rawValue
     }

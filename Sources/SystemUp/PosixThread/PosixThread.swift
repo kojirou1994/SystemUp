@@ -17,16 +17,16 @@ extension PosixThread {
 }
 
 public extension PosixThread.ThreadID {
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func cancel() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cancel(rawValue)
     }
   }
 
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   __consuming func detach() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_detach(rawValue)
@@ -34,8 +34,8 @@ public extension PosixThread.ThreadID {
   }
 
   @available(*, noasync)
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   __consuming func join() -> Result<UnsafeMutableRawPointer?, Errno> {
     var value: UnsafeMutableRawPointer?
     return SyscallUtilities.errnoOrZeroOnReturn {
@@ -44,8 +44,8 @@ public extension PosixThread.ThreadID {
   }
 
   /// send a signal to a specified thread
-  @inlinable
   @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func send(signal: Signal) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_kill(rawValue, signal.rawValue)
@@ -82,13 +82,13 @@ public extension PosixThread {
   }
 
   @available(*, noasync)
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func exit(value: UnsafeMutableRawPointer? = nil) -> Never {
     pthread_exit(value)
   }
 
   @available(*, noasync)
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(cancelState: CancelState, oldValue: UnsafeMutablePointer<CancelState>? = nil) {
     PosixThread.call {
       pthread_setcancelstate(cancelState.rawValue, oldValue?.pointer(to: \.rawValue))
@@ -96,7 +96,7 @@ public extension PosixThread {
   }
 
   @available(*, noasync)
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(cancelType: CancelType, oldValue: UnsafeMutablePointer<CancelType>? = nil) {
     PosixThread.call {
       pthread_setcanceltype(cancelType.rawValue, oldValue?.pointer(to: \.rawValue))
@@ -104,7 +104,7 @@ public extension PosixThread {
   }
 
   @available(*, noasync)
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func testCancel() {
     pthread_testcancel()
   }
@@ -112,19 +112,19 @@ public extension PosixThread {
   #if canImport(Darwin)
   /// yield control of the current thread
   @available(*, noasync)
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func yield() {
     pthread_yield_np()
   }
   #endif
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var current: ThreadID {
     .init(rawValue: pthread_self())
   }
 
   #if !os(Linux)
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var concurrency: Int32 {
     set {
       PosixThread.call {
@@ -141,11 +141,11 @@ public extension PosixThread {
 // MARK: Pthread Helpers
 public extension PosixThread {
 
-  static func create(main: ThreadMain, attributes: Attributes? = nil) throws -> ThreadID {
-    try create(context: Unmanaged.passRetained(main).toOpaque(), attributes: attributes) { context in
-      let main = Unmanaged<ThreadMain>.fromOpaque(context.unsafelyUnwrapped)
-      main.takeUnretainedValue().main()
-      main.release()
+  static func create(attributes: Attributes? = nil, _ block: @escaping () -> Void) throws -> ThreadID {
+    try create(context: Unmanaged.passRetained(block as AnyObject).toOpaque(), attributes: attributes) { context in
+      let block = Unmanaged<AnyObject>.fromOpaque(context.unsafelyUnwrapped)
+      (block.takeUnretainedValue() as! (() -> Void))()
+      block.release()
       return nil
     }.get()
   }
@@ -158,16 +158,7 @@ public extension PosixThread {
     }
     attr.scope = .system
     attr.detachState = .detached
-    return try create(main: .init(main: block), attributes: attr)
-  }
-
-  final class ThreadMain {
-    @inlinable @inline(__always)
-    public init(main: @escaping () -> Void) {
-      self.main = main
-    }
-
-    public let main: () -> Void
+    return try create(attributes: attr, block)
   }
 }
 
@@ -197,7 +188,7 @@ extension PosixThread {
       }.map { attr }
     }
 
-    @inlinable
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func destroy() {
       PosixThread.call {
         pthread_attr_destroy(&rawValue)
@@ -205,7 +196,7 @@ extension PosixThread {
     }
 
     public struct DetachState: MacroRawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -219,7 +210,7 @@ extension PosixThread {
     }
 
     public struct Inheritsched: MacroRawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -233,7 +224,7 @@ extension PosixThread {
     }
 
     public struct SchedParam: RawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: sched_param) {
         self.rawValue = rawValue
       }
@@ -248,7 +239,7 @@ extension PosixThread {
     }
 
     public struct SchedulingPolicy: MacroRawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -264,7 +255,7 @@ extension PosixThread {
     }
 
     public struct Scope: MacroRawRepresentable {
-
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int32) {
         self.rawValue = rawValue
       }
@@ -279,7 +270,7 @@ extension PosixThread {
   }
 
   public struct CancelState: MacroRawRepresentable {
-
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -293,7 +284,7 @@ extension PosixThread {
   }
 
   public struct CancelType: MacroRawRepresentable {
-
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
       self.rawValue = rawValue
     }
@@ -308,7 +299,7 @@ extension PosixThread {
 }
 
 public extension PosixThread.Attributes {
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var stack: UnsafeMutableRawBufferPointer {
     mutating get {
       var start: UnsafeMutableRawPointer?
@@ -323,7 +314,7 @@ public extension PosixThread.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var stackSize: Int {
     mutating get {
       PosixThread.get { pthread_attr_getstacksize(&rawValue, $0) }
@@ -333,7 +324,7 @@ public extension PosixThread.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var guardSize: Int {
     mutating get {
       PosixThread.get { pthread_attr_getguardsize(&rawValue, $0) }
@@ -344,7 +335,7 @@ public extension PosixThread.Attributes {
   }
 
   #if !os(Linux)
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var stackAddress: UnsafeMutableRawPointer {
     mutating get {
       PosixThread.get { pthread_attr_getstackaddr(&rawValue, $0) }
@@ -355,7 +346,7 @@ public extension PosixThread.Attributes {
   }
   #endif
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var detachState: DetachState {
     mutating get {
       PosixThread.get { pthread_attr_getdetachstate(&rawValue, $0) }
@@ -365,7 +356,7 @@ public extension PosixThread.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var inheritsched: Inheritsched {
     mutating get {
       PosixThread.get { pthread_attr_getinheritsched(&rawValue, $0) }
@@ -375,7 +366,7 @@ public extension PosixThread.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var schedParam: SchedParam {
     mutating get {
       var value: sched_param = .init()
@@ -393,7 +384,7 @@ public extension PosixThread.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var schedPolicy: SchedulingPolicy {
     mutating get {
       PosixThread.get { pthread_attr_getschedpolicy(&rawValue, $0) }
@@ -403,7 +394,7 @@ public extension PosixThread.Attributes {
     }
   }
 
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var scope: Scope {
     mutating get {
       PosixThread.get { pthread_attr_getscope(&rawValue, $0) }
@@ -417,7 +408,7 @@ public extension PosixThread.Attributes {
 // MARK: Utility
 extension PosixThread {
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func get<T, R>(_ body: (UnsafeMutablePointer<R>) -> Int32) -> T {
     return withUnsafeTemporaryAllocation(of: R.self, capacity: 1) { dst in
       assertNoFailure {
@@ -429,7 +420,7 @@ extension PosixThread {
     }
   }
 
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func call(_ body: () -> Int32) {
     assertNoFailure {
       SyscallUtilities.errnoOrZeroOnReturn(body)
@@ -441,6 +432,7 @@ extension PosixThread {
 // MARK: Darwin QOS
 #if canImport(Darwin)
 public extension PosixThread {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_set_qos_class_self_np(qos, relativePriority)
@@ -451,20 +443,29 @@ public extension PosixThread {
 public extension PosixThread.ThreadID {
   // moveOnly
   struct QualityOfServiceOverride {
+    @usableFromInline
     let rawValue: pthread_override_t
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    init(rawValue: pthread_override_t) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     __consuming
     public func end() {
       pthread_override_qos_class_end_np(rawValue)
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_get_qos_class_np(rawValue, qos, relativePriority)
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func overrideStart(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> QualityOfServiceOverride? {
     unsafeBitCast(pthread_override_qos_class_start_np(rawValue, qos, relativePriority), to: OpaquePointer?.self)
       .map(QualityOfServiceOverride.init)
@@ -473,12 +474,14 @@ public extension PosixThread.ThreadID {
 }
 
 public extension PosixThread.Attributes {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_attr_get_qos_class_np(&rawValue, qos, relativePriority)
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_attr_set_qos_class_np(&rawValue, qos, relativePriority)

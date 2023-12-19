@@ -1,6 +1,7 @@
 import SystemLibc
 import CUtility
 import SystemPackage
+import CGeneric
 
 public struct PosixEnvironment {
   public var environment: [String: String]
@@ -42,30 +43,33 @@ public extension PosixEnvironment {
   }
 
   /// set() may invalidate the result cstring
-  @_alwaysEmitIntoClient
-  static func get(key: UnsafePointer<CChar>) -> String? {
+  @CStringGeneric()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func get(key: String) -> String? {
     SystemLibc.getenv(key).map { String(cString: $0) }
   }
 
+  @CStringGeneric()
   @discardableResult
-  @_alwaysEmitIntoClient
-  static func set(key: UnsafePointer<CChar>, value: UnsafePointer<CChar>, overwrite: Bool = true) -> Result<Void, Errno> {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func set(key: String, value: String, overwrite: Bool = true) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.setenv(key, value, .init(cBool: overwrite))
     }
   }
 
   @available(*, unavailable, message: "memory leak")
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func put<T: StringProtocol>(_ string: T) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       string.withCString { SystemLibc.putenv(strdup($0)) }
     }
   }
 
+  @CStringGeneric()
   @discardableResult
-  @_alwaysEmitIntoClient
-  static func unset(key: UnsafePointer<CChar>) -> Result<Void, Errno> {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func unset(key: String) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.unsetenv(key)
     }

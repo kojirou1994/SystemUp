@@ -2,39 +2,39 @@
 import SystemLibc
 import SystemPackage
 import CUtility
+import CGeneric
 
 @available(macOS 10.12, iOS 10.0, tvOS 10.0, watchOS 3.0, *)
-public extension FileSyscalls {
+public extension SystemCall {
 
   /// create copy on write clones of files
-  static func cloneFile(from src: FilePathOption, to dst: FilePathOption, flags: CloneFlags = []) -> Result<Void, Errno> {
+  @CStringGeneric()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func cloneFile(_ src: String, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      src.path.withPlatformString { srcPath in
-        dst.path.withPlatformString { dstPath in
-          SystemLibc.clonefileat(
-            src.relativedDirFD.rawValue, srcPath,
-            dst.relativedDirFD.rawValue, dstPath,
-            flags.rawValue
-          )
-        }
-      }
+      SystemLibc.clonefileat(
+        srcBase.toFD, src,
+        dstBase.toFD, destPath,
+        flags.rawValue
+      )
     }
   }
 
   /// create copy on write clones of files
-  static func cloneFile(from fd: FileDescriptor, to dst: FilePathOption, flags: CloneFlags = []) -> Result<Void, Errno> {
+  @CStringGeneric()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func cloneFile(_ fd: FileDescriptor, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      dst.path.withPlatformString { dstPath in
-        SystemLibc.fclonefileat(
-          fd.rawValue,
-          dst.relativedDirFD.rawValue, dstPath,
-          flags.rawValue
-        )
-      }
+      SystemLibc.fclonefileat(
+        fd.rawValue,
+        dstBase.toFD, destPath,
+        flags.rawValue
+      )
     }
   }
 
   struct CloneFlags: OptionSet, MacroRawRepresentable {
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: UInt32) {
       self.rawValue = rawValue
     }

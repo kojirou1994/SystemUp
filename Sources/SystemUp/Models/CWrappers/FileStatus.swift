@@ -7,7 +7,7 @@ public struct FileStatus {
     self.rawValue = rawValue
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
     self.init(rawValue: .init())
   }
@@ -26,46 +26,46 @@ extension FileStatus: CustomStringConvertible {
 public extension FileStatus {
 
   /// ID of device containing file
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var deviceID: DeviceID {
     .init(rawValue: rawValue.st_dev)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var fileType: FileType {
     .init(rawValue: rawValue.st_mode & S_IFMT)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var permissions: FilePermissions {
     .init(rawValue: rawValue.st_mode & ~S_IFMT)
   }
 
   /// number of hard links to the file
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var hardLinksCount: CInterop.UpNumberOfLinks {
     rawValue.st_nlink
   }
 
   /// inode's number
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var fileSerialNumber: CInterop.UpInodeNumber {
     rawValue.st_ino
   }
 
   /// user-id of owner
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var userID: UInt32 {
     rawValue.st_uid
   }
 
   /// device type, for special file inode, eg. block or character
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var specialDeviceID: DeviceID {
     .init(rawValue: rawValue.st_rdev)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var lastAccessTime: CInterop.UpTimespec {
     #if canImport(Darwin)
     rawValue.st_atimespec
@@ -74,7 +74,7 @@ public extension FileStatus {
     #endif
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var lastModificationTime: CInterop.UpTimespec {
     #if canImport(Darwin)
     rawValue.st_mtimespec
@@ -83,7 +83,7 @@ public extension FileStatus {
     #endif
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var lastStatusChangedTime: CInterop.UpTimespec {
     #if canImport(Darwin)
     rawValue.st_ctimespec
@@ -93,38 +93,38 @@ public extension FileStatus {
   }
 
   #if canImport(Darwin)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var creationTime: CInterop.UpTimespec {
     rawValue.st_birthtimespec
   }
   #endif
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var size: CInterop.UpSize {
     rawValue.st_size
   }
 
   /// The actual number of blocks allocated for the file in 512-byte units.  As short symbolic links are stored in the inode, this number may be zero.
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var blocksCount: CInterop.UpBlocksCount {
     rawValue.st_blocks
   }
 
   /// The optimal I/O block size for the file.
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var blockSize: CInterop.UpBlockSize {
     rawValue.st_blksize
   }
 
   #if canImport(Darwin)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var flags: UInt32 {
     rawValue.st_flags
   }
   #endif
 
   #if canImport(Darwin)
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var fileGenerationNumber: UInt32 {
     rawValue.st_gen
   }

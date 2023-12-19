@@ -4,6 +4,7 @@ import SystemPackage
 public struct Signal: RawRepresentable, Hashable {
   public let rawValue: CInt
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: CInt) {
     self.rawValue = rawValue
   }
@@ -11,8 +12,7 @@ public struct Signal: RawRepresentable, Hashable {
 
 public extension Signal {
 
-  @inlinable
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(handler: SignalHandler, for signals: any Sequence<Self>) {
     signals.forEach { signal in
       assertNoFailure {
@@ -21,8 +21,7 @@ public extension Signal {
     }
   }
 
-  @_alwaysEmitIntoClient
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func set(handler: SignalHandler) -> Result<SignalHandler, Errno> {
     assert(self != .kill && self != .stop)
     let result = SystemLibc.signal(rawValue, handler.body)
@@ -32,16 +31,14 @@ public extension Signal {
     return .success(.init(result))
   }
 
-  @_alwaysEmitIntoClient
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func set(action: SignalAction) -> Result<SignalAction, Errno> {
     var old = SignalAction(uninitialize: ())
     return set(action: action, oldAction: &old)
       .map { old }
   }
 
-  @_alwaysEmitIntoClient
-  @inlinable
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func set(action: SignalAction, oldAction: UnsafeMutablePointer<SignalAction>?) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: action.rawValue) { action in
@@ -52,8 +49,7 @@ public extension Signal {
 
   /// send a signal to the current thread
   /// - Returns: void on success or any of the errors specified for the library functions getpid(2) and pthread_kill(2).
-  @_alwaysEmitIntoClient
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func sendToCurrentThread() -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.raise(rawValue)
@@ -77,13 +73,13 @@ extension Signal {
     @_alwaysEmitIntoClient
     public static var all: Self { .init(rawValue: -1) }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static func processID(_ id: ProcessID) -> Self {
       assert(id.rawValue > 0)
       return .init(rawValue: id.rawValue)
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static func groupID(_ id: Int32) -> Self {
       assert(id > 1)
       return .init(rawValue: -id)
@@ -91,7 +87,7 @@ extension Signal {
   }
 
   @discardableResult
-  @inlinable @inline(__always)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func send(to process: SendTargetProcess) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.kill(process.rawValue, rawValue)

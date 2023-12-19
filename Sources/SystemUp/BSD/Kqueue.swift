@@ -12,14 +12,14 @@ public struct Kqueue {
   @usableFromInline
   internal let rawValue: Int32
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func open() -> Result<Self, Errno> {
     SyscallUtilities.valueOrErrno {
       kqueue()
     }.map(Self.init)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   __consuming public func close() {
     assertNoFailure {
       SyscallUtilities.retryWhileInterrupted {
@@ -28,14 +28,14 @@ public struct Kqueue {
     }
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func register(change: __shared Kevent, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) -> Result<Int, Errno> {
     withUnsafePointer(to: change) { e in
       register(changes: .init(start: e, count: 1), eventsOutputTo: dest, timeout: timeout)
     }
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func register(changes: UnsafeBufferPointer<Kevent>, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) -> Result<Int, Errno> {
     SyscallUtilities.valueOrErrno {
       kevent(
@@ -55,12 +55,12 @@ public struct Kqueue {
       self.rawValue = rawValue
     }
 
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(identifier: some FixedWidthInteger, filter: some FixedWidthInteger, flags: some FixedWidthInteger, filterFlags: some FixedWidthInteger, filterData: some FixedWidthInteger, userDataIdentifier: UnsafeMutableRawPointer?) {
       rawValue = .init(ident: numericCast(identifier), filter: numericCast(filter), flags: numericCast(flags), fflags: numericCast(filterFlags), data: numericCast(filterData), udata: userDataIdentifier)
     }
 
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(identifier: some FixedWidthInteger, actions: Actions, filter: Filter, filterFlags: Filter.Flags, filterData: some FixedWidthInteger, userDataIdentifier: UnsafeMutableRawPointer?) {
       self.init(identifier: identifier, filter: filter.rawValue, flags: actions.rawValue, filterFlags: filterFlags.rawValue, filterData: filterData, userDataIdentifier: userDataIdentifier)
     }
@@ -70,7 +70,7 @@ public struct Kqueue {
       _read { yield Filter(rawValue: rawValue.filter) }
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var filterFlags: Filter.Flags {
       _read { yield Filter.Flags(rawValue: rawValue.fflags) }
     }
@@ -78,11 +78,12 @@ public struct Kqueue {
 
   public struct Kevent64: RawRepresentable {
     public var rawValue: kevent64_s
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: kevent64_s) {
       self.rawValue = rawValue
     }
 
-    @inlinable @inline(__always)
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(identifier: some FixedWidthInteger, filter: some FixedWidthInteger, flags: some FixedWidthInteger, filterFlags: some FixedWidthInteger, filterData: some FixedWidthInteger, userDataIdentifier: some FixedWidthInteger, filterExtension1: some FixedWidthInteger, filterExtension2: some FixedWidthInteger) {
       rawValue = .init(ident: numericCast(identifier), filter: numericCast(filter), flags: numericCast(flags), fflags: numericCast(filterFlags), data: numericCast(filterData), udata: numericCast(userDataIdentifier), ext: (numericCast(filterExtension1), numericCast(filterExtension2)))
     }
@@ -91,6 +92,7 @@ public struct Kqueue {
   public struct Filter: RawRepresentable {
     public let rawValue: Int16
 
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int16) {
       self.rawValue = rawValue
     }
@@ -102,6 +104,7 @@ public struct Kqueue {
 
     public struct Flags: MacroRawRepresentable, OptionSet {
       public var rawValue: UInt32
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: UInt32) {
         self.rawValue = rawValue
       }
@@ -109,6 +112,7 @@ public struct Kqueue {
 
     public struct VnodeFlags: MacroRawRepresentable, OptionSet {
       public var rawValue: UInt32
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: UInt32) {
         self.rawValue = rawValue
       }
@@ -117,6 +121,7 @@ public struct Kqueue {
 
   public struct Actions: MacroRawRepresentable, OptionSet {
     public var rawValue: UInt16
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: UInt16) {
       self.rawValue = rawValue
     }
@@ -127,7 +132,7 @@ public struct Kqueue {
 // MARK: Structured Kevent
 
 public extension Kqueue.Kevent {
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func vnode(fd: FileDescriptor, actions: Kqueue.Actions, flags: Kqueue.Filter.VnodeFlags) -> Self {
     .init(identifier: fd.rawValue, actions: actions, filter: .vnode, filterFlags: .init(rawValue: flags.rawValue), filterData: 0, userDataIdentifier: nil)
   }

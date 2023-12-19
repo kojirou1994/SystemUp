@@ -7,32 +7,29 @@ public enum Poll {
     @usableFromInline
     internal var rawValue: pollfd
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(fd: FileDescriptor, events: Events = []) {
       rawValue = .init(fd: fd.rawValue, events: events.rawValue, revents: 0)
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var fd: FileDescriptor {
       .init(rawValue: rawValue.fd)
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var events: Events {
-      get {
-        .init(rawValue: rawValue.events)
-      }
-      set {
-        rawValue.events = newValue.rawValue
-      }
+      get { .init(rawValue: rawValue.events) }
+      set { rawValue.events = newValue.rawValue }
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var returnedEvents: Events {
       .init(rawValue: rawValue.events)
     }
 
     public struct Events: OptionSet, MacroRawRepresentable {
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
       public init(rawValue: Int16) {
         self.rawValue = rawValue
       }
@@ -64,6 +61,7 @@ public enum Poll {
   }
 
   public struct Timeout {
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(milliseconds: Int32) {
       self.milliseconds = milliseconds
     }
@@ -75,7 +73,7 @@ public enum Poll {
   }
 
   /// return nil if the time limit expires
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func call(fds: UnsafeMutableBufferPointer<PollFD>, timeout: Timeout) -> Result<FileDescriptor, Errno>? {
     let ret = poll(UnsafeMutableRawPointer(fds.baseAddress)?.assumingMemoryBound(to: pollfd.self), numericCast(fds.count), timeout.milliseconds)
     switch ret {
