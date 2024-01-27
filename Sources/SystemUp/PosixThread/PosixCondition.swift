@@ -2,27 +2,26 @@ import SystemLibc
 import SystemPackage
 import CUtility
 
-public struct PosixCondition {
-  @inlinable
-  internal init() {}
+public struct PosixCondition: ~Copyable {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public init(attributes: borrowing Attributes) throws {
+    try SyscallUtilities.errnoOrZeroOnReturn {
+      withUnsafePointer(to: attributes.rawValue) { pthread_cond_init(&rawValue, $0) }
+    }.get()
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public init() throws {
+    try SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_cond_init(&rawValue, nil)
+    }.get()
+  }
 
   @usableFromInline
   internal var rawValue: pthread_cond_t = .init()
 }
 
 public extension PosixCondition {
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func create(attributes: Attributes? = nil) -> Result<Self, Errno> {
-    var mutex = Self.init()
-    return SyscallUtilities.errnoOrZeroOnReturn {
-      if let attributes = attributes {
-        return withCastedUnsafePointer(to: attributes) { pthread_cond_init(&mutex.rawValue, $0) }
-      } else {
-        return pthread_cond_init(&mutex.rawValue, nil)
-      }
-    }.map { mutex }
-  }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func destroy() {
@@ -67,23 +66,19 @@ public extension PosixCondition {
 }
 
 extension PosixCondition {
-  public struct Attributes {
-    @usableFromInline
-    internal init() {}
+  public struct Attributes: ~Copyable {
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public init() throws {
+      try SyscallUtilities.errnoOrZeroOnReturn {
+        pthread_condattr_init(&rawValue)
+      }.get()
+    }
 
     @usableFromInline
     internal var rawValue: pthread_condattr_t = .init()
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public static func create() -> Result<Self, Errno> {
-      var attr = Self.init()
-      return SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_condattr_init(&attr.rawValue)
-      }.map { attr }
-    }
-
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func destroy() {
+    public consuming func destroy() {
       PosixThread.call {
         pthread_condattr_destroy(&rawValue)
       }
@@ -96,9 +91,11 @@ public extension PosixCondition.Attributes {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var processShared: PosixMutex.ProcessShared {
-    mutating get {
-      PosixThread.get {
-        pthread_condattr_getpshared(&rawValue, $0)
+    get {
+      withUnsafePointer(to: rawValue) { attr in
+        PosixThread.get {
+          pthread_condattr_getpshared(attr, $0)
+        }
       }
     }
     set {

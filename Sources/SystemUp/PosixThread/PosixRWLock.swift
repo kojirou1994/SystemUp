@@ -2,27 +2,27 @@ import SystemLibc
 import SystemPackage
 import CUtility
 
-public struct PosixRWLock {
-  @usableFromInline
-  internal init() {}
+public struct PosixRWLock: ~Copyable {
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public init(attributes: borrowing Attributes) throws {
+    try SyscallUtilities.errnoOrZeroOnReturn {
+      withUnsafePointer(to: attributes.rawValue) { pthread_rwlock_init(&rawValue, $0) }
+    }.get()
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public init() throws {
+    try SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_rwlock_init(&rawValue, nil)
+    }.get()
+  }
 
   @usableFromInline
   internal var rawValue: pthread_rwlock_t = .init()
 }
 
 public extension PosixRWLock {
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func create(attributes: Attributes? = nil) -> Result<Self, Errno> {
-    var lock = Self.init()
-    return SyscallUtilities.errnoOrZeroOnReturn {
-      if let attributes = attributes {
-        return withCastedUnsafePointer(to: attributes) { pthread_rwlock_init(&lock.rawValue, $0) }
-      } else {
-        return pthread_rwlock_init(&lock.rawValue, nil)
-      }
-    }.map { lock }
-  }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func destroy() {
@@ -72,25 +72,20 @@ public extension PosixRWLock {
 }
 
 extension PosixRWLock {
-  public struct Attributes {
-    @usableFromInline
-    internal init() {}
+  public struct Attributes: ~Copyable {
     
     @usableFromInline
     internal var rawValue: pthread_rwlockattr_t = .init()
     
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public static func create() -> Result<Self, Errno> {
-      var attr = Self.init()
-      return SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_rwlockattr_init(&attr.rawValue)
-      }.map {
-        return attr
-      }
+    public init() throws {
+      try SyscallUtilities.errnoOrZeroOnReturn {
+        pthread_rwlockattr_init(&rawValue)
+      }.get()
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func destroy() {
+    public consuming func destroy() {
       PosixThread.call {
         pthread_rwlockattr_destroy(&rawValue)
       }
@@ -101,9 +96,11 @@ extension PosixRWLock {
 public extension PosixRWLock.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var processShared: PosixMutex.ProcessShared {
-    mutating get {
-      PosixThread.get {
-        pthread_rwlockattr_getpshared(&rawValue, $0)
+    get {
+      withUnsafePointer(to: rawValue) { attr in
+        PosixThread.get {
+          pthread_rwlockattr_getpshared(attr, $0)
+        }
       }
     }
     set {

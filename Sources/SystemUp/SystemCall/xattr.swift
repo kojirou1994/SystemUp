@@ -5,19 +5,13 @@ import CGeneric
 import protocol Foundation.ContiguousBytes
 
 public extension SystemCall {
-
   @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattrNamesBufferSize(_ path: String, options: Xattr.Options) -> Result<Int, Errno> {
-    getXattrNames(path, options: options, into: .init(start: nil, count: 0))
-  }
-
-  @CStringGeneric()
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattrNames(_ path: String, options: Xattr.Options, into buffer: UnsafeMutableBufferPointer<UInt8>) -> Result<Int, Errno> {
+  static func listXattrNames(_ path: String, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
+    let buffer = mode.toC
     return SyscallUtilities.valueOrErrno { () -> Int in
       #if os(macOS) || os(iOS)
       return listxattr(path, buffer.baseAddress, buffer.count, options.rawValue)
@@ -32,13 +26,9 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattrNamesBufferSize(_ fd: FileDescriptor, options: Xattr.Options) -> Result<Int, Errno> {
-    getXattrNames(fd, options: options, into: .init(start: nil, count: 0))
-  }
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattrNames(_ fd: FileDescriptor, options: Xattr.Options, into buffer: UnsafeMutableBufferPointer<UInt8>) -> Result<Int, Errno> {
-    SyscallUtilities.valueOrErrno { () -> Int in
+  static func listXattrNames(_ fd: FileDescriptor, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+    let buffer = mode.toC
+    return SyscallUtilities.valueOrErrno { () -> Int in
       #if os(macOS) || os(iOS)
       flistxattr(fd.rawValue, buffer.baseAddress, buffer.count, options.rawValue)
       #elseif os(Linux)
@@ -49,16 +39,11 @@ public extension SystemCall {
 
   @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattrBufferSize(_ path: String, attributeName: String, position: UInt32 = 0, options: Xattr.Options) -> Result<Int, Errno> {
-    getXattr(path, attributeName: attributeName, position: position, options: options, into: .init(start: nil, count: 0))
-  }
-
-  @CStringGeneric()
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattr(_ path: String, attributeName: String, position: UInt32 = 0, options: Xattr.Options, into buffer: UnsafeMutableBufferPointer<UInt8>) -> Result<Int, Errno> {
+  static func getXattr(_ path: String, attributeName: String, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
+    let buffer = mode.toC
     return SyscallUtilities.valueOrErrno { () -> Int in
       #if os(macOS) || os(iOS)
       return getxattr(path, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
@@ -74,16 +59,11 @@ public extension SystemCall {
 
   @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattrBufferSize(_ fd: FileDescriptor, attributeName: String, position: UInt32 = 0, options: Xattr.Options) -> Result<Int, Errno> {
-    getXattr(fd, attributeName: attributeName, position: position, options: options, into: .init(start: nil, count: 0))
-  }
-
-  @CStringGeneric()
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattr(_ fd: FileDescriptor, attributeName: String, position: UInt32 = 0, options: Xattr.Options, into buffer: UnsafeMutableBufferPointer<UInt8>) -> Result<Int, Errno> {
+  static func getXattr(_ fd: FileDescriptor, attributeName: String, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
+    let buffer = mode.toC
     return SyscallUtilities.valueOrErrno { () -> Int in
       #if os(macOS) || os(iOS)
       fgetxattr(fd.rawValue, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
@@ -92,6 +72,7 @@ public extension SystemCall {
       #endif
     }
   }
+
   /// set xattr value for specific key
   /// - Parameters:
   ///   - value: xattr value
@@ -250,12 +231,12 @@ public enum Xattr {
 
   @usableFromInline
   internal static func list(_ path: UnsafePointer<Int8>, options: Options) throws -> XattrType {
-    let size = try SystemCall.getXattrNamesBufferSize(path, options: options).get()
+    let size = try SystemCall.listXattrNames(path, options: options, mode: .getSize).get()
     guard size > 0 else {
       return XattrType()
     }
     return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try SystemCall.getXattrNames(path, options: options, into: buffer).get()
+      let newSize = try SystemCall.listXattrNames(path, options: options, mode: .getValue(.init(buffer))).get()
       assert(newSize <= size)
       initializedCount = newSize
     }
@@ -263,12 +244,12 @@ public enum Xattr {
 
   @usableFromInline
   internal static func get(path: UnsafePointer<Int8>, key: UnsafePointer<Int8>, position: UInt32, options: Options) throws -> XattrType {
-    let size = try SystemCall.getXattrBufferSize(path, attributeName: key, position: position, options: options).get()
+    let size = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getSize).get()
     guard size > 0 else {
       return XattrType()
     }
     return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, into: buffer).get()
+      let newSize = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getValue(.init(buffer))).get()
       assert(newSize <= size)
       initializedCount = newSize
     }

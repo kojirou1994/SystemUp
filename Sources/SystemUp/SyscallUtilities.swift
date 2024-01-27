@@ -4,6 +4,21 @@ import SystemLibc
 public enum SyscallUtilities {}
 
 public extension SyscallUtilities {
+  enum PreAllocateCallMode {
+    case getSize
+    case getValue(UnsafeMutableRawBufferPointer)
+
+    @inlinable @inline(__always)
+    internal var toC: UnsafeMutableRawBufferPointer {
+      switch self {
+      case .getSize:
+        return .init(start: nil, count: 0)
+      case .getValue(let buffer):
+        return buffer
+      }
+    }
+  }
+
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   static func errnoOrZeroOnReturn(_ body: () -> Int32) -> Result<Void, Errno> {

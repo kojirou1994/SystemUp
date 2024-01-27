@@ -1,31 +1,32 @@
-import CProc
+#if canImport(Darwin)
+import SystemLibc
 import SystemPackage
 
-public enum PIDDirty { }
+extension Proc {
+  public enum Dirty {
+    @_alwaysEmitIntoClient
+    public static func track(pid: ProcessID, flags: TrackFlags) -> Int32 {
+      proc_track_dirty(pid.rawValue, flags.rawValue)
+    }
 
-public extension PIDDirty {
-  @_alwaysEmitIntoClient
-  static func track(pid: Int32, flags: TrackFlags) throws -> Int32 {
-    proc_track_dirty(pid, flags.rawValue)
-  }
+    @_alwaysEmitIntoClient
+    public static func set(pid: ProcessID, dirty: Bool) -> Int32 {
+      proc_set_dirty(pid.rawValue, dirty)
+    }
 
-  @_alwaysEmitIntoClient
-  static func set(pid: Int32, dirty: Bool) throws -> Int32 {
-    proc_set_dirty(pid, dirty)
-  }
+    @_alwaysEmitIntoClient
+    public static func get(pid: ProcessID, flags: inout GetFlags) -> Int32 {
+      proc_get_dirty(pid.rawValue, &flags.rawValue)
+    }
 
-  @_alwaysEmitIntoClient
-  static func get(pid: Int32, flags: inout GetFlags) throws -> Int32 {
-    proc_get_dirty(pid, &flags.rawValue)
-  }
-
-  @_alwaysEmitIntoClient
-  static func clear(pid: Int32, flags: UInt32) throws -> Int32 {
-    proc_clear_dirty(pid, flags)
+    @_alwaysEmitIntoClient
+    public static func clear(pid: ProcessID, flags: UInt32) -> Int32 {
+      proc_clear_dirty(pid.rawValue, flags)
+    }
   }
 }
 
-extension PIDDirty {
+extension Proc.Dirty {
   public struct TrackFlags: OptionSet {
     @_alwaysEmitIntoClient
     public init(rawValue: UInt32) {
@@ -55,7 +56,7 @@ extension PIDDirty {
   }
 }
 
-public extension PIDDirty.TrackFlags {
+public extension Proc.Dirty.TrackFlags {
   @_alwaysEmitIntoClient
   static var track: Self { .init(PROC_DIRTY_TRACK) }
 
@@ -72,7 +73,7 @@ public extension PIDDirty.TrackFlags {
   static var deferAlways: Self { .init(PROC_DIRTY_DEFER_ALWAYS) }
 }
 
-public extension PIDDirty.GetFlags {
+public extension Proc.Dirty.GetFlags {
   @_alwaysEmitIntoClient
   static var tracked: Self { .init(PROC_DIRTY_TRACKED) }
 
@@ -86,3 +87,4 @@ public extension PIDDirty.GetFlags {
   static var launchIsInProgress: Self { .init(PROC_DIRTY_LAUNCH_IS_IN_PROGRESS) }
 
 }
+#endif

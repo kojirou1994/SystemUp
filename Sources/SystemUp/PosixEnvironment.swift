@@ -19,18 +19,23 @@ public struct PosixEnvironment {
 
 public extension PosixEnvironment {
 
-  static var lock = try! PosixMutex.create().get()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static var environ: NullTerminatedArray<UnsafeMutablePointer<CChar>> {
+    let environ: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>
+    #if canImport(Darwin)
+    environ = NSGetEnviron().pointee
+    #elseif os(Linux)
+    environ = __environ
+    #endif
+    return .init(environ)
+  }
 
   /// not thread-safe
   static var global: Self {
-    lock.lock()
-    defer {
-      lock.unlock()
-    }
 
     var result = Self(environment: .init())
 
-    for entry in NullTerminatedArray(SystemLibc.environ) {
+    for entry in environ {
       let entry = entry.pointee
       if let finish = strchr(entry, Int32(UInt8(ascii: "="))) {
         let key = UnsafeRawBufferPointer(start: entry, count: finish - entry)
@@ -42,11 +47,17 @@ public extension PosixEnvironment {
     return result
   }
 
+  @CStringGeneric()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func getenv<R>(_ key: String, _ body: (UnsafePointer<CChar>?) -> R) -> R {
+    body(SystemLibc.getenv(key))
+  }
+
   /// set() may invalidate the result cstring
   @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func get(key: String) -> String? {
-    SystemLibc.getenv(key).map { String(cString: $0) }
+    getenv(key) { $0.map(String.init(cString: )) }
   }
 
   @CStringGeneric()
@@ -58,11 +69,12 @@ public extension PosixEnvironment {
     }
   }
 
-  @available(*, unavailable, message: "memory leak")
+  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func put<T: StringProtocol>(_ string: T) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      string.withCString { SystemLibc.putenv(strdup($0)) }
+  static func put(_ string: consuming DynamicCString) -> Result<Void, Errno> {
+    let cString = string.take()
+    return SyscallUtilities.voidOrErrno {
+      SystemLibc.putenv(cString)
     }
   }
 
@@ -71,7 +83,7 @@ public extension PosixEnvironment {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func unset(key: String) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      SystemLibc.unsetenv(key)
+      return SystemLibc.unsetenv(key)
     }
   }
 

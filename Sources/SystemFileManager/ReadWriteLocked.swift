@@ -7,7 +7,7 @@ public final class ReadWriteLocked<Value> {
 
   public init(wrappedValue defaultValue: Value) {
     self.value = defaultValue
-    self.lock = try! .create().get()
+    self.lock = try! .init()
   }
 
   deinit {

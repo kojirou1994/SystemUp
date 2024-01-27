@@ -19,8 +19,6 @@ let package = Package(
     .target(
       name: "CSystemUp"),
     .target(
-      name: "CProc"),
-    .target(
       name: "SystemLibc",
       dependencies: [
         "CSystemUp",
@@ -50,19 +48,5 @@ let package = Package(
   ]
 )
 
-#if os(macOS)
-package.products.append(.library(name: "Proc", targets: ["Proc"]))
 package.targets.append(contentsOf: [
-  .target(
-    name: "Proc",
-    dependencies: [
-      "CProc",
-      .product(name: "SyscallValue", package: "SyscallValue"),
-      .product(name: "CUtility", package: "CUtility"),
-      .product(name: "SystemPackage", package: "swift-system"),
-    ]),
-  .testTarget(
-    name: "ProcTests",
-    dependencies: ["Proc"]),
 ])
-#endif

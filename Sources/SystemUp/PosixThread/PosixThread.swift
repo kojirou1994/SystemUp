@@ -5,7 +5,7 @@ import CUtility
 public enum PosixThread { }
 
 extension PosixThread {
-  public struct ThreadID {
+  public struct ThreadID: ~Copyable {
     @usableFromInline
     internal init(rawValue: pthread_t) {
       self.rawValue = rawValue
@@ -27,7 +27,7 @@ public extension PosixThread.ThreadID {
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  __consuming func detach() -> Result<Void, Errno> {
+  consuming func detach() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_detach(rawValue)
     }
@@ -36,7 +36,7 @@ public extension PosixThread.ThreadID {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  __consuming func join() -> Result<UnsafeMutableRawPointer?, Errno> {
+  consuming func join() -> Result<UnsafeMutableRawPointer?, Errno> {
     var value: UnsafeMutableRawPointer?
     return SyscallUtilities.errnoOrZeroOnReturn {
       pthread_join(rawValue, &value)
@@ -54,32 +54,6 @@ public extension PosixThread.ThreadID {
 }
 
 public extension PosixThread {
-
-  @inlinable
-  static func create(context: UnsafeMutableRawPointer? = nil, attributes: Attributes? = nil,
-                     body: @convention(c) (UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer?) -> Result<ThreadID, Errno> {
-    #if canImport(Darwin)
-    let body = unsafeBitCast(body, to: (@convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer?).self)
-    var thread: pthread_t?
-    #else
-    var thread: pthread_t = .init()
-    #endif
-
-    return SyscallUtilities.errnoOrZeroOnReturn {
-      if let attributes = attributes {
-        return withCastedUnsafePointer(to: attributes) { pthread_create(&thread, $0, body, context) }
-      } else {
-        return pthread_create(&thread, nil, body, context)
-      }
-    }.map {
-      #if canImport(Darwin)
-      return .init(rawValue: thread.unsafelyUnwrapped)
-      #else
-      return .init(rawValue: thread)
-      #endif
-    }
-
-  }
 
   @available(*, noasync)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -141,18 +115,52 @@ public extension PosixThread {
 // MARK: Pthread Helpers
 public extension PosixThread {
 
-  static func create(attributes: Attributes? = nil, _ block: @escaping () -> Void) throws -> ThreadID {
+  @inlinable @inline(__always)
+  internal static func create(context: UnsafeMutableRawPointer? = nil, attributes: UnsafePointer<pthread_attr_t>?,
+                     body: @convention(c) (UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer?) throws -> pthread_t {
+    #if canImport(Darwin)
+    let body = unsafeBitCast(body, to: (@convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer?).self)
+    var thread: pthread_t?
+    #else
+    var thread: pthread_t = .init()
+    #endif
+
+    try SyscallUtilities.errnoOrZeroOnReturn {
+      pthread_create(&thread, attributes, body, context)
+    }.get()
+
+    #if canImport(Darwin)
+    return thread.unsafelyUnwrapped
+    #else
+    return thread
+    #endif
+  }
+
+  @inlinable @inline(__always)
+  internal static func create(attributes: UnsafePointer<pthread_attr_t>?, _ block: @escaping () -> Void) throws -> pthread_t {
     try create(context: Unmanaged.passRetained(block as AnyObject).toOpaque(), attributes: attributes) { context in
       let block = Unmanaged<AnyObject>.fromOpaque(context.unsafelyUnwrapped)
       (block.takeUnretainedValue() as! (() -> Void))()
       block.release()
       return nil
-    }.get()
+    }
+  }
+
+  @inlinable
+  static func create(_ block: @escaping () -> Void) throws -> ThreadID {
+    try .init(rawValue: create(attributes: nil, block))
+  }
+
+  @inlinable
+  static func create(attributes: borrowing Attributes, _ block: @escaping () -> Void) throws -> ThreadID {
+    try .init(rawValue: withUnsafePointer(to: attributes.rawValue) { attributes in
+      try create(attributes: attributes, block)
+    })
   }
 
   @discardableResult
   static func detach(_ block: @escaping () -> Void) throws -> ThreadID {
-    var attr = try Attributes.create().get()
+    var attr = try Attributes()
     defer {
       attr.destroy()
     }
@@ -162,31 +170,25 @@ public extension PosixThread {
   }
 }
 
-extension PosixThread.ThreadID: Equatable {
-  @inlinable @inline(__always)
-  public static func == (lhs: Self, rhs: Self) -> Bool {
-    pthread_equal(lhs.rawValue, rhs.rawValue) != 0
+extension PosixThread.ThreadID {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public func equals(to another: borrowing Self) -> Bool {
+    pthread_equal(rawValue, another.rawValue) != 0
   }
 }
 
 extension PosixThread {
-  public struct Attributes {
+  public struct Attributes: ~Copyable {
 
-    @usableFromInline
-    internal init(rawValue: pthread_attr_t) {
-      self.rawValue = rawValue
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public init() throws {
+      try SyscallUtilities.errnoOrZeroOnReturn {
+        pthread_attr_init(&rawValue)
+      }.get()
     }
 
     @usableFromInline
-    internal var rawValue: pthread_attr_t
-
-    @inlinable
-    public static func create() -> Result<Self, Errno> {
-      var attr = Self.init(rawValue: .init())
-      return SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_attr_init(&attr.rawValue)
-      }.map { attr }
-    }
+    internal var rawValue: pthread_attr_t = .init()
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func destroy() {
@@ -442,7 +444,7 @@ public extension PosixThread {
 
 public extension PosixThread.ThreadID {
   // moveOnly
-  struct QualityOfServiceOverride {
+  struct QualityOfServiceOverride: ~Copyable {
     @usableFromInline
     let rawValue: pthread_override_t
 
@@ -452,8 +454,7 @@ public extension PosixThread.ThreadID {
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    __consuming
-    public func end() {
+    public consuming func end() {
       pthread_override_qos_class_end_np(rawValue)
     }
   }
@@ -466,9 +467,12 @@ public extension PosixThread.ThreadID {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func overrideStart(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> QualityOfServiceOverride? {
-    unsafeBitCast(pthread_override_qos_class_start_np(rawValue, qos, relativePriority), to: OpaquePointer?.self)
-      .map(QualityOfServiceOverride.init)
+  func overrideStart(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) throws -> QualityOfServiceOverride {
+    if let v = unsafeBitCast(pthread_override_qos_class_start_np(rawValue, qos, relativePriority), to: OpaquePointer?.self) {
+      return .init(rawValue: v)
+    } else {
+      throw Errno.invalidArgument
+    }
   }
 
 }

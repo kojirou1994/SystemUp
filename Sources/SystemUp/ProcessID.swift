@@ -10,9 +10,18 @@ public struct ProcessID: RawRepresentable {
 }
 
 public extension ProcessID {
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var current: Self { .init(rawValue: SystemLibc.getpid()) }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var parent: Self { .init(rawValue: SystemLibc.getppid()) }
+}
+
+extension ProcessID: CustomStringConvertible, Comparable {
+  public var description: String { rawValue.description }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public static func < (lhs: ProcessID, rhs: ProcessID) -> Bool {
+    lhs.rawValue < rhs.rawValue
+  }
 }
