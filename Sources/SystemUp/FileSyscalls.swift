@@ -3,6 +3,7 @@ import SystemLibc
 import SyscallValue
 import CUtility
 
+@available(*, deprecated, message: "Use SystemCall")
 public enum FileSyscalls {}
 
 // MARK: Open
