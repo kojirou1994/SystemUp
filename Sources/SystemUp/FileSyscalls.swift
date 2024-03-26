@@ -471,34 +471,3 @@ public extension FileSyscalls {
     }
   }
 }
-
-// MARK: working directory
-public extension FileSyscalls {
-
-  static func getWorkingDirectory() -> Result<FilePath, Errno> {
-    SyscallUtilities.unwrap {
-      SystemLibc.getcwd(nil, 0)
-    }.map { path in
-      defer {
-        path.deallocate()
-      }
-      return .init(platformString: path)
-    }
-  }
-
-  static func changeWorkingDirectory(_ path: FilePath) -> Result<Void, Errno> {
-    path.withPlatformString(changeWorkingDirectory)
-  }
-
-  static func changeWorkingDirectory(_ path: UnsafePointer<CChar>) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      SystemLibc.chdir(path)
-    }
-  }
-
-  static func changeWorkingDirectory(_ fd: FileDescriptor) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      SystemLibc.fchdir(fd.rawValue)
-    }
-  }
-}
