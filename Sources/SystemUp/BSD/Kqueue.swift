@@ -23,7 +23,7 @@ public struct Kqueue {
   __consuming public func close() {
     assertNoFailure {
       SyscallUtilities.retryWhileInterrupted {
-        FileSyscalls.close(rawValue)
+        SystemCall.close(rawValue)
       }
     }
   }

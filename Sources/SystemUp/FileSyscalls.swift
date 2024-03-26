@@ -6,36 +6,6 @@ import CUtility
 @available(*, deprecated, message: "Use SystemCall")
 public enum FileSyscalls {}
 
-// MARK: Open
-public extension FileSyscalls {
-
-  @_alwaysEmitIntoClient
-  static func open(_ option: FilePathOption, _ mode: FileDescriptor.AccessMode,
-                   options: FileDescriptor.OpenOptions = .init(),
-                   permissions: FilePermissions? = nil) -> Result<FileDescriptor, Errno> {
-
-    let oFlag = mode.rawValue | options.rawValue
-
-    return SyscallUtilities.valueOrErrno {
-      option.path.withPlatformString { path in
-        if let permissions {
-          return SystemLibc.openat(option.relativedDirFD.rawValue, path, oFlag, permissions.rawValue)
-        }
-        precondition(!options.contains(.create),
-                     "Create must be given permissions")
-        return SystemLibc.openat(option.relativedDirFD.rawValue, path, oFlag)
-      }
-    }.map(FileDescriptor.init)
-  }
-
-  @_alwaysEmitIntoClient
-  static func close(_ fd: Int32) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      SystemLibc.close(fd)
-    }
-  }
-}
-
 public extension FileSyscalls {
 
   @_alwaysEmitIntoClient
