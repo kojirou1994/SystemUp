@@ -16,6 +16,32 @@ public extension SystemCall {
   }
   #endif
 
+  @CStringGeneric()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func readLink(_ path: String, relativeTo base: RelativeDirectory = .cwd) -> Result<FilePath, Errno> {
+
+    var bufsize = 256
+    var buffer = UnsafeMutableBufferPointer<Int8>.allocate(capacity: bufsize)
+    defer {
+      buffer.deallocate()
+    }
+
+    while true {
+
+      switch readLink(path, relativeTo: base, into: buffer) {
+      case .failure(let err): return .failure(err)
+      case .success(let length):
+        if length != bufsize {
+          buffer[length] = 0
+          return .success(.init(platformString: buffer.baseAddress.unsafelyUnwrapped))
+        }
+
+        bufsize = bufsize * 2
+        buffer = .init(start: realloc(buffer.baseAddress, bufsize).assumingMemoryBound(to: Int8.self), count: bufsize)
+      }
+    }
+  }
+
   /// read value of a symbolic link
   /// - Parameters:
   ///   - path: path
