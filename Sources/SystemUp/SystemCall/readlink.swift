@@ -16,6 +16,12 @@ public extension SystemCall {
   }
   #endif
 
+  /// read value of a symbolic link
+  /// - Parameters:
+  ///   - path: path
+  ///   - base: path base
+  ///   - buffer: destination buffer
+  /// - Returns: count of bytes placed in the buffer, readlink() does not append a null byte
   @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func readLink(_ path: String, relativeTo base: RelativeDirectory = .cwd, into buffer: UnsafeMutableBufferPointer<Int8>) -> Result<Int, Errno> {

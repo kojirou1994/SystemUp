@@ -6,9 +6,9 @@ public struct SystemFileManager {}
 
 extension SystemFileManager {
 
-  public static func createDirectoryIntermediately(_ option: FilePathOption, permissions: FilePermissions = .directoryDefault) throws {
+  public static func createDirectoryIntermediately(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws {
     var status = FileStatus(rawValue: .init())
-    switch FileSyscalls.fileStatus(option, into: &status) {
+    switch SystemCall.fileStatus(path, relativeTo: base, into: &status) {
     case .success:
       if status.fileType == .directory {
         return
@@ -19,32 +19,32 @@ extension SystemFileManager {
       switch err {
       case .noSuchFileOrDirectory:
         // create parent
-        var parent = option.path
+        var parent = path
         if parent.removeLastComponent(), !parent.isEmpty {
-          try createDirectoryIntermediately(.relative(parent, toDirectory: option.relativedDirFD), permissions: permissions)
+          try createDirectoryIntermediately(parent, relativeTo: base, permissions: permissions)
         }
       default:
         throw err
       }
     }
-    try FileSyscalls.createDirectory(option, permissions: permissions).get()
+    try SystemCall.createDirectory(path, relativeTo: base, permissions: permissions).get()
   }
 
   public static func remove(_ path: FilePath) -> Result<Void, Errno> {
     withUnsafeTemporaryAllocation(of: FileStatus.self, capacity: 1) { buffer in
-      FileSyscalls.fileStatus(.absolute(path), flags: .noFollow, into: &buffer.baseAddress!.pointee)
+      SystemCall.fileStatus(path, flags: .noFollow, into: &buffer.baseAddress!.pointee)
         .flatMap { () -> Result<Void, Errno> in
           if buffer[0].fileType == .directory {
             return removeDirectoryRecursive(path)
           } else {
-            return FileSyscalls.unlink(.absolute(path))
+            return SystemCall.unlink(path)
           }
         }
     }
   }
 
   public static func removeDirectory(_ path: FilePath) -> Result<Void, Errno> {
-    FileSyscalls.unlink(.absolute(path), flags: .removeDir)
+    SystemCall.unlink(path, flags: .removeDir)
   }
 
   public static func removeDirectoryUntilSuccess(_ path: FilePath) -> Result<Void, Errno> {
@@ -70,7 +70,7 @@ extension SystemFileManager {
         let childPath = path.appending(entryName)
         switch entry.fileType {
         case .directory: return removeDirectoryRecursive(childPath)
-        default: return FileSyscalls.unlink(.absolute(childPath))
+        default: return SystemCall.unlink(childPath)
         }
       }) {
         switch result {
@@ -217,8 +217,8 @@ public extension SystemFileManager {
 
 // MARK: Determining Access to Files
 public extension SystemFileManager {
-  static func fileExists(atPath option: FilePathOption) -> Bool {
-    switch fileStatus(option) {
+  static func fileExists(atPath path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd) -> Bool {
+    switch fileStatus(path, relativeTo: base) {
     case .success: return true
     case .failure: return false
     }
@@ -231,13 +231,13 @@ public extension SystemFileManager {
 
   static func fileStatus(_ fd: FileDescriptor) -> Result<FileStatus, Errno> {
     var result = FileStatus()
-    return FileSyscalls.fileStatus(fd, into: &result)
+    return SystemCall.fileStatus(fd, into: &result)
       .map { result }
   }
 
-  static func fileStatus(_ option: FilePathOption, flags: FileSyscalls.AtFlags = []) -> Result<FileStatus, Errno> {
+  static func fileStatus(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = []) -> Result<FileStatus, Errno> {
     var result = FileStatus()
-    return FileSyscalls.fileStatus(option, flags: flags, into: &result)
+    return SystemCall.fileStatus(path, relativeTo: base, flags: flags, into: &result)
       .map { result }
   }
 

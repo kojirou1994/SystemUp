@@ -8,6 +8,19 @@ public extension SystemCall {
 
   @CStringGeneric
   @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func realPath(_ path: String) -> Result<FilePath, Errno> {
+    realPath(path).map { path in
+      // TODO: avoid path coping
+      defer {
+        path.deallocate()
+      }
+      return .init(platformString: path)
+    }
+  }
+
+
+  @CStringGeneric
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func realPath(_ path: String) -> Result<UnsafeMutablePointer<Int8>, Errno> {
     SyscallUtilities.unwrap {
       realpath(path, nil)
