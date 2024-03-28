@@ -7,8 +7,8 @@ public extension Errno {
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   static var systemCurrent: Self {
-    get { .init(rawValue: SystemLibc.swift_get_errno()) }
-    set { SystemLibc.swift_set_errno(newValue.rawValue) }
+    get { .init(rawValue: SystemLibc.errno) }
+    set { SystemLibc.errno = newValue.rawValue }
   }
 
   @_alwaysEmitIntoClient
