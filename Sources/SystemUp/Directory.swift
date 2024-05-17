@@ -80,6 +80,20 @@ public struct Directory {
     }
   }
 
+  /// directory stream iterate helper
+  @_alwaysEmitIntoClient
+  public func forEachEntries(_ body: (borrowing Entry, _ stop: inout Bool) throws -> Void) throws {
+    var stop = false
+    while !stop {
+      if (try withNextEntry({ try body($0, &stop) })?.get()) != nil {
+        // success
+      } else {
+        // no entry
+        return
+      }
+    }
+  }
+
   /// not thread-safe, dot . and .. is ignored
   @_alwaysEmitIntoClient
   public func withNextEntry<R>(_ body: (borrowing Entry) throws -> R) rethrows -> Result<R, Errno>? {
