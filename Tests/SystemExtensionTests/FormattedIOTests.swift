@@ -19,7 +19,7 @@ final class FormattedIOTests: XCTestCase {
     // stream input
     var inputBuffer = Data(input.utf8)
     try inputBuffer.withUnsafeMutableBytes { buffer in
-      let stream = try FileStream.open(buffer, mode: .read()).get()
+      let stream = try FileStream.open(buffer, mode: .read())
 
       var v1: CInt = 0
       var v2: CInt = 0

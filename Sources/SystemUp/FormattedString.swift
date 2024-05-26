@@ -84,7 +84,7 @@ public extension FileDescriptor {
 public enum InputFormatConversion {
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func scan(_ stream: FileStream, format: UnsafePointer<CChar>, _ args: UnsafeMutableRawPointer...) -> Int32 {
+  public static func scan(_ stream: borrowing FileStream, format: UnsafePointer<CChar>, _ args: UnsafeMutableRawPointer...) -> Int32 {
     withVaList(args) { va in
       SystemLibc.vfscanf(stream.rawValue, format, va)
     }
