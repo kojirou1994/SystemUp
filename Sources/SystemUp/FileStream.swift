@@ -1,9 +1,12 @@
 import SystemLibc
 import SystemPackage
+import CGeneric
+import CUtility
 
-public struct FileStream: RawRepresentable {
+public struct FileStream: ~Copyable {
 
-  public let rawValue: UnsafeMutablePointer<FILE>
+  @usableFromInline
+  internal let rawValue: UnsafeMutablePointer<FILE>
 
   @inlinable @inline(__always)
   public init(rawValue: UnsafeMutablePointer<FILE>) {
@@ -21,48 +24,76 @@ extension FileStream {
   }
 }
 
+// TODO: typed throws
 // MARK: Open and Close
 public extension FileStream {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ path: FilePath, mode: Mode) -> Result<Self, Errno> {
-    SyscallUtilities.unwrap {
-      path.withPlatformString { path in
+  static func open(_ path: String, mode: Mode) throws -> Self {
+    try .init(rawValue: SyscallUtilities.unwrap {
+      SystemLibc.fopen(path, mode.rawValue)
+    }.get())
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func open(_ path: some CStringConvertible, mode: Mode) throws -> Self {
+    try .init(rawValue: SyscallUtilities.unwrap {
+      path.withCString { path in
         SystemLibc.fopen(path, mode.rawValue)
       }
-    }.map(Self.init)
+    }.get())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ fd: FileDescriptor, mode: Mode) -> Result<Self, Errno> {
-    SyscallUtilities.unwrap {
+  static func open(_ fd: FileDescriptor, mode: Mode) throws -> Self {
+    try .init(rawValue: SyscallUtilities.unwrap {
       SystemLibc.fdopen(fd.rawValue, mode.rawValue)
-    }.map(Self.init)
+    }.get())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ buffer: UnsafeMutableRawBufferPointer, mode: Mode) -> Result<Self, Errno> {
-    SyscallUtilities.unwrap {
+  static func open(_ buffer: UnsafeMutableRawBufferPointer, mode: Mode) throws -> Self {
+    try .init(rawValue: SyscallUtilities.unwrap {
       SystemLibc.fmemopen(buffer.baseAddress, buffer.count, mode.rawValue)
-    }.map(Self.init)
+    }.get())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func reopen(_ rawValue: Self, path: FilePath? = nil, mode: Mode) -> Result<Self, Errno> {
-    let v: UnsafeMutablePointer<FILE>?
-    if let path = path {
-      v = path.withPlatformString { path in
-        SystemLibc.freopen(path, mode.rawValue, rawValue.rawValue)
+  borrowing func reopen(mode: Mode) throws {
+    let v = try SyscallUtilities.unwrap {
+      SystemLibc.freopen(nil, mode.rawValue, rawValue)
+    }.get()
+    assert(v == rawValue)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  borrowing func reopen(_ path: String, mode: Mode) throws {
+    let v = try SyscallUtilities.unwrap {
+      SystemLibc.freopen(path, mode.rawValue, rawValue)
+    }.get()
+    assert(v == rawValue)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  borrowing func reopen(_ path: some CStringConvertible, mode: Mode) throws {
+    let v = try SyscallUtilities.unwrap {
+      path.withCString { path in
+        SystemLibc.freopen(path, mode.rawValue, rawValue)
       }
-    } else {
-      v = SystemLibc.freopen(nil, mode.rawValue, rawValue.rawValue)
-    }
-    return SyscallUtilities.unwrap { v }.map(Self.init)
+    }.get()
+    assert(v == rawValue)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func tempFile() throws -> Self {
+    try .init(rawValue: SyscallUtilities.unwrap {
+      SystemLibc.tmpfile()
+    }.get())
   }
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func close() -> Result<Void, Errno> {
+  consuming func close() -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.fclose(rawValue)
     }
@@ -116,14 +147,10 @@ public extension FileStream {
 // MARK: reposition a stream
 public extension FileStream {
 
+  /// sets the file position indicator for the stream to the beginning of the file
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func rewind() {
-    assertNoFailure {
-      SyscallUtilities.voidOrErrno { () -> Int32 in
-        SystemLibc.rewind(rawValue)
-        return SystemLibc.errno
-      }
-    }
+    SystemLibc.rewind(rawValue)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -133,14 +160,16 @@ public extension FileStream {
     }.get()
   }
 
+  /// obtains the current value of the file position indicator for the stream
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func tell() -> Int {
     SystemLibc.ftell(rawValue)
   }
 
+  /// alternate interfaces equivalent to tell() and seek()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var currentPosition: Position {
-    set {
+    nonmutating set {
       withUnsafePointer(to: newValue.rawValue) { pos in
         assertNoFailure {
           SyscallUtilities.voidOrErrno {
@@ -172,6 +201,7 @@ public extension FileStream {
     }
   }
 
+  /// flushes all open output streams.
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func flushAll() -> Result<Void, Errno> {
@@ -183,29 +213,37 @@ public extension FileStream {
 
 // MARK: binary stream input/output
 public extension FileStream {
+  /// number of items read
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func read(ptr: UnsafeMutableRawPointer, size: Int, count: Int) -> Int {
-    SystemLibc.fread(ptr, size, count, rawValue)
+  func read(into buffer: UnsafeMutableRawPointer, size: Int, count: Int) -> Int {
+    SystemLibc.fread(buffer, size, count, rawValue)
   }
 
+  /// number of items write
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func write(ptr: UnsafeRawPointer, size: Int, count: Int) -> Int {
-    SystemLibc.fwrite(ptr, size, count, rawValue)
+  func write(buffer: UnsafeRawPointer, size: Int, count: Int) -> Int {
+    SystemLibc.fwrite(buffer, size, count, rawValue)
   }
 
+  /// number of items read
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func read<T>(into buffer: UnsafeMutableBufferPointer<T>) -> Int {
-    read(ptr: buffer.baseAddress!, size: MemoryLayout<T>.stride, count: buffer.count)
+    assert(MemoryLayout<T>.stride == MemoryLayout<T>.size, "T is not aligned!")
+    return read(into: buffer.baseAddress!, size: MemoryLayout<T>.stride, count: buffer.count)
   }
 
+  /// number of items write
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func write<T>(buffer: UnsafeBufferPointer<T>) -> Int {
-    write(ptr: buffer.baseAddress!, size: MemoryLayout<T>.stride, count: buffer.count)
+    assert(MemoryLayout<T>.stride == MemoryLayout<T>.size, "T is not aligned!")
+    return write(buffer: buffer.baseAddress!, size: MemoryLayout<T>.stride, count: buffer.count)
   }
 }
 
 // MARK: character or word
 public extension FileStream {
+
+  /// fgetc() reads the next character from stream and returns it as an unsigned char cast to an int, or EOF on end of file or error.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getc() -> Int32 {
     SystemLibc.getc(rawValue)
@@ -228,16 +266,23 @@ public extension FileStream {
     SystemLibc.putc_unlocked(char, rawValue)
   }
 
+  /// pushes c back to stream
+  /// - Parameter char: cast to unsigned char
+  /// - Returns: success
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func ungetc(_ char: Int32) -> Int32 {
-    SystemLibc.ungetc(char, rawValue)
+  func ungetc(_ char: Int32) -> Bool {
+    let result = SystemLibc.ungetc(char, rawValue)
+    // ungetc() returns c on success, or EOF on error.
+    return result == char
   }
 
+  // MARK: Wrappers
+
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func nextCharacter() -> UInt8? {
+  func readByte() -> UInt8? {
     let value = getc()
-    if _slowPath(value == EOF) {
+    if _slowPath(value == SystemLibc.EOF) {
       return nil
     }
     assert(UInt8(value) == value)
@@ -245,31 +290,40 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func put(character: UInt8) {
-    putc(Int32(character))
+  func write(byte: UInt8) {
+    putc(Int32(byte))
   }
 
+  /// pushes c back to stream, cast to unsigned char, where it is available for subsequent read operations.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func unget(character: UInt8) {
-    ungetc(Int32(character))
+  func unget(byte: UInt8) {
+    ungetc(Int32(byte))
   }
 }
 
 // MARK: line
 public extension FileStream {
+  /// reads in at most one less than size characters from stream and stores them into the buffer. Reading stops after an EOF or a newline. If a newline is read, it is stored into the buffer. A terminating null byte ('\0') is stored after the last character in the buffer.
+  /// - Parameter buffer: dest buffer
+  /// - Returns: success
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getLine(into buffer: UnsafeMutableBufferPointer<CChar>) -> Bool {
     let result = SystemLibc.fgets(buffer.baseAddress, numericCast(buffer.count), rawValue)
+    // fgets() returns s on success, and NULL on error or when end of file occurs while no characters have been read.
     assert(result == nil || result == buffer.baseAddress)
     return result != nil
   }
 
+  /// writes the string to stream, without its terminating null byte ('\0').
+  /// - Parameter string: null-terminated string
+  /// - Returns: nonnegative number on success
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func put(line: UnsafePointer<CChar>) -> Int32? {
-    let result = SystemLibc.fputs(line, rawValue)
-    guard result != EOF else {
+  @CStringGeneric()
+  func write(_ string: String) -> Int32? {
+    let result = SystemLibc.fputs(string, rawValue)
+    if _slowPath(result == SystemLibc.EOF) {
       return nil
     }
     return result
@@ -294,6 +348,7 @@ public extension FileStream {
   }
 }
 
+// MARK: Standard Streams
 public extension FileStream {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardInput: FileStream {
@@ -308,13 +363,6 @@ public extension FileStream {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardError: FileStream {
     .init(rawValue: SystemLibc.stderr)
-  }
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func tempFile() -> Result<Self, Errno> {
-    SyscallUtilities.unwrap {
-      SystemLibc.tmpfile()
-    }.map(Self.init)
   }
 }
 
