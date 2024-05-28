@@ -315,6 +315,68 @@ public extension FileStream {
     return result != nil
   }
 
+  /// If line was set to NULL before the call, then the buffer should be freed by the user program even on failure.
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  /// delimited string input
+  /// - Parameters:
+  ///   - line: output line buffer address, will be allocated if nil, remember to release it
+  ///   - linecapp: capacity of line buffer
+  ///   - delimiter: delimiter character
+  /// - Returns: the number of characters read, including the delimiter character, but not including the terminating null byte, return nil if EOF
+  func getDelimitedLine(line: inout UnsafeMutablePointer<CChar>?, linecapp: inout Int, delimiter: UInt8 = .init(ascii: "\n")) throws -> Int? {
+
+    let result = SystemLibc.getline(&line, &linecapp, rawValue)
+
+    if result == -1 {
+      if _fastPath(isEOF) {
+        return nil
+      } else {
+        throw Errno.systemCurrent
+      }
+    }
+
+    assert(result > 0, "getline returns \(result)")
+    assert(line != nil)
+
+    return result
+  }
+
+  // MARK: Wrappers
+
+  /// iterate over delimited lines, error from getline() is ignored
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func iterateDelimitedLine(initialBufferSize: Int = 0, delimiter: UInt8 = .init(ascii: "\n"), strippingDelimiter: Bool = true, _ body: (_ line: borrowing DynamicCString, _ length: Int, _ stop: inout Bool) throws -> Void) rethrows {
+    var capp = initialBufferSize
+    var buf: UnsafeMutablePointer<CChar>?
+    if capp > 0 {
+      buf = .allocate(capacity: capp)
+    }
+    defer {
+      buf?.deallocate()
+    }
+    var stop = false
+    while !stop, case let length = SystemLibc.getline(&buf, &capp, rawValue),
+            length > 0 {
+      assert(buf != nil)
+      let validStr = buf.unsafelyUnwrapped
+      var validLength = length
+      if strippingDelimiter {
+        if validStr[length-1] == delimiter {
+          validStr[length-1] = 0
+          validLength -= 1
+        }
+      }
+      let str = DynamicCString(cString: validStr)
+
+      do {
+        try body(str, validLength, &stop)
+        _ = str.take()
+      } catch {
+        _ = str.take()
+        throw error
+      }
+    }
+  }
   /// writes the string to stream, without its terminating null byte ('\0').
   /// - Parameter string: null-terminated string
   /// - Returns: nonnegative number on success
