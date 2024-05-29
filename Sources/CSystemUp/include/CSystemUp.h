@@ -18,7 +18,7 @@
 #define _GNU_SOURCE
 #include <unistd.h>
 #include <stdlib.h>
-
+#include <fcntl.h>
 #include <sys/sysmacros.h>
 
 #endif // linux end
