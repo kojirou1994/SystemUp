@@ -252,3 +252,14 @@ public extension FileControl {
   }
 }
 #endif
+
+#if os(Linux)
+public extension FileControl {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func posixFileAllocate(_ fd: FileDescriptor, offset: Int, length: Int) throws {
+    try SyscallUtilities.errnoOrZeroOnReturn {
+      SystemLibc.posix_fallocate(fd.rawValue, offset, length)
+    }.get()
+  }
+}
+#endif
