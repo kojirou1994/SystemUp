@@ -315,14 +315,14 @@ public extension FileStream {
     return result != nil
   }
 
-  /// If line was set to NULL before the call, then the buffer should be freed by the user program even on failure.
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
   /// delimited string input
   /// - Parameters:
-  ///   - line: output line buffer address, will be allocated if nil, remember to release it
+  ///   - line: output line buffer address, will be allocated if nil, remember to release it.If line was set to nil before the call, then the buffer should be freed by the user program even on failure.
   ///   - linecapp: capacity of line buffer
   ///   - delimiter: delimiter character
-  /// - Returns: the number of characters read, including the delimiter character, but not including the terminating null byte, return nil if EOF
+  /// - Returns: the number of characters read, including the delimiter character, but not including the terminating null byte, return nil if EOF.
+  /// line is always non-nil on success.
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getDelimitedLine(line: inout UnsafeMutablePointer<CChar>?, linecapp: inout Int, delimiter: UInt8 = .init(ascii: "\n")) throws -> Int? {
 
     let result = SystemLibc.getline(&line, &linecapp, rawValue)
@@ -339,6 +339,19 @@ public extension FileStream {
     assert(line != nil)
 
     return result
+  }
+
+  /// delimited string input
+  /// - Parameter delimiter: delimiter character
+  /// - Returns: string including the delimiter character. return nil if EOF.
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func getDelimitedLine(delimiter: UInt8 = .init(ascii: "\n")) throws -> LazyCopiedCString? {
+    var line: UnsafeMutablePointer<CChar>?
+    var linecapp = 0
+    guard let length = try getDelimitedLine(line: &line, linecapp: &linecapp, delimiter: delimiter) else {
+      return nil
+    }
+    return .init(cString: line.unsafelyUnwrapped, forceLength: length, freeWhenDone: true)
   }
 
   // MARK: Wrappers
