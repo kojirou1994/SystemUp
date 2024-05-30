@@ -99,6 +99,17 @@ public extension FileStream {
     }
   }
 
+  @_alwaysEmitIntoClient
+  consuming func closeAfter<R>(_ body: (borrowing Self) throws -> R) rethrows -> R {
+    do {
+      let result = try body(self)
+      close()
+      return result
+    } catch {
+      close()
+      throw error
+    }
+  }
 }
 
 // MARK: check and reset stream status
