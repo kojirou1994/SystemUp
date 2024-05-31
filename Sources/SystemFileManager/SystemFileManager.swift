@@ -1,6 +1,8 @@
 import SystemPackage
 import SystemUp
 import struct Foundation.Data
+import CUtility
+import CGeneric
 
 public struct SystemFileManager {}
 
@@ -217,8 +219,10 @@ public extension SystemFileManager {
 
 // MARK: Determining Access to Files
 public extension SystemFileManager {
-  static func fileExists(atPath path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd) -> Bool {
-    switch fileStatus(path, relativeTo: base) {
+  @CStringGeneric()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func fileExists(atPath path: String, relativeTo base: SystemCall.RelativeDirectory = .cwd) -> Bool {
+    switch fileStatus(path, relativeTo: base, { _ in ()}) {
     case .success: return true
     case .failure: return false
     }
@@ -229,16 +233,21 @@ public extension SystemFileManager {
 // MARK: Getting and Setting Attributes
 public extension SystemFileManager {
 
-  static func fileStatus(_ fd: FileDescriptor) -> Result<FileStatus, Errno> {
-    var result = FileStatus()
-    return SystemCall.fileStatus(fd, into: &result)
-      .map { result }
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func fileStatus<R>(_ fd: FileDescriptor, _ property: (FileStatus) -> R = { $0 }) -> Result<R, Errno> {
+    withUnsafeTemporaryAllocation(of: FileStatus.self, capacity: 1) { buf in
+      SystemCall.fileStatus(fd, into: buf.baseAddress!)
+        .map { property(buf[0]) }
+    }
   }
 
-  static func fileStatus(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = []) -> Result<FileStatus, Errno> {
-    var result = FileStatus()
-    return SystemCall.fileStatus(path, relativeTo: base, flags: flags, into: &result)
-      .map { result }
+  @CStringGeneric()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func fileStatus<R>(_ path: String, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = [], _ property: (FileStatus) -> R = { $0 }) -> Result<R, Errno> {
+    withUnsafeTemporaryAllocation(of: FileStatus.self, capacity: 1) { buf in
+      SystemCall.fileStatus(path, relativeTo: base, flags: flags, into: buf.baseAddress!)
+        .map { property(buf[0]) }
+    }
   }
 
 }

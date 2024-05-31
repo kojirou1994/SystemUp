@@ -123,7 +123,7 @@ public extension WaitPID {
   @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
   static func exitStatus(of target: TargetID, rusage: UnsafeMutablePointer<rusage>? = nil) async throws -> WaitPID.WaitResult {
     try await withCheckedThrowingContinuation { continuation in
-      Task {
+      try! PosixThread.detach {
         var status = WaitPID.ExitStatus(rawValue: 0)
         let result = SyscallUtilities.retryWhileInterrupted {
           WaitPID.wait(target, status: &status, options: [], rusage: rusage)
