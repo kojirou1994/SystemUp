@@ -127,23 +127,18 @@ public extension WaitPID.ExitStatus {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exited(exitStatus: Int32) -> Self {
-    assert(exitStatus.leadingZeroBitCount >= 24, "status only supports 8bits, \(exitStatus) will be truncated!")
+  static func exited(_ exitStatus: Int32) -> Self {
+    assert(UInt8(exactly: exitStatus) != nil, "status only supports 8bits, \(exitStatus) will be truncated!")
     return .init(rawValue: swift_W_EXITCODE(exitStatus, 0))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exited(exitStatus: UInt8) -> Self {
-    return .init(rawValue: swift_W_EXITCODE(numericCast(exitStatus), 0))
-  }
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func signaled(signal: Signal) -> Self {
+  static func signaled(_ signal: Signal) -> Self {
     .init(rawValue: swift_W_EXITCODE(0, signal.rawValue))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func stopped(signal: Signal) -> Self {
+  static func stopped(_ signal: Signal) -> Self {
     .init(rawValue: swift_W_STOPCODE(signal.rawValue))
   }
 }
