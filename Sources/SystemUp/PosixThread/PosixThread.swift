@@ -443,7 +443,7 @@ public extension PosixThread {
 }
 
 public extension PosixThread.ThreadID {
-  // moveOnly
+
   struct QualityOfServiceOverride: ~Copyable {
     @usableFromInline
     let rawValue: pthread_override_t
