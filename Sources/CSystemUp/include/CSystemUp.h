@@ -64,6 +64,14 @@ SWIFT_INLINE int swift_WIFCONTINUED(int status) {
   return WIFCONTINUED(status);
 }
 
+SWIFT_INLINE int swift_W_EXITCODE(int ret, int sig) {
+  return W_EXITCODE(ret, sig);
+}
+
+SWIFT_INLINE int swift_W_STOPCODE(int sig) {
+  return W_STOPCODE(sig);
+}
+
 SWIFT_INLINE unsigned long swift_FIOCLEX() {
   return FIOCLEX;
 }
