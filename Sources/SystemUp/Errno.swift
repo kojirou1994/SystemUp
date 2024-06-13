@@ -16,4 +16,26 @@ public extension Errno {
   var errorMessage: StaticCString? {
     SystemLibc.strerror(rawValue).map { .init(cString: $0) }
   }
+
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  func copyErrorMessage(to buf: UnsafeMutableBufferPointer<CChar>) -> Result<Void, Errno> {
+    SyscallUtilities.errnoOrZeroOnReturn {
+      SystemLibc.strerror_r(rawValue, buf.baseAddress, buf.count)
+    }
+  }
+
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  static func print(_ string: UnsafePointer<CChar>? = nil) {
+    perror(string)
+  }
+}
+
+extension Errno: CaseIterable {
+  public static var allCases: LazyMapSequence<LazySequence<Range<Int32>>.Elements, Errno> {
+    let n = 0..<SystemLibc.sys_nerr
+    let s = n.lazy.map(Errno.init)
+    return s
+  }
 }
