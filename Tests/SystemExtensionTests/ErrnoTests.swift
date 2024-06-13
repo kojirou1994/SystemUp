@@ -12,7 +12,7 @@ final class ErrnoTests: XCTestCase {
 
   func testCopyMessage() throws {
     try withUnsafeTemporaryAllocation(of: CChar.self, capacity: 4096) { buf in
-      for err in Errno.allCases {
+      for err in (0..<10).map(Errno.init) {
         XCTAssertNoThrow(try err.copyErrorMessage(to: buf).get())
       }
 

@@ -20,8 +20,9 @@ public extension Errno {
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   func copyErrorMessage(to buf: UnsafeMutableBufferPointer<CChar>) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
-      SystemLibc.strerror_r(rawValue, buf.baseAddress, buf.count)
+    assert(!buf.isEmpty)
+    return SyscallUtilities.errnoOrZeroOnReturn {
+      SystemLibc.strerror_r(rawValue, buf.baseAddress.unsafelyUnwrapped, buf.count)
     }
   }
 
@@ -32,6 +33,7 @@ public extension Errno {
   }
 }
 
+#if canImport(Darwin)
 extension Errno: CaseIterable {
   public static var allCases: LazyMapSequence<LazySequence<Range<Int32>>.Elements, Errno> {
     let n = 0..<SystemLibc.sys_nerr
@@ -39,3 +41,4 @@ extension Errno: CaseIterable {
     return s
   }
 }
+#endif
