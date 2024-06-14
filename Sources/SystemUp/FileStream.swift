@@ -182,7 +182,7 @@ public extension FileStream {
   var currentPosition: Position {
     nonmutating set {
       withUnsafePointer(to: newValue.rawValue) { pos in
-        assertNoFailure {
+        _ = assertNoFailure {
           SyscallUtilities.voidOrErrno {
             SystemLibc.fsetpos(rawValue, pos)
           }
