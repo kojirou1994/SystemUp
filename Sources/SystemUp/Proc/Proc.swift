@@ -35,6 +35,7 @@ public extension Proc {
   @_alwaysEmitIntoClient
   static var pathInfoMaxSize: Int32 { 4 * MAXPATHLEN }
   
+  @_alwaysEmitIntoClient
   static func path(pid: ProcessID) throws -> FilePath {
     try withUnsafeTemporaryAllocation(byteCount: Int(pathInfoMaxSize), alignment: MemoryLayout<UInt8>.alignment) { buffer in
       _ = try path(pid: pid, into: buffer).get()
@@ -43,31 +44,48 @@ public extension Proc {
   }
 
   /// result is c-string length(no \0), return 0 if buffer is too small
+  @_alwaysEmitIntoClient
   static func path(pid: ProcessID, into buffer: UnsafeMutableRawBufferPointer) -> Result<Int32, Errno> {
-    assert(buffer.count == pathInfoMaxSize)
+    assert(buffer.count >= pathInfoMaxSize)
     return SyscallUtilities.valueOrErrno {
       proc_pidpath(pid.rawValue, buffer.baseAddress, numericCast(buffer.count))
     }
   }
 
   struct ListPIDType {
+    @_alwaysEmitIntoClient
+    internal init(type: UInt32, typeinfo: UInt32) {
+      self.type = type
+      self.typeinfo = typeinfo
+    }
+    @usableFromInline
     let type: UInt32
+    @usableFromInline
     let typeinfo: UInt32
 
+    @_alwaysEmitIntoClient
     public static var all: Self { .init(type: UInt32(PROC_ALL_PIDS), typeinfo: 0) }
+    @_alwaysEmitIntoClient
     public static func processGroup(_ v: UInt32) -> Self { .init(type: UInt32(PROC_PGRP_ONLY), typeinfo: v) }
+    @_alwaysEmitIntoClient
     public static func tty(_ v: UInt32) -> Self { .init(type: UInt32(PROC_TTY_ONLY), typeinfo: v) }
+    @_alwaysEmitIntoClient
     public static func uid(_ v: UInt32) -> Self { .init(type: UInt32(PROC_UID_ONLY), typeinfo: v) }
+    @_alwaysEmitIntoClient
     public static func ruid(_ v: UInt32) -> Self { .init(type: UInt32(PROC_RUID_ONLY), typeinfo: v) }
+    @_alwaysEmitIntoClient
     public static func parentProcessID(_ v: UInt32) -> Self { .init(type: UInt32(PROC_PPID_ONLY), typeinfo: v) }
+    @_alwaysEmitIntoClient
     public static func kdbg(_ v: UInt32) -> Self { .init(type: UInt32(PROC_KDBG_ONLY), typeinfo: v) }
   }
 
+  @_alwaysEmitIntoClient
   static func listPIDs(_ type: ListPIDType) throws -> [ProcessID] {
     try SyscallUtilities.preallocateSyscall { Proc.listPIDs(type, mode: $0) }.get()
   }
 
   /// return buffer size
+  @_alwaysEmitIntoClient
   static func listPIDs(_ type: ListPIDType, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int32, Errno> {
     let buffer = mode.toC
     return SyscallUtilities.valueOrErrno {
@@ -192,6 +210,14 @@ public extension Proc {
       return SyscallUtilities.valueOrErrno {
         proc_pidinfo(pid.rawValue, PIDInfoType.listFDs.rawValue, 0, buffer.baseAddress, Int32(buffer.count))
       }
+    }
+  }
+
+  @_alwaysEmitIntoClient
+  static func listFDs(pid: ProcessID, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int32, Errno> {
+    let buffer = mode.toC
+    return SyscallUtilities.valueOrErrno {
+      proc_pidinfo(pid.rawValue, PIDInfoType.listFDs.rawValue, 0, buffer.baseAddress, Int32(buffer.count))
     }
   }
 

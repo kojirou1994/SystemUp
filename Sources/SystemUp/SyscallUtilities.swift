@@ -71,14 +71,17 @@ public extension SyscallUtilities {
   }
 }
 
+@discardableResult
 @inlinable @inline(__always)
 @_alwaysEmitIntoClient
-public func assertNoFailure<R, E>(file: StaticString = #file, line: UInt = #line, _ body: () -> Result<R, E>) {
-  switch body() {
+public func assertNoFailure<R, E>(file: StaticString = #file, line: UInt = #line, _ body: () -> Result<R, E>) -> Result<R, E> {
+  let result = body()
+  switch result {
   case .success: break
   case .failure(let error):
     assertionFailure("Impossible Error: \(error)", file: file, line: line)
   }
+  return result
 }
 
 @inlinable @inline(__always)
