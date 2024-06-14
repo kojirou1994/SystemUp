@@ -61,7 +61,6 @@ public extension Memory {
       SystemLibc.reallocf(ptr, byteCount)
     }
   }
-  #endif
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func blockSize(of ptr: UnsafeRawPointer) -> Int {
@@ -73,6 +72,7 @@ public extension Memory {
   static func goodSize(_ size: Int) -> Int {
     SystemLibc.malloc_good_size(size)
   }
+  #endif
 
   // MARK: Wrappers
 
