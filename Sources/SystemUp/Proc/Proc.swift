@@ -38,7 +38,8 @@ public extension Proc {
   @_alwaysEmitIntoClient
   static func path(pid: ProcessID) throws -> FilePath {
     try withUnsafeTemporaryAllocation(byteCount: Int(pathInfoMaxSize), alignment: MemoryLayout<UInt8>.alignment) { buffer in
-      _ = try path(pid: pid, into: buffer).get()
+      let length = try path(pid: pid, into: buffer).get()
+      buffer[Int(length)] = 0
       return .init(platformString: buffer.baseAddress!.assumingMemoryBound(to: CInterop.Char.self))
     }
   }
