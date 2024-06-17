@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
-        "revision" : "ff60ccc3f24dcc14d22f4186a9e5a5d521304488",
-        "version" : "0.3.5"
+        "revision" : "c0bc3ca043bdd4b67413753c19d4ba2f2788750c",
+        "version" : "0.3.8"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-syntax.git",
       "state" : {
-        "revision" : "6ad4ea24b01559dde0773e3d091f1b9e36175036",
-        "version" : "509.0.2"
+        "revision" : "303e5c5c36d6a558407d364878df131c3546fad8",
+        "version" : "510.0.2"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "025bcb1165deab2e20d4eaba79967ce73013f496",
-        "version" : "1.2.1"
+        "revision" : "f9266c85189c2751589a50ea5aec72799797e471",
+        "version" : "1.3.0"
       }
     },
     {
@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kojirou1994/SyscallValue.git",
       "state" : {
-        "revision" : "a2576782e2f360a9a28ed7b4378d68109b443fd9",
-        "version" : "0.0.1"
+        "revision" : "445da560738b6c9abd677b77e0d1b0eb9f43e082",
+        "version" : "1.0.0"
       }
     }
   ],

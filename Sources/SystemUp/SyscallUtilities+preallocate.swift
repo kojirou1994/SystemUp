@@ -10,8 +10,8 @@ public extension SyscallUtilities {
     case .success(let bufsize):
       do {
         let capacity = Int(bufsize)
-        let v = try R(capacity: capacity) { ptr in
-          let realsize = try body(.getValue(.init(start: ptr, count: capacity))).get()
+        let v = try R(bytesCapacity: capacity) { buffer in
+          let realsize = try body(.getValue(buffer)).get()
           return Int(realsize)
         }
         return .success(v)

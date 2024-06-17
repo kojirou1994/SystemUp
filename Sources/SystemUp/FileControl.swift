@@ -156,16 +156,16 @@ public extension FileControl.Command {
 public extension FileControl {
 
   static func path(for fd: FileDescriptor) throws -> String {
-    try String(capacity: Int(MAXPATHLEN)) { ptr in
-      _ = try control(fd, command: .getPath, ptr: ptr).get()
-      return strlen(ptr)
+    try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
+      _ = try control(fd, command: .getPath, ptr: buffer.baseAddress!).get()
+      return strlen(buffer.baseAddress!)
     }
   }
 
   static func nonFirmlinkedPath(for fd: FileDescriptor) throws -> String {
-    try String(capacity: Int(MAXPATHLEN)) { ptr in
-      _ = try control(fd, command: .getNonFirmlinkedPath, ptr: ptr).get()
-      return strlen(ptr)
+    try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
+      _ = try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!).get()
+      return strlen(buffer.baseAddress!)
     }
   }
 

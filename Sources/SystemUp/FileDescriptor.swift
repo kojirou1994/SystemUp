@@ -5,8 +5,8 @@ import CUtility
 
 extension FileDescriptor {
   public func read<T: SyscallValue>(upToCount count: Int) throws -> T {
-    try T.init(capacity: count) { ptr in
-      try read(into: UnsafeMutableRawBufferPointer(start: ptr, count: count))
+    try T.init(bytesCapacity: count) { buffer in
+      try read(into: buffer)
     }
   }
 
@@ -52,14 +52,15 @@ public extension FileDescriptor {
 
   var ttyName: String? {
     let capacity = Int(PATH_MAX)
-    return try? String(capacity: capacity) { buffer in
-      switch getTTYName(into: buffer.assumingMemoryBound(to: CChar.self), capacity: capacity) {
+    return try? String(bytesCapacity: capacity) { buffer in
+      let buffer = buffer.assumingMemoryBound(to: CChar.self)
+      switch getTTYName(into: buffer.baseAddress!, capacity: buffer.count) {
       case .success: break
       case .failure(let err):
         assert(err != .outOfRange, "The bufsize is too small!!")
         throw err
       }
-      return strlen(buffer)
+      return strlen(buffer.baseAddress!)
     }
   }
 
