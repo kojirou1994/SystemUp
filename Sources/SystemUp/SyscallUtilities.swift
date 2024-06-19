@@ -44,15 +44,15 @@ public extension SyscallUtilities {
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  static func voidOrErrno<I: FixedWidthInteger>(_ body: () -> I) -> Result<Void, Errno> {
-    valueOrErrno(body).map { _ in () }
+  static func voidOrErrno<I: FixedWidthInteger>(failureValue: Int = -1, _ body: () -> I) -> Result<Void, Errno> {
+    valueOrErrno(failureValue: failureValue, body).map { _ in () }
   }
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  static func valueOrErrno<I: FixedWidthInteger>(_ body: () -> I) -> Result<I, Errno> {
+  static func valueOrErrno<I: FixedWidthInteger>(failureValue: Int = -1, _ body: () -> I) -> Result<I, Errno> {
     let i = body()
-    if i == -1 {
+    if i == failureValue {
       let err = Errno.systemCurrent
       return .failure(err)
     } else {
