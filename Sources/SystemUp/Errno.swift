@@ -11,6 +11,21 @@ public extension Errno {
     set { SystemLibc.swift_set_errno(newValue.rawValue) }
   }
 
+  /// set errno to 0.
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  static func reset() {
+    systemCurrent = .init(rawValue: 0)
+  }
+
+  /// returns nil if errno is 0.
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  static var systemCurrentValid: Self? {
+    let v = SystemLibc.swift_get_errno()
+    return v == 0 ? nil : .init(rawValue: v)
+  }
+
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   var errorMessage: StaticCString? {

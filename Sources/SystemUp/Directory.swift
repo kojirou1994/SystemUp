@@ -98,7 +98,7 @@ public struct Directory {
   @_alwaysEmitIntoClient
   public func withNextEntry<R>(_ body: (borrowing Entry) throws -> R) rethrows -> Result<R, Errno>? {
     while true {
-      Errno.systemCurrent = .init(rawValue: 0)
+      Errno.reset()
       let ptr = readdir(dir)
       if let ptr {
         let entry = Entry(ptr)
@@ -107,8 +107,7 @@ public struct Directory {
         }
         return try .success(body(entry))
       } else {
-        if case let err = Errno.systemCurrent,
-           err.rawValue != 0 {
+        if let err = Errno.systemCurrentValid {
           // errno changed, error happened!
           return .failure(err)
         } else {

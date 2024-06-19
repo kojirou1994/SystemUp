@@ -15,16 +15,33 @@ public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func getString(systemVariable: SystemVariableString) -> Result<String, Errno> {
-    SyscallUtilities.preallocateSyscall { getString(systemVariable: systemVariable, mode: $0) }
+    SyscallUtilities.preallocateSyscall { getString(systemVariable: systemVariable, fixEmptyCString: false, mode: $0) }
   }
 
-  /// - Returns: the buffer size needed to hold the entire configuration-defined value, including the terminating null byte
+  /// get string-valued configurable variables
+  /// - Parameters:
+  ///   - systemVariable: variable name
+  ///   - fixEmptyCString: if true and result is empty string, set \0 to buffer[0]
+  /// - Returns: the buffer size needed to hold the entire configuration-defined value, including the terminating null byte. if the variable does not have a configuration defined value, 0 is returned.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getString(systemVariable: SystemVariableString, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
-    SyscallUtilities.valueOrErrno {
-      let b = mode.toC
-      return SystemLibc.confstr(systemVariable.rawValue, b.baseAddress, b.count)
+  static func getString(systemVariable: SystemVariableString, fixEmptyCString: Bool, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+    Errno.reset()
+    let buf = mode.toC
+    let result = SystemLibc.confstr(systemVariable.rawValue, buf.baseAddress, buf.count)
+    assert(result >= 0, "specified by POSIX")
+    if result == 0 {
+      if let err = Errno.systemCurrentValid {
+        // If the call to confstr() is not successful, 0 is returned and errno is set appropriately
+        return .failure(err)
+      } else {
+        // if the variable does not have a configuration defined value, 0 is returned and errno is not modified.
+        if fixEmptyCString, !buf.isEmpty {
+          buf[buf.startIndex] = 0
+        }
+      }
     }
+
+    return .success(result)
   }
 
   struct SystemVariableInteger: MacroRawRepresentable {
