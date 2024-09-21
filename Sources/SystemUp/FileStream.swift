@@ -438,17 +438,17 @@ public extension FileStream {
 public extension FileStream {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardInput: FileStream {
-    .init(rawValue: SystemLibc.stdin)
+    .init(rawValue: SystemLibc.swift_get_stdin())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardOutput: FileStream {
-    .init(rawValue: SystemLibc.stdout)
+    .init(rawValue: SystemLibc.swift_get_stdout())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardError: FileStream {
-    .init(rawValue: SystemLibc.stderr)
+    .init(rawValue: SystemLibc.swift_get_stderr())
   }
 }
 

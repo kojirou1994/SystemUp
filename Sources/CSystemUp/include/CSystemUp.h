@@ -157,3 +157,15 @@ SWIFT_INLINE int swift_get_errno() {
 SWIFT_INLINE void swift_set_errno(int value) {
   errno = value;
 }
+
+SWIFT_INLINE FILE* swift_get_stdin() {
+  return stdin;
+}
+
+SWIFT_INLINE FILE* swift_get_stdout() {
+  return stdout;
+}
+
+SWIFT_INLINE FILE* swift_get_stderr() {
+  return stderr;
+}
