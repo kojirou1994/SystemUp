@@ -99,7 +99,7 @@ public enum InputFormatConversion {
   }
 }
 
-extension UnsafeMutableRawPointer: CVarArg {
+extension UnsafeMutableRawPointer: @retroactive CVarArg {
   public var _cVarArgEncoding: [Int] {
     OpaquePointer(self)._cVarArgEncoding
   }
