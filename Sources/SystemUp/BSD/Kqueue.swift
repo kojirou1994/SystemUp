@@ -3,7 +3,7 @@ import Darwin
 import SystemPackage
 import CUtility
 
-public struct Kqueue {
+public struct Kqueue: ~Copyable {
   @usableFromInline
   internal init(rawValue: Int32) {
     self.rawValue = rawValue
@@ -20,7 +20,7 @@ public struct Kqueue {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  __consuming public func close() {
+  deinit {
     assertNoFailure {
       SyscallUtilities.retryWhileInterrupted {
         SystemCall.close(rawValue)
