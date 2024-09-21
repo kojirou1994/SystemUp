@@ -25,7 +25,7 @@ public extension PosixEnvironment {
     #if canImport(Darwin)
     environ = NSGetEnviron().pointee
     #elseif os(Linux)
-    environ = __environ
+    environ = swift_get_environ()
     #endif
     return .init(environ)
   }
