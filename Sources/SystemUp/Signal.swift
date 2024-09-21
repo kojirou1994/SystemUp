@@ -1,7 +1,7 @@
 import SystemLibc
 import SystemPackage
 
-public struct Signal: RawRepresentable, Hashable {
+public struct Signal: RawRepresentable, Hashable, Sendable {
   public let rawValue: CInt
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)

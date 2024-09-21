@@ -49,7 +49,7 @@ public extension Errno {
 }
 
 #if canImport(Darwin)
-extension Errno: CaseIterable {
+extension Errno: @retroactive CaseIterable {
   public static var allCases: LazyMapSequence<LazySequence<Range<Int32>>.Elements, Errno> {
     let n = 0..<SystemLibc.sys_nerr
     let s = n.lazy.map(Errno.init)

@@ -1,4 +1,4 @@
 import CUtility
 import SystemPackage
 
-extension FilePath: CStringConvertible {}
+extension FilePath: @retroactive CStringConvertible {}

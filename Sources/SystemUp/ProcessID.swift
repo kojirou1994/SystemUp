@@ -1,6 +1,6 @@
 import SystemLibc
 
-public struct ProcessID: RawRepresentable {
+public struct ProcessID: RawRepresentable, Sendable {
   public let rawValue: Int32
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)

@@ -17,12 +17,12 @@ public extension WaitPID {
 
 extension WaitPID {
 
-  public struct WaitResult {
+  public struct WaitResult: Sendable {
     public let pid: ProcessID
     public let status: ExitStatus
   }
 
-  public struct TargetID {
+  public struct TargetID: Sendable {
     @usableFromInline
     internal let rawValue: Int32
     @usableFromInline
@@ -39,7 +39,7 @@ extension WaitPID {
     }
   }
 
-  public struct ExitStatus: RawRepresentable, Hashable {
+  public struct ExitStatus: RawRepresentable, Hashable, Sendable {
     public var rawValue: Int32
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
