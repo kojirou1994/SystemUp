@@ -145,24 +145,26 @@ public extension SystemCall {
 
 extension Xattr {
   @usableFromInline
-  internal static func forEachKeyCString(_ keys: XattrType, _ body: (String, UnsafePointer<CChar>) throws -> Void) rethrows {
-    try keys.withUnsafeBytes { buffer in
-      guard var currentStart = buffer.baseAddress, !buffer.isEmpty else {
-        return
-      }
-      let endAddress = currentStart.advanced(by: buffer.count-1)
-      while case let length = strlen(currentStart.assumingMemoryBound(to: CChar.self)),
-            currentStart + length <= endAddress {
-        let key = String(decoding: UnsafeRawBufferPointer(start: currentStart, count: length), as: UTF8.self)
-        try body(key, .init(OpaquePointer(currentStart)))
-        currentStart = currentStart + length
-        if currentStart == endAddress {
-          break
-        } else {
-          currentStart += 1
+  internal static func forEachKeyCString<E: Error>(_ keys: XattrType, _ body: (String, UnsafePointer<CChar>) throws(E) -> Void) throws(E) {
+    try toTypedThrows(E.self) {
+      try keys.withUnsafeBytes { buffer in
+        guard var currentStart = buffer.baseAddress, !buffer.isEmpty else {
+          return
         }
+        let endAddress = currentStart.advanced(by: buffer.count-1)
+        while case let length = strlen(currentStart.assumingMemoryBound(to: CChar.self)),
+              currentStart + length <= endAddress {
+          let key = String(decoding: UnsafeRawBufferPointer(start: currentStart, count: length), as: UTF8.self)
+          try body(key, .init(OpaquePointer(currentStart)))
+          currentStart = currentStart + length
+          if currentStart == endAddress {
+            break
+          } else {
+            currentStart += 1
+          }
+        }
+        assert(currentStart == endAddress, "has non null-terminated string, just ignored!!")
       }
-      assert(currentStart == endAddress, "has non null-terminated string, just ignored!!")
     }
   }
 }
@@ -177,10 +179,10 @@ public enum Xattr {
   ///   - options: noFollow and showCompression are accepted
   /// - Returns: dictionary
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func listAll(path: UnsafePointer<Int8>, options: Options) throws -> [String : XattrType] {
+  public static func listAll(path: UnsafePointer<Int8>, options: Options) throws(Errno) -> [String : XattrType] {
     var result = [String : XattrType]()
 
-    try forEachKeyCString(list(path, options: options)) { key, keyCString in
+    try forEachKeyCString(list(path, options: options)) { key, keyCString throws(Errno) in
       result[key] = try get(path: path, key: keyCString, position: 0, options: options)
     }
 
@@ -192,7 +194,7 @@ public enum Xattr {
   ///   - path: file path
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func allKeys(path: UnsafePointer<Int8>, options: Options) throws -> [String] {
+  public static func allKeys(path: UnsafePointer<Int8>, options: Options) throws(Errno) -> [String] {
     var keys = [String]()
     try forEachKeyCString(list(path, options: options))  { key, _ in keys.append(key) }
     return keys
@@ -204,7 +206,7 @@ public enum Xattr {
   ///   - key: specific key
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func getValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws -> XattrType {
+  public static func getValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws(Errno) -> XattrType {
     try get(path: path, key: key, position: 0, options: options)
   }
 
@@ -213,8 +215,8 @@ public enum Xattr {
   ///   - path: file path
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func removeAll(path: UnsafePointer<Int8>, options: Options) throws {
-    try forEachKeyCString(list(path, options: options)) { _, key in
+  public static func removeAll(path: UnsafePointer<Int8>, options: Options) throws(Errno) {
+    try forEachKeyCString(list(path, options: options)) { _, key throws(Errno) in
       try SystemCall.removeXattr(path, attributeName: key, options: options).get()
     }
   }
@@ -225,33 +227,37 @@ public enum Xattr {
   ///   - key: xattr key
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func removeValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws {
+  public static func removeValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws(Errno) {
     try SystemCall.removeXattr(path, attributeName: key, options: options).get()
   }
 
   @usableFromInline
-  internal static func list(_ path: UnsafePointer<Int8>, options: Options) throws -> XattrType {
+  internal static func list(_ path: UnsafePointer<Int8>, options: Options) throws(Errno) -> XattrType {
     let size = try SystemCall.listXattrNames(path, options: options, mode: .getSize).get()
     guard size > 0 else {
       return XattrType()
     }
-    return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try SystemCall.listXattrNames(path, options: options, mode: .getValue(.init(buffer))).get()
-      assert(newSize <= size)
-      initializedCount = newSize
+    return try toTypedThrows(Errno.self) {
+      try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
+        let newSize = try SystemCall.listXattrNames(path, options: options, mode: .getValue(.init(buffer))).get()
+        assert(newSize <= size)
+        initializedCount = newSize
+      }
     }
   }
 
   @usableFromInline
-  internal static func get(path: UnsafePointer<Int8>, key: UnsafePointer<Int8>, position: UInt32, options: Options) throws -> XattrType {
+  internal static func get(path: UnsafePointer<Int8>, key: UnsafePointer<Int8>, position: UInt32, options: Options) throws(Errno) -> XattrType {
     let size = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getSize).get()
     guard size > 0 else {
       return XattrType()
     }
-    return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-      let newSize = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getValue(.init(buffer))).get()
-      assert(newSize <= size)
-      initializedCount = newSize
+    return try toTypedThrows(Errno.self) {
+      try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
+        let newSize = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getValue(.init(buffer))).get()
+        assert(newSize <= size)
+        initializedCount = newSize
+      }
     }
   }
 

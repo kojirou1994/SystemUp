@@ -467,7 +467,7 @@ public extension PosixThread.ThreadID {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func overrideStart(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) throws -> QualityOfServiceOverride {
+  func overrideStart(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) throws(Errno) -> QualityOfServiceOverride {
     if let v = unsafeBitCast(pthread_override_qos_class_start_np(rawValue, qos, relativePriority), to: OpaquePointer?.self) {
       return .init(rawValue: v)
     } else {

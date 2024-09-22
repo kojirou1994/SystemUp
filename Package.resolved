@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
-        "revision" : "7e9c7908c4cd698e36a23de1d0b753fdf65af87b",
-        "version" : "0.4.2"
+        "revision" : "6d3c29e89109f34665fa39685fcbd1ffe6d54a4f",
+        "version" : "0.4.5"
       }
     },
     {

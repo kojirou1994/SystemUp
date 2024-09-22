@@ -40,7 +40,7 @@ public extension Memory {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func resize(_ ptr: inout UnsafeMutableRawPointer, byteCount: Int) throws {
+  static func resize(_ ptr: inout UnsafeMutableRawPointer, byteCount: Int) throws(Errno) {
     ptr = try resized(ptr, byteCount: byteCount).get()
   }
 

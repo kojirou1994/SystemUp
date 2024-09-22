@@ -201,7 +201,7 @@ extension SystemCall {
       internal let state: copyfile_state_t
 
       @_alwaysEmitIntoClient @inlinable @inline(__always)
-      public init() throws {
+      public init() throws(Errno) {
         guard let state = copyfile_state_alloc() else {
           throw Errno.noMemory
         }
@@ -440,7 +440,7 @@ public extension SystemCall.CopyFile.State {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func withUnsafeCString<R>(property: Propperty, _ body: (UnsafeMutablePointer<CChar>?) throws -> R) rethrows -> R {
+  func withUnsafeCString<R: ~Copyable, E: Error>(property: Propperty, _ body: (UnsafeMutablePointer<CChar>?) throws(E) -> R) throws(E) -> R {
     assert([.srcFilename, .dstFilename, .xattrName].contains(property))
     var ptr: UnsafeMutablePointer<CChar>?
     try! get(property: property, &ptr).get()

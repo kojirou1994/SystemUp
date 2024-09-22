@@ -29,14 +29,14 @@ extension FileStream {
 public extension FileStream {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ path: String, mode: Mode) throws -> Self {
+  static func open(_ path: String, mode: Mode) throws(Errno) -> Self {
     try .init(rawValue: SyscallUtilities.unwrap {
       SystemLibc.fopen(path, mode.rawValue)
     }.get())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ path: some CStringConvertible, mode: Mode) throws -> Self {
+  static func open(_ path: some CStringConvertible, mode: Mode) throws(Errno) -> Self {
     try .init(rawValue: SyscallUtilities.unwrap {
       path.withCString { path in
         SystemLibc.fopen(path, mode.rawValue)
@@ -45,21 +45,21 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ fd: FileDescriptor, mode: Mode) throws -> Self {
+  static func open(_ fd: FileDescriptor, mode: Mode) throws(Errno) -> Self {
     try .init(rawValue: SyscallUtilities.unwrap {
       SystemLibc.fdopen(fd.rawValue, mode.rawValue)
     }.get())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ buffer: UnsafeMutableRawBufferPointer, mode: Mode) throws -> Self {
+  static func open(_ buffer: UnsafeMutableRawBufferPointer, mode: Mode) throws(Errno) -> Self {
     try .init(rawValue: SyscallUtilities.unwrap {
       SystemLibc.fmemopen(buffer.baseAddress, buffer.count, mode.rawValue)
     }.get())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  borrowing func reopen(mode: Mode) throws {
+  borrowing func reopen(mode: Mode) throws(Errno) {
     let v = try SyscallUtilities.unwrap {
       SystemLibc.freopen(nil, mode.rawValue, rawValue)
     }.get()
@@ -67,7 +67,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  borrowing func reopen(_ path: String, mode: Mode) throws {
+  borrowing func reopen(_ path: String, mode: Mode) throws(Errno) {
     let v = try SyscallUtilities.unwrap {
       SystemLibc.freopen(path, mode.rawValue, rawValue)
     }.get()
@@ -75,7 +75,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  borrowing func reopen(_ path: some CStringConvertible, mode: Mode) throws {
+  borrowing func reopen(_ path: some CStringConvertible, mode: Mode) throws(Errno) {
     let v = try SyscallUtilities.unwrap {
       path.withCString { path in
         SystemLibc.freopen(path, mode.rawValue, rawValue)
@@ -85,7 +85,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func tempFile() throws -> Self {
+  static func tempFile() throws(Errno) -> Self {
     try .init(rawValue: SyscallUtilities.unwrap {
       SystemLibc.tmpfile()
     }.get())
@@ -100,7 +100,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient
-  consuming func closeAfter<R>(_ body: (borrowing Self) throws -> R) rethrows -> R {
+  consuming func closeAfter<R: ~Copyable, E: Error>(_ body: (borrowing Self) throws(E) -> R) throws(E) -> R {
     do {
       let result = try body(self)
       close()
@@ -165,7 +165,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func seek(toOffset offset: Int, from origin: FileDescriptor.SeekOrigin) throws {
+  func seek(toOffset offset: Int, from origin: FileDescriptor.SeekOrigin) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       SystemLibc.fseek(rawValue, offset, origin.rawValue)
     }.get()
@@ -334,7 +334,7 @@ public extension FileStream {
   /// - Returns: the number of characters read, including the delimiter character, but not including the terminating null byte, return nil if EOF.
   /// line is always non-nil on success.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func getDelimitedLine(line: inout UnsafeMutablePointer<CChar>?, linecapp: inout Int, delimiter: UInt8 = .init(ascii: "\n")) throws -> Int? {
+  func getDelimitedLine(line: inout UnsafeMutablePointer<CChar>?, linecapp: inout Int, delimiter: UInt8 = .init(ascii: "\n")) throws(Errno) -> Int? {
 
     let result = SystemLibc.getline(&line, &linecapp, rawValue)
 
@@ -356,7 +356,7 @@ public extension FileStream {
   /// - Parameter delimiter: delimiter character
   /// - Returns: string including the delimiter character. return nil if EOF.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func getDelimitedLine(delimiter: UInt8 = .init(ascii: "\n")) throws -> LazyCopiedCString? {
+  func getDelimitedLine(delimiter: UInt8 = .init(ascii: "\n")) throws(Errno) -> LazyCopiedCString? {
     var line: UnsafeMutablePointer<CChar>?
     var linecapp = 0
     guard let length = try getDelimitedLine(line: &line, linecapp: &linecapp, delimiter: delimiter) else {
@@ -369,7 +369,7 @@ public extension FileStream {
 
   /// iterate over delimited lines, error from getline() is ignored
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func iterateDelimitedLine(initialBufferSize: Int = 0, delimiter: UInt8 = .init(ascii: "\n"), strippingDelimiter: Bool = true, _ body: (_ line: borrowing DynamicCString, _ length: Int, _ stop: inout Bool) throws -> Void) rethrows {
+  func iterateDelimitedLine<E: Error>(initialBufferSize: Int = 0, delimiter: UInt8 = .init(ascii: "\n"), strippingDelimiter: Bool = true, _ body: (_ line: borrowing DynamicCString, _ length: Int, _ stop: inout Bool) throws(E) -> Void) throws(E) {
     var capp = initialBufferSize
     var buf: UnsafeMutablePointer<CChar>?
     if capp > 0 {

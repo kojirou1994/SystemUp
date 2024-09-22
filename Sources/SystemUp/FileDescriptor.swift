@@ -4,9 +4,11 @@ import SyscallValue
 import CUtility
 
 extension FileDescriptor {
-  public func read<T: SyscallValue>(upToCount count: Int) throws -> T {
-    try T.init(bytesCapacity: count) { buffer in
-      try read(into: buffer)
+  public func read<T: SyscallValue>(upToCount count: Int) throws(Errno) -> T {
+    try toTypedThrows(Errno.self) {
+      try T.init(bytesCapacity: count) { buffer in
+        try read(into: buffer)
+      }
     }
   }
 

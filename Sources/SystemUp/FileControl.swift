@@ -67,22 +67,22 @@ public extension FileControl.Command {
 
 public extension FileControl {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func duplicate(_ fd: FileDescriptor) throws -> FileDescriptor {
+  static func duplicate(_ fd: FileDescriptor) throws(Errno) -> FileDescriptor {
     try control(fd, command: .duplicateFD).map(FileDescriptor.init).get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func duplicateCloseOnExec(_ fd: FileDescriptor) throws -> FileDescriptor {
+  static func duplicateCloseOnExec(_ fd: FileDescriptor) throws(Errno) -> FileDescriptor {
     try control(fd, command: .duplicateFDCloseOnExec).map(FileDescriptor.init).get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func flags(for fd: FileDescriptor) throws -> FileDescriptorFlags {
+  static func flags(for fd: FileDescriptor) throws(Errno) -> FileDescriptorFlags {
     try .init(rawValue: control(fd, command: .getFlags).get())
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(_ fd: FileDescriptor, flags: FileDescriptorFlags) throws {
+  static func set(_ fd: FileDescriptor, flags: FileDescriptorFlags) throws(Errno) {
     _ = try control(fd, command: .setFlags, value: flags.rawValue).get()
   }
 
@@ -98,22 +98,22 @@ public extension FileControl {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func statusFlags(for fd: FileDescriptor) throws -> Int32 {
+  static func statusFlags(for fd: FileDescriptor) throws(Errno) -> Int32 {
     try control(fd, command: .getStatusFlags).get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(_ fd: FileDescriptor, statusFlags: Int32) throws {
+  static func set(_ fd: FileDescriptor, statusFlags: Int32) throws(Errno) {
     _ = try control(fd, command: .setStatusFlags, value: statusFlags).get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func processID(for fd: FileDescriptor) throws -> ProcessID {
+  static func processID(for fd: FileDescriptor) throws(Errno) -> ProcessID {
     try control(fd, command: .getProcessID).map(ProcessID.init).get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(_ fd: FileDescriptor, processID: ProcessID) throws {
+  static func set(_ fd: FileDescriptor, processID: ProcessID) throws(Errno) {
     _ = try control(fd, command: .setProcessID, value: processID.rawValue).get()
   }
 
@@ -155,22 +155,26 @@ public extension FileControl.Command {
 
 public extension FileControl {
 
-  static func path(for fd: FileDescriptor) throws -> String {
-    try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
-      _ = try control(fd, command: .getPath, ptr: buffer.baseAddress!).get()
-      return strlen(buffer.baseAddress!)
+  static func path(for fd: FileDescriptor) throws(Errno) -> String {
+    try toTypedThrows(Errno.self) {
+      try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
+        _ = try control(fd, command: .getPath, ptr: buffer.baseAddress!).get()
+        return strlen(buffer.baseAddress!)
+      }
     }
   }
 
-  static func nonFirmlinkedPath(for fd: FileDescriptor) throws -> String {
-    try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
-      _ = try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!).get()
-      return strlen(buffer.baseAddress!)
+  static func nonFirmlinkedPath(for fd: FileDescriptor) throws(Errno) -> String {
+    try toTypedThrows(Errno.self) {
+      try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
+        _ = try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!).get()
+        return strlen(buffer.baseAddress!)
+      }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func preAllocate(_ fd: FileDescriptor, options: inout PreAllocateOptions) throws {
+  static func preAllocate(_ fd: FileDescriptor, options: inout PreAllocateOptions) throws(Errno) {
     _ = try control(fd, command: .preAllocate, ptr: &options).get()
   }
 
@@ -256,7 +260,7 @@ public extension FileControl {
 #if os(Linux)
 public extension FileControl {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func posixFileAllocate(_ fd: FileDescriptor, offset: Int, length: Int) throws {
+  static func posixFileAllocate(_ fd: FileDescriptor, offset: Int, length: Int) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
       SystemLibc.posix_fallocate(fd.rawValue, offset, length)
     }.get()
@@ -267,7 +271,7 @@ public extension FileControl {
 #if os(Linux)
 public extension FileControl {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func _linuxFileAllocate(_ fd: FileDescriptor, mode: Int32, offset: Int, length: Int) throws {
+  static func _linuxFileAllocate(_ fd: FileDescriptor, mode: Int32, offset: Int, length: Int) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       SystemLibc.fallocate(fd.rawValue, mode, offset, length)
     }.get()

@@ -17,9 +17,11 @@ public extension Proc {
 
   @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   @_alwaysEmitIntoClient
-  static func name(pid: ProcessID) throws -> String {
-    try .init(unsafeUninitializedCapacity: Int(MAXPATHLEN)) { buffer in
-      Int(try name(pid: pid, into: .init(buffer)).get())
+  static func name(pid: ProcessID) throws(Errno) -> String {
+    try toTypedThrows(Errno.self) {
+      try .init(unsafeUninitializedCapacity: Int(MAXPATHLEN)) { buffer in
+        Int(try name(pid: pid, into: .init(buffer)).get())
+      }
     }
   }
 
@@ -36,11 +38,13 @@ public extension Proc {
   static var pathInfoMaxSize: Int32 { 4 * MAXPATHLEN }
   
   @_alwaysEmitIntoClient
-  static func path(pid: ProcessID) throws -> FilePath {
-    try withUnsafeTemporaryAllocation(byteCount: Int(pathInfoMaxSize), alignment: MemoryLayout<UInt8>.alignment) { buffer in
-      let length = try path(pid: pid, into: buffer).get()
-      buffer[Int(length)] = 0
-      return .init(platformString: buffer.baseAddress!.assumingMemoryBound(to: CInterop.Char.self))
+  static func path(pid: ProcessID) throws(Errno) -> FilePath {
+    try toTypedThrows(Errno.self) {
+      try withUnsafeTemporaryAllocation(byteCount: Int(pathInfoMaxSize), alignment: MemoryLayout<UInt8>.alignment) { buffer in
+        let length = try path(pid: pid, into: buffer).get()
+        buffer[Int(length)] = 0
+        return .init(platformString: buffer.baseAddress!.assumingMemoryBound(to: CInterop.Char.self))
+      }
     }
   }
 
@@ -81,7 +85,7 @@ public extension Proc {
   }
 
   @_alwaysEmitIntoClient
-  static func listPIDs(_ type: ListPIDType) throws -> [ProcessID] {
+  static func listPIDs(_ type: ListPIDType) throws(Errno) -> [ProcessID] {
     try SyscallUtilities.preallocateSyscall { Proc.listPIDs(type, mode: $0) }.get()
   }
 

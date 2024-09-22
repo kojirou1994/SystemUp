@@ -51,22 +51,27 @@ public struct Directory: ~Copyable {
     }
   }
 
+  /// return current location in directory stream
   @_alwaysEmitIntoClient
-  public func tell() throws -> Int {
-    telldir(dir)
+  public func tell() -> Int {
+    let r = telldir(dir)
+    assert(r != -1)
+    return r
   }
 
   /// resets the position of the named directory stream to the beginning of the directory.
   @_alwaysEmitIntoClient
-  public func rewind() throws {
+  public func rewind() {
     rewinddir(dir)
   }
 
+  /// sets the position of the next readdir() operation on the directory stream
   @_alwaysEmitIntoClient
-  public func seek(offset: Int) throws {
-    seekdir(dir, offset)
+  public func seek(to location: Int) {
+    seekdir(dir, location)
   }
 
+  /// returns the integer file descriptor associated with the named directory stream
   @_alwaysEmitIntoClient
   public var fd: FileDescriptor {
     .init(rawValue: dirfd(dir))
@@ -193,8 +198,8 @@ extension Directory {
     }
 
     @_alwaysEmitIntoClient
-    public func withNameBuffer<R: ~Copyable>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
-      try withNameCString { cString in
+    public func withNameBuffer<R: ~Copyable, E: Error>(_ body: (UnsafeRawBufferPointer) throws(E) -> R) throws(E) -> R {
+      try withNameCString { cString throws(E) in
         #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
         let length = Int(entry.pointee.d_namlen)
         #else
@@ -206,7 +211,7 @@ extension Directory {
     }
 
     @_alwaysEmitIntoClient
-    public func withNameCString<R: ~Copyable>(_ body: (UnsafePointer<CChar>) throws -> R) rethrows -> R {
+    public func withNameCString<R: ~Copyable, E: Error>(_ body: (UnsafePointer<CChar>) throws(E) -> R) throws(E) -> R {
       try body(UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self))
     }
   }
