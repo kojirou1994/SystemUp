@@ -3,7 +3,8 @@ import CUtility
 import SystemPackage
 
 public struct ResourceUsage: Sendable {
-  public var rawValue: rusage
+  @usableFromInline
+  internal var rawValue: rusage
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {

@@ -8,9 +8,9 @@ public enum WaitPID {}
 public extension WaitPID {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func wait(_ target: TargetID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
-                   rusage: UnsafeMutablePointer<rusage>? = nil) -> Result<ProcessID, Errno> {
+                   rusage: UnsafeMutablePointer<ResourceUsage>? = nil) -> Result<ProcessID, Errno> {
     SyscallUtilities.valueOrErrno {
-      wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage)
+      wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage?.pointer(to: \.rawValue))
     }.map(ProcessID.init)
   }
 }
@@ -146,36 +146,70 @@ public extension WaitPID.ExitStatus {
 // MARK: Async Wait
 public extension WaitPID {
 
-  /// create new thread to wait
+  /// create new blocked thread to wait
   @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
-  static func exitStatus(of target: TargetID, rusage: UnsafeMutablePointer<rusage>? = nil) async throws -> WaitPID.WaitResult {
+  static func exitStatus(of target: TargetID) async throws -> WaitResult {
     try await withCheckedThrowingContinuation { continuation in
       try! PosixThread.detach {
         var status = WaitPID.ExitStatus(rawValue: 0)
         let result = SyscallUtilities.retryWhileInterrupted {
-          WaitPID.wait(target, status: &status, options: [], rusage: rusage)
+          WaitPID.wait(target, status: &status, options: [], rusage: nil)
         }
-        continuation.resume(with: result.map { .init(pid: $0, status: status) })
+        continuation.resume(with: result.map { .init(pid: $0, status: consume status) })
       }
     }
   }
 
   /// check by interval
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  static func exitStatus(of target: TargetID, checkInterval: Duration, rusage: UnsafeMutablePointer<rusage>? = nil) async throws -> WaitPID.WaitResult {
+  static func exitStatus(of target: TargetID, checkInterval: Duration) async throws -> WaitResult {
     var status = WaitPID.ExitStatus(rawValue: 0)
     while true {
       let pid = try SyscallUtilities.retryWhileInterrupted {
-        WaitPID.wait(target, status: &status, options: .noHang, rusage: rusage)
+        WaitPID.wait(target, status: &status, options: .noHang, rusage: nil)
       }.get()
       if pid.rawValue == 0 {
         // if WNOHANG is specified and there are no stopped or exited children, 0 is returned
         try await Task.sleep(for: checkInterval)
       } else {
-        return .init(pid: pid, status: status)
+        return .init(pid: consume pid, status: consume status)
       }
     }
   }
+
+  /// create new blocked thread to wait
+  @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
+  static func exitStatusAndUsage(of target: TargetID) async throws -> (WaitResult, ResourceUsage) {
+    try await withCheckedThrowingContinuation { continuation in
+      try! PosixThread.detach {
+        var status = WaitPID.ExitStatus(rawValue: 0)
+        var rusage = ResourceUsage()
+        let result = SyscallUtilities.retryWhileInterrupted {
+          WaitPID.wait(target, status: &status, options: [], rusage: &rusage)
+        }
+        continuation.resume(with: result.map { (.init(pid: $0, status: consume status), consume rusage) })
+      }
+    }
+  }
+
+  /// check by interval
+  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
+  static func exitStatusAndUsage(of target: TargetID, checkInterval: Duration) async throws -> (WaitResult, ResourceUsage) {
+    var status = WaitPID.ExitStatus(rawValue: 0)
+    var rusage = ResourceUsage()
+    while true {
+      let pid = try SyscallUtilities.retryWhileInterrupted {
+        WaitPID.wait(target, status: &status, options: .noHang, rusage: &rusage)
+      }.get()
+      if pid.rawValue == 0 {
+        // if WNOHANG is specified and there are no stopped or exited children, 0 is returned
+        try await Task.sleep(for: checkInterval)
+      } else {
+        return (.init(pid: consume pid, status: consume status), consume rusage)
+      }
+    }
+  }
+
 }
 
 extension WaitPID.ExitStatus: CustomStringConvertible {
