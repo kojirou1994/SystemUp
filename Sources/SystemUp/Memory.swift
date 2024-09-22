@@ -95,12 +95,12 @@ public extension Memory {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func resize<T>(_ buf: inout UnsafeMutableBufferPointer<T>, capacity: Int) throws {
+  static func resize<T>(_ buf: inout UnsafeMutableBufferPointer<T>, capacity: Int) throws(Errno) {
     buf = try .init(start: resized(buf.baseAddress, byteCount: capacity * MemoryLayout<T>.stride).get().assumingMemoryBound(to: T.self), count: capacity)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func resize(_ buf: inout UnsafeMutableRawBufferPointer, byteCount: Int) throws {
+  static func resize(_ buf: inout UnsafeMutableRawBufferPointer, byteCount: Int) throws(Errno) {
     buf = try .init(start: resized(buf.baseAddress, byteCount: byteCount).get(), count: byteCount)
   }
 }

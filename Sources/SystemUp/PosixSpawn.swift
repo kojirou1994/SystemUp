@@ -50,12 +50,12 @@ extension PosixSpawn {
     #endif
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public init() throws {
+    public init() throws(Errno) {
       try reinitialize()
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func reinitialize() throws {
+    public mutating func reinitialize() throws(Errno) {
       #if canImport(Darwin)
       assert(attributes == nil, "destroy first")
       #endif
@@ -96,12 +96,12 @@ extension PosixSpawn {
     #endif
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public init() throws {
+    public init() throws(Errno) {
       try reinitialize()
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func reinitialize() throws {
+    public mutating func reinitialize() throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
         posix_spawn_file_actions_init(&fileActions)
       }.get()

@@ -5,14 +5,14 @@ import CUtility
 public struct PosixRWLock: ~Copyable {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init(attributes: borrowing Attributes) throws {
+  public init(attributes: borrowing Attributes) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
       withUnsafePointer(to: attributes.rawValue) { pthread_rwlock_init(&rawValue, $0) }
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init() throws {
+  public init() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_rwlock_init(&rawValue, nil)
     }.get()
@@ -78,7 +78,7 @@ extension PosixRWLock {
     internal var rawValue: pthread_rwlockattr_t = .init()
     
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public init() throws {
+    public init() throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
         pthread_rwlockattr_init(&rawValue)
       }.get()

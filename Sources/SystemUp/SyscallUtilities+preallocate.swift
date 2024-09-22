@@ -41,9 +41,9 @@ public extension SyscallUtilities {
         assert(Int(validBytes) % MemoryLayout<Item>.stride == 0, "Item size wrong?")
 
         return .success(buffer.prefix(Int(validBytes)).assumingMemoryBound(to: Item.self))
-      } catch let err as Errno {
-        return .failure(err)
-      } catch { fatalError() }
+      } catch {
+        return .failure(error)
+      }
     }
   }
 }

@@ -1,7 +1,7 @@
 import SystemLibc
 import SystemPackage
 
-public struct UserID: RawRepresentable {
+public struct UserID: RawRepresentable, Sendable {
   public let rawValue: uid_t
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: uid_t) {

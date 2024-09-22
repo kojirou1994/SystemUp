@@ -11,7 +11,7 @@ final class PosixThreadTests: XCTestCase {
   }
 
   func testThreadCreate() throws {
-    var condition = false
+    nonisolated(unsafe) var condition = false
     try PosixThread.detach {
       condition = true
     }

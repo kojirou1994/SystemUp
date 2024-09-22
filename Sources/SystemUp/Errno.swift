@@ -50,7 +50,7 @@ public extension Errno {
 
 #if canImport(Darwin)
 extension Errno: @retroactive CaseIterable {
-  public static var allCases: LazyMapSequence<LazySequence<Range<Int32>>.Elements, Errno> {
+  public static var allCases: some Collection<Errno> {
     let n = 0..<SystemLibc.sys_nerr
     let s = n.lazy.map(Errno.init)
     return s

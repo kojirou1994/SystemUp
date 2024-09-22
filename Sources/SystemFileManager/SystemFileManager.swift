@@ -8,7 +8,7 @@ public struct SystemFileManager {}
 
 extension SystemFileManager {
 
-  public static func createDirectoryIntermediately(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws {
+  public static func createDirectoryIntermediately(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
     var status = FileStatus(rawValue: .init())
     switch SystemCall.fileStatus(path, relativeTo: base, into: &status) {
     case .success:
@@ -32,90 +32,73 @@ extension SystemFileManager {
     try SystemCall.createDirectory(path, relativeTo: base, permissions: permissions).get()
   }
 
-  public static func remove(_ path: FilePath) -> Result<Void, Errno> {
-    withUnsafeTemporaryAllocation(of: FileStatus.self, capacity: 1) { buffer in
-      SystemCall.fileStatus(path, flags: .noFollow, into: &buffer.baseAddress!.pointee)
-        .flatMap { () -> Result<Void, Errno> in
-          if buffer[0].fileType == .directory {
-            return removeDirectoryRecursive(path)
-          } else {
-            return SystemCall.unlink(path)
-          }
-        }
+  public static func remove(_ path: FilePath) throws(Errno) {
+    if try fileStatus(path, flags: .noFollow, \.fileType).get() == .directory {
+      return try removeDirectoryRecursive(path)
+    } else {
+      return try SystemCall.unlink(path).get()
     }
+
   }
 
-  public static func removeDirectory(_ path: FilePath) -> Result<Void, Errno> {
-    SystemCall.unlink(path, flags: .removeDir)
+  public static func removeDirectory(_ path: FilePath) throws(Errno) {
+    try SystemCall.unlink(path, flags: .removeDir).get()
   }
 
-  public static func removeDirectoryUntilSuccess(_ path: FilePath) -> Result<Void, Errno> {
+  public static func removeDirectoryUntilSuccess(_ path: FilePath) throws(Errno) {
     while true {
-      switch removeDirectoryRecursive(path) {
-      case .success: return .success(())
-      case .failure(.directoryNotEmpty):
-        break
-      case .failure(let err):
-        return .failure(err)
+      do {
+        try removeDirectoryRecursive(path)
+        return
+      } catch .directoryNotEmpty {
+
+      } catch {
+        throw error
       }
     }
   }
 
-  public static func removeDirectoryRecursive(_ path: FilePath) -> Result<Void, Errno> {
-    switch Directory.open(path) {
-    case .failure(let e): return .failure(e)
-    case .success(let directory):
-      defer { directory.close() }
-      while let result = directory.withNextEntry({ entry -> Result<Void, Errno> in
-        // remove each entry, return result
-        let entryName = entry.name
-        let childPath = path.appending(entryName)
-        switch entry.fileType {
-        case .directory: return removeDirectoryRecursive(childPath)
-        default: return SystemCall.unlink(childPath)
-        }
-      }) {
-        switch result {
-        case .failure(let readError): return .failure(readError)
-        case .success(let removeResult):
-          switch removeResult {
-          case .success: break
-          case .failure(let removeError): return .failure(removeError)
-          }
-        }
+  public static func removeDirectoryRecursive(_ path: FilePath) throws(Errno) {
+    let directory = try Directory.open(path)
+
+    while (try directory.withNextEntry({ entry throws(Errno) -> Void in
+      // remove each entry, return result
+      let entryName = entry.name
+      let childPath = path.appending(entryName)
+      switch entry.fileType {
+      case .directory: try removeDirectoryRecursive(childPath)
+      default: try SystemCall.unlink(childPath).get()
       }
-      return removeDirectory(path)
-    }
+    })?.get()) != nil { }
+
+    try removeDirectory(path)
   }
 
   /// Performs a deep enumeration of the specified directory and returns the paths of all of the contained subdirectories.
   /// - Parameter path: The path of the root directory.
   /// - Returns: Relative paths of all of the contained subdirectories.
-  public static func subpathsOfDirectory(atPath path: FilePath) throws -> [FilePath] {
+  public static func subpathsOfDirectory(atPath path: FilePath) throws(Errno) -> [FilePath] {
     var results = [FilePath]()
     try _subpathsOfDirectory(atPath: path, basePath: FilePath(), into: &results)
     return results
   }
 
-  private static func _subpathsOfDirectory(atPath path: FilePath, basePath: FilePath, into results: inout [FilePath]) throws {
-    try Directory.open(path)
-      .get()
-      .closeAfter { directory in
-        while true {
-          let result: ()? = try directory.withNextEntry { nextEntry in
-            let entryName = nextEntry.name
-            let result = basePath.appending(entryName)
-            results.append(result)
-            if nextEntry.fileType == .directory {
-              try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
-            }
-          }?.get()
-
-          if result == nil {
-            break
-          }
+  private static func _subpathsOfDirectory(atPath path: FilePath, basePath: FilePath, into results: inout [FilePath]) throws(Errno) {
+    let directory = try Directory.open(path)
+    while true {
+      let result: ()? = try directory.withNextEntry { nextEntry throws(Errno) in
+        let entryName = nextEntry.name
+        let result = basePath.appending(entryName)
+        results.append(result)
+        if nextEntry.fileType == .directory {
+          try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
         }
+      }?.get()
+
+      if result == nil {
+        break
       }
+    }
   }
 
   public static func nullDeviceFD() throws -> FileDescriptor {

@@ -2,7 +2,7 @@ import SystemLibc
 import CUtility
 import SystemPackage
 
-public struct ResourceUsage {
+public struct ResourceUsage: Sendable {
   public var rawValue: rusage
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)

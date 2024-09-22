@@ -117,7 +117,7 @@ public extension PosixThread {
 
   @inlinable @inline(__always)
   internal static func create(context: UnsafeMutableRawPointer? = nil, attributes: UnsafePointer<pthread_attr_t>?,
-                     body: @convention(c) (UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer?) throws -> pthread_t {
+                     body: @convention(c) (UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer?) throws(Errno) -> pthread_t {
     #if canImport(Darwin)
     let body = unsafeBitCast(body, to: (@convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer?).self)
     var thread: pthread_t?
@@ -137,29 +137,29 @@ public extension PosixThread {
   }
 
   @inlinable @inline(__always)
-  internal static func create(attributes: UnsafePointer<pthread_attr_t>?, _ block: @escaping () -> Void) throws -> pthread_t {
+  internal static func create(attributes: UnsafePointer<pthread_attr_t>?, _ block: @escaping @Sendable () -> Void) throws(Errno) -> pthread_t {
     try create(context: Unmanaged.passRetained(block as AnyObject).toOpaque(), attributes: attributes) { context in
       let block = Unmanaged<AnyObject>.fromOpaque(context.unsafelyUnwrapped)
-      (block.takeUnretainedValue() as! (() -> Void))()
+      (block.takeUnretainedValue() as! (@Sendable () -> Void))()
       block.release()
       return nil
     }
   }
 
   @inlinable
-  static func create(_ block: @escaping () -> Void) throws -> ThreadID {
+  static func create(_ block: @escaping @Sendable () -> Void) throws(Errno) -> ThreadID {
     try .init(rawValue: create(attributes: nil, block))
   }
 
   @inlinable
-  static func create(attributes: borrowing Attributes, _ block: @escaping () -> Void) throws -> ThreadID {
-    try .init(rawValue: withUnsafePointer(to: attributes.rawValue) { attributes in
+  static func create(attributes: borrowing Attributes, _ block: @escaping @Sendable () -> Void) throws(Errno) -> ThreadID {
+    try .init(rawValue: withUnsafePointer(to: attributes.rawValue) { attributes throws(Errno) in
       try create(attributes: attributes, block)
     })
   }
 
   @discardableResult
-  static func detach(_ block: @escaping () -> Void) throws -> ThreadID {
+  static func detach(_ block: @escaping @Sendable () -> Void) throws(Errno) -> ThreadID {
     var attr = try Attributes()
     defer {
       attr.destroy()
@@ -181,7 +181,7 @@ extension PosixThread {
   public struct Attributes: ~Copyable {
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public init() throws {
+    public init() throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
         pthread_attr_init(&rawValue)
       }.get()

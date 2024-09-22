@@ -1,6 +1,6 @@
 import SystemLibc
 
-public struct SignalHandler {
+public struct SignalHandler: Sendable {
   @usableFromInline
   internal init(_ body: (@convention(c) (Int32) -> Void)?) {
     self.body = body

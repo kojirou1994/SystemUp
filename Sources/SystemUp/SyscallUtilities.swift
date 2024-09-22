@@ -62,7 +62,7 @@ public extension SyscallUtilities {
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  static func unwrap<T>(_ body: () -> T?) -> Result<T, Errno> {
+  static func unwrap<T: ~Copyable>(_ body: () -> T?) -> Result<T, Errno> {
     if let value  = body() {
       return .success(value)
     } else {

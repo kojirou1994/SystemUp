@@ -4,14 +4,14 @@ import CUtility
 
 public struct PosixCondition: ~Copyable {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init(attributes: borrowing Attributes) throws {
+  public init(attributes: borrowing Attributes) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
       withUnsafePointer(to: attributes.rawValue) { pthread_cond_init(&rawValue, $0) }
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init() throws {
+  public init() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_init(&rawValue, nil)
     }.get()
@@ -68,7 +68,7 @@ public extension PosixCondition {
 extension PosixCondition {
   public struct Attributes: ~Copyable {
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public init() throws {
+    public init() throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
         pthread_condattr_init(&rawValue)
       }.get()

@@ -2,7 +2,7 @@ import SystemPackage
 import CUtility
 import SystemLibc
 
-public struct Fts {
+public struct Fts: ~Copyable {
   @usableFromInline
   internal init(_ handle: UnsafeMutablePointer<FTS>) {
     self.handle = handle
@@ -12,21 +12,18 @@ public struct Fts {
   internal let handle: UnsafeMutablePointer<FTS>
 
   @_alwaysEmitIntoClient
-  public static func open(path: FilePath, options: OpenOptions) -> Result<Self, Errno> {
-    path.withPlatformString { open(path: $0, options: options) }
+  public static func open(path: some CStringConvertible, options: OpenOptions) throws(Errno) -> Self {
+    try .init(withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
+      path.withCString { path in
+        array[0] = .init(mutating: path)
+        array[1] = nil
+        return _fts_open(array.baseAddress, options)
+      }
+    }.get())
   }
 
-  @_alwaysEmitIntoClient
-  public static func open(path: UnsafePointer<Int8>, options: OpenOptions) -> Result<Self, Errno> {
-    withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
-      array[0] = .init(mutating: path)
-      array[1] = nil
-      return _fts_open(array.baseAddress, options)
-    }
-  }
-
-  public static func open<C: Collection>(paths: C, options: OpenOptions) -> Result<Self, Errno> where C.Element == FilePath {
-    withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: paths.count + 1) { array in
+  public static func open<C: Collection>(paths: C, options: OpenOptions) throws(Errno) -> Self where C.Element == FilePath {
+    try .init(withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: paths.count + 1) { array in
       paths.enumerated().forEach { offset, path in
         path.withPlatformString { path in
           array[offset] = .init(mutating: path)
@@ -34,57 +31,55 @@ public struct Fts {
       }
       array[paths.count] = nil
       return _fts_open(array.baseAddress, options)
-    }
+    }.get())
   }
 
   @_alwaysEmitIntoClient
-  public static func open(paths: CStringArray, options: OpenOptions) -> Result<Self, Errno> {
-    paths.withUnsafeCArrayPointer { array in
+  public static func open(paths: CStringArray, options: OpenOptions) throws(Errno) -> Self {
+    try .init(paths.withUnsafeCArrayPointer { array in
       _fts_open(array, options)
-    }
+    }.get())
   }
 
   @usableFromInline
-  internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>?, _ options: OpenOptions) -> Result<Self, Errno> {
+  internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>?, _ options: OpenOptions) -> Result<UnsafeMutablePointer<FTS>, Errno> {
     assert(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
 
-    guard let ptr = fts_open(array, options.rawValue, nil) else {
-      return .failure(Errno.systemCurrent)
+    return SyscallUtilities.unwrap {
+      fts_open(array, options.rawValue, nil)
     }
-    return .success(.init(ptr))
   }
 
   @usableFromInline
-  internal func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws -> Fts.Entry? {
+  internal func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws(Errno) -> Fts.Entry? {
     if let ptr = ptr {
       return .init(ptr)
     }
-    let errno = Errno.systemCurrent
-    if errno.rawValue != 0 {
+    if let errno = Errno.systemCurrentValid {
       throw errno
     }
     return nil
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func read() -> Fts.Entry? {
-    fts_read(handle).map(Fts.Entry.init)
+  public func read() throws(Errno) -> Fts.Entry? {
+    try entryOrErrno(fts_read(handle))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func children(options: ChildrenOptions = []) throws -> Fts.Entry? {
+  public func children(options: ChildrenOptions = []) throws(Errno) -> Fts.Entry? {
     try entryOrErrno(fts_children(handle, options.rawValue))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func set(entry: Fts.Entry, option: SetOption) throws {
+  public func set(entry: Fts.Entry, option: SetOption) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       fts_set(handle, entry.ptr, option.rawValue)
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func close() {
+  deinit {
     assertNoFailure {
       SyscallUtilities.voidOrErrno {
         fts_close(handle)
@@ -92,11 +87,6 @@ public struct Fts {
     }
   }
 
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func closeAfter<R>(_ body: (Self) throws -> R) rethrows -> R {
-    defer { close() }
-    return try body(self)
-  }
 }
 
 extension Fts {
@@ -417,5 +407,25 @@ extension Fts {
 extension Fts.Entry: CustomStringConvertible {
   public var description: String {
     "\(String(describing: Self.self))(ptr: \(ptr), name: \(name), level: \(level))"
+  }
+}
+
+extension Fts.Info: CustomStringConvertible {
+  public var description: String {
+    switch self {
+    case .default: "Any FTSENT structure that represents a file type not explicitly described by one of the other fts_info values."
+    case .dot: "A file named ‘.’ or ‘..’ which was not specified as a file name to fts_open() or fts_open_b()."
+    case .directoryPre: " directory being visited in pre-order."
+    case .directoryPost: "A directory being visited in post-order."
+    case .directoryCycle: "A directory that causes a cycle in the tree."
+    case .file: "A regular file."
+    case .fileNoStatRequested: "A file for which no stat(2) information was requested."
+    case .symbolic: "A symbolic link."
+    case .symbolicNonExistent: "A symbolic link with a non-existent target."
+    case .fileNoStat: "(Error)A file for which no stat(2) information was available."
+    case .directoryNotRead: "(Error)A directory which cannot be read."
+    case .error: "(Error)This is an error return."
+    default: "unknown(\(rawValue))"
+    }
   }
 }

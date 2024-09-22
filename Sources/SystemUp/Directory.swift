@@ -3,7 +3,7 @@ import SystemLibc
 import CUtility
 import CGeneric
 
-public struct Directory {
+public struct Directory: ~Copyable {
 
   #if canImport(Darwin)
   @usableFromInline
@@ -21,23 +21,31 @@ public struct Directory {
   @usableFromInline
   internal let dir: CDirectoryStream
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient
-  public static func open(_ path: String) -> Result<Self, Errno> {
-    SyscallUtilities.unwrap {
-      .init(opendir(path))
-    }
+  public static func open(_ path: String) throws(Errno) -> Self {
+    .init(try SyscallUtilities.unwrap {
+      opendir(path)
+    }.get())
   }
 
   @_alwaysEmitIntoClient
-  public static func open(_ fd: FileDescriptor) -> Result<Self, Errno> {
-    SyscallUtilities.unwrap {
-      .init(fdopendir(fd.rawValue))
-    }
+  public static func open(_ path: some CStringConvertible) throws(Errno) -> Self {
+    .init(try SyscallUtilities.unwrap {
+      path.withCString { path in
+        opendir(path)
+      }
+    }.get())
   }
 
   @_alwaysEmitIntoClient
-  public func close() {
+  public static func open(_ fd: consuming FileDescriptor) throws(Errno) -> Self {
+    try .init(SyscallUtilities.unwrap {
+      fdopendir(fd.rawValue)
+    }.get())
+  }
+
+  @_alwaysEmitIntoClient
+  deinit {
     assertNoFailure {
       SyscallUtilities.voidOrErrno { closedir(dir) }
     }
@@ -96,7 +104,7 @@ public struct Directory {
 
   /// not thread-safe, dot . and .. is ignored
   @_alwaysEmitIntoClient
-  public func withNextEntry<R>(_ body: (borrowing Entry) throws -> R) rethrows -> Result<R, Errno>? {
+  public func withNextEntry<R, E: Error>(_ body: (borrowing Entry) throws(E) -> R) throws(E) -> Result<R, Errno>? {
     while true {
       Errno.reset()
       let ptr = readdir(dir)
@@ -116,12 +124,6 @@ public struct Directory {
         }
       }
     }
-  }
-
-  @_alwaysEmitIntoClient
-  public func closeAfter<R>(_ body: (Self) throws -> R) throws -> R {
-    defer { close() }
-    return try body(self)
   }
 
 }
@@ -191,7 +193,7 @@ extension Directory {
     }
 
     @_alwaysEmitIntoClient
-    public func withNameBuffer<R>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
+    public func withNameBuffer<R: ~Copyable>(_ body: (UnsafeRawBufferPointer) throws -> R) rethrows -> R {
       try withNameCString { cString in
         #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
         let length = Int(entry.pointee.d_namlen)
@@ -204,7 +206,7 @@ extension Directory {
     }
 
     @_alwaysEmitIntoClient
-    public func withNameCString<R>(_ body: (UnsafePointer<CChar>) throws -> R) rethrows -> R {
+    public func withNameCString<R: ~Copyable>(_ body: (UnsafePointer<CChar>) throws -> R) rethrows -> R {
       try body(UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self))
     }
   }

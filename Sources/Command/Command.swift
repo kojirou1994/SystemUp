@@ -272,11 +272,11 @@ extension Command {
 
     public mutating func waitOutput() throws -> Output {
       var stdout: [UInt8] = []
-      var stderr: [UInt8] = []
+      nonisolated(unsafe) var stderr: [UInt8] = []
 
       switch (self.stdout, self.stderr) {
       case (let out?, let err?):
-        var errError: Error?
+        nonisolated(unsafe) var errError: Error?
         let errThread = try PosixThread.create {
           do {
             try readAll(fd: err, dst: &stderr)

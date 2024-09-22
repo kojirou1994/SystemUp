@@ -2,13 +2,13 @@ import SystemUp
 import SystemPackage
 
 @available(macOS 10.15.0, iOS 13.0.0, *)
-public actor ReadDirectory {
+public actor DirectoryReader {
 
-  public init(_ stream: Directory) {
+  public init(_ stream: consuming Directory) {
     self.stream = stream
   }
 
-  public let stream: Directory
+  internal let stream: Directory
 
   public struct Entry {
     public let entryFileNumber: CInterop.UpInodeNumber

@@ -4,14 +4,14 @@ import CUtility
 
 public struct PosixMutex: ~Copyable {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init(attributes: borrowing Attributes) throws {
+  public init(attributes: borrowing Attributes) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
       withUnsafePointer(to: attributes.rawValue) { pthread_mutex_init(&rawValue, $0) }
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init() throws {
+  public init() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_mutex_init(&rawValue, nil)
     }.get()
@@ -62,7 +62,7 @@ extension PosixMutex {
     internal var rawValue: pthread_mutexattr_t = .init()
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public init(type: MutexType? = nil) throws {
+    public init(type: MutexType? = nil) throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
         pthread_mutexattr_init(&rawValue)
       }.get()
