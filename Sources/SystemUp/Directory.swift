@@ -31,7 +31,7 @@ public struct Directory: ~Copyable {
   @_alwaysEmitIntoClient
   public static func open(_ path: some CStringConvertible) throws(Errno) -> Self {
     .init(try SyscallUtilities.unwrap {
-      path.withCString { path in
+      path.withUnsafeCString { path in
         opendir(path)
       }
     }.get())

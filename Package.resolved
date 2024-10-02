@@ -1,13 +1,13 @@
 {
-  "originHash" : "945c0e938b9c71edcb93363b0333a024e4720191603b2863f5e68e9912a08c58",
+  "originHash" : "c21a62a58e7e6f0d0e3c9c27f83420c097851d25281b0536db89cedbd341ca0d",
   "pins" : [
     {
       "identity" : "cutility",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
-        "revision" : "6d3c29e89109f34665fa39685fcbd1ffe6d54a4f",
-        "version" : "0.4.5"
+        "revision" : "e01f94dcd4945b4252b34c6d97dba5e0ca877870",
+        "version" : "0.5.1"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-syntax.git",
       "state" : {
-        "revision" : "cb53fa1bd3219b0b23ded7dfdd3b2baff266fd25",
-        "version" : "600.0.0"
+        "revision" : "0687f71944021d616d34d922343dcef086855920",
+        "version" : "600.0.1"
       }
     },
     {

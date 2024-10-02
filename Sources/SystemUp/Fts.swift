@@ -14,7 +14,7 @@ public struct Fts: ~Copyable {
   @_alwaysEmitIntoClient
   public static func open(path: some CStringConvertible, options: OpenOptions) throws(Errno) -> Self {
     try .init(withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
-      path.withCString { path in
+      path.withUnsafeCString { path in
         array[0] = .init(mutating: path)
         array[1] = nil
         return _fts_open(array.baseAddress, options)
