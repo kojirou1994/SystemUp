@@ -183,7 +183,7 @@ public extension WaitPID {
     try await withCheckedThrowingContinuation { continuation in
       try! PosixThread.detach {
         var status = WaitPID.ExitStatus(rawValue: 0)
-        var rusage = ResourceUsage()
+        var rusage: ResourceUsage = Memory.undefined()
         let result = SyscallUtilities.retryWhileInterrupted {
           WaitPID.wait(target, status: &status, options: [], rusage: &rusage)
         }
@@ -196,7 +196,7 @@ public extension WaitPID {
   @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   static func exitStatusAndUsage(of target: TargetID, checkInterval: Duration) async throws -> (WaitResult, ResourceUsage) {
     var status = WaitPID.ExitStatus(rawValue: 0)
-    var rusage = ResourceUsage()
+    var rusage: ResourceUsage = Memory.undefined()
     while true {
       let pid = try SyscallUtilities.retryWhileInterrupted {
         WaitPID.wait(target, status: &status, options: .noHang, rusage: &rusage)

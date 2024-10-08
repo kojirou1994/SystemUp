@@ -2,19 +2,15 @@ import SystemLibc
 import CSystemUp
 import CUtility
 
-public struct FileSystemStatistics: RawRepresentable {
+public struct FileSystemStatistics {
 
   /// the c struct
   public var rawValue: statfs
 
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init(rawValue: statfs) {
-    self.rawValue = rawValue
-  }
-
+  @available(*, deprecated, message: "Use Memory.undefined()")
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
-    self.init(rawValue: .init())
+    rawValue = Memory.undefined()
   }
 
 }

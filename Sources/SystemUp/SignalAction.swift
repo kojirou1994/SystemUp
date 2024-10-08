@@ -11,6 +11,7 @@ public struct SignalAction {
     self.rawValue = rawValue
   }
 
+  @available(*, deprecated, message: "Use Memory.undefined()")
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(uninitialize: Void) {
     self.rawValue = .init()
@@ -20,31 +21,31 @@ public struct SignalAction {
 public extension SignalAction {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  init(mask: SignalSet = .init(), flags: Flags = [], simple handler: SignalHandler) {
+  init(blockedSignals: SignalSet = Memory.zeroed(), flags: Flags = [], simple handler: SignalHandler) {
     precondition(!flags.contains(.siginfo), "is using simple handler, siginfo must not be set!")
     #if canImport(Darwin)
-    let sigAction = sigaction(__sigaction_u: .init(__sa_handler: handler.body), sa_mask: mask, sa_flags: flags.rawValue)
+    let sigAction = sigaction(__sigaction_u: .init(__sa_handler: handler.body), sa_mask: blockedSignals.rawValue, sa_flags: flags.rawValue)
     #elseif os(Linux)
-    let sigAction = sigaction(__sigaction_handler: .init(sa_handler: handler.body), sa_mask: mask, sa_flags: flags.rawValue, sa_restorer: nil)
+    let sigAction = sigaction(__sigaction_handler: .init(sa_handler: handler.body), sa_mask: blockedSignals.rawValue, sa_flags: flags.rawValue, sa_restorer: nil)
     #endif
     self.init(rawValue: sigAction)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  init(mask: SignalSet = .init(), flags: Flags = [], complex handler: @convention(c) (_ signal: Int32, _ siginfo: UnsafeMutablePointer<siginfo_t>?, _ uap: UnsafeMutableRawPointer?) -> Void) {
+  init(blockedSignals: SignalSet = Memory.zeroed(), flags: Flags = [], complex handler: @convention(c) (_ signal: Int32, _ siginfo: UnsafeMutablePointer<siginfo_t>?, _ uap: UnsafeMutableRawPointer?) -> Void) {
     let realFlags = flags.union(.siginfo).rawValue
     #if canImport(Darwin)
-    let sigAction = sigaction(__sigaction_u: .init(__sa_sigaction: handler), sa_mask: mask, sa_flags: realFlags)
+    let sigAction = sigaction(__sigaction_u: .init(__sa_sigaction: handler), sa_mask: blockedSignals.rawValue, sa_flags: realFlags)
     #elseif os(Linux)
-    let sigAction = sigaction(__sigaction_handler: .init(sa_sigaction: handler), sa_mask: mask, sa_flags: realFlags, sa_restorer: nil)
+    let sigAction = sigaction(__sigaction_handler: .init(sa_sigaction: handler), sa_mask: blockedSignals.rawValue, sa_flags: realFlags, sa_restorer: nil)
     #endif
     self.init(rawValue: sigAction)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  var mask: SignalSet {
-    _read { yield rawValue.sa_mask }
-    _modify { yield &rawValue.sa_mask }
+  var blockedSignals: SignalSet {
+    get { .init(rawValue: rawValue.sa_mask) }
+    set { rawValue.sa_mask = newValue.rawValue }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)

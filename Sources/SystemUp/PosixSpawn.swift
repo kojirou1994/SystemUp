@@ -208,10 +208,10 @@ public extension PosixSpawn.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var sigdefault: SignalSet {
     mutating get {
-      var result = SignalSet()
+      var result: SignalSet = Memory.undefined()
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          posix_spawnattr_getsigdefault(&attributes, &result)
+          posix_spawnattr_getsigdefault(&attributes, &result.rawValue)
         }
       }
       return result
@@ -219,7 +219,7 @@ public extension PosixSpawn.Attributes {
     set {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          withUnsafePointer(to: newValue) { sigset in
+          withUnsafePointer(to: newValue.rawValue) { sigset in
             posix_spawnattr_setsigdefault(&attributes, sigset)
           }
         }
@@ -247,14 +247,14 @@ public extension PosixSpawn.Attributes {
     }
   }
 
-  /// set or get the spawn-sigmask attribute on a posix_spawnattr_t
+  /// The initial signal mask to be set for the new process on creation if the setSignalMask flag is set.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  var sigmask: SignalSet {
+  var blockedSignals: SignalSet {
     mutating get {
-      var result = SignalSet()
+      var result: SignalSet = Memory.undefined()
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          posix_spawnattr_getsigmask(&attributes, &result)
+          posix_spawnattr_getsigmask(&attributes, &result.rawValue)
         }
       }
       return result
@@ -262,7 +262,7 @@ public extension PosixSpawn.Attributes {
     set {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          withUnsafePointer(to: newValue) { sigset in
+          withUnsafePointer(to: newValue.rawValue) { sigset in
             posix_spawnattr_setsigmask(&attributes, sigset)
           }
         }
@@ -416,7 +416,7 @@ public extension PosixSpawn.Attributes.Flags {
   static var setSigdefault: Self { .init(macroValue: POSIX_SPAWN_SETSIGDEF) }
 
   @_alwaysEmitIntoClient
-  static var setSigmask: Self { .init(macroValue: POSIX_SPAWN_SETSIGMASK) }
+  static var setBlockedSignals: Self { .init(macroValue: POSIX_SPAWN_SETSIGMASK) }
 
   #if canImport(Darwin)
   @_alwaysEmitIntoClient
@@ -442,12 +442,12 @@ public extension PosixSpawn.Attributes.Flags {
 public extension PosixSpawn.Attributes {
   mutating func resetSignalsLikeTSC() {
     // Unmask all signals.
-    var noSignals = SignalSet()
+    var noSignals: SignalSet = Memory.undefined()
     noSignals.removeAll()
-    sigmask = noSignals
+    blockedSignals = noSignals
 
     // Reset all signals to default behavior.
-    var mostSignals = SignalSet()
+    var mostSignals: SignalSet = Memory.undefined()
     #if canImport(Darwin)
     mostSignals.fillAll()
     mostSignals.remove(.kill)
@@ -465,16 +465,16 @@ public extension PosixSpawn.Attributes {
 
     sigdefault = mostSignals
 
-    flags.formUnion([.setSigmask, .setSigdefault])
+    flags.formUnion([.setBlockedSignals, .setSigdefault])
   }
 
   mutating func resetSignalsLikeRustStd() {
-    var set = SignalSet()
+    var set: SignalSet = Memory.undefined()
     set.removeAll()
-    sigmask = set
+    blockedSignals = set
     set.insert(.brokenPipe)
     sigdefault = set
 
-    flags.formUnion([.setSigmask, .setSigdefault])
+    flags.formUnion([.setBlockedSignals, .setSigdefault])
   }
 }

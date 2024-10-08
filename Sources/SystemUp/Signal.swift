@@ -33,7 +33,7 @@ public extension Signal {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func set(action: SignalAction) -> Result<SignalAction, Errno> {
-    var old = SignalAction(uninitialize: ())
+    var old: SignalAction = Memory.undefined()
     return set(action: action, oldAction: &old)
       .map { old }
   }
@@ -47,7 +47,7 @@ public extension Signal {
     }
   }
 
-  /// send a signal to the current thread
+  /// sends a signal to the calling process(single-threaded program) or thread(multithreaded program).
   /// - Returns: void on success or any of the errors specified for the library functions getpid(2) and pthread_kill(2).
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func sendToCurrentThread() -> Result<Void, Errno> {

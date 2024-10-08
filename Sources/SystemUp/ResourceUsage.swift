@@ -6,6 +6,7 @@ public struct ResourceUsage: Sendable {
   @usableFromInline
   internal var rawValue: rusage
 
+  @available(*, deprecated, message: "Use Memory.undefined()")
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
     rawValue = .init()

@@ -3,13 +3,11 @@ import SystemLibc
 import CUtility
 
 public struct FileStatus {
-  public init(rawValue: CInterop.UpStat) {
-    self.rawValue = rawValue
-  }
 
+  @available(*, deprecated, message: "Use Memory.undefined()")
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
-    self.init(rawValue: .init())
+    rawValue = Memory.undefined()
   }
 
   public var rawValue: CInterop.UpStat

@@ -11,6 +11,13 @@ public extension Memory {
       return buf[0]
     }
   }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func undefined<T>() -> T {
+    withUnsafeTemporaryAllocation(of: T.self, capacity: 1) { buf in
+      return buf[0]
+    }
+  }
 }
 
 // MARK: malloc series

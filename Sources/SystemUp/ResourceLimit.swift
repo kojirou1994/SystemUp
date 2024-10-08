@@ -6,6 +6,7 @@ public struct ResourceLimit {
   @usableFromInline
   internal var rawValue: rlimit
 
+  @available(*, deprecated, message: "Use Memory.undefined()")
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
     rawValue = .init()
@@ -74,7 +75,7 @@ public extension ResourceLimit {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static subscript(resource: Resource) -> Self {
     get {
-      var result = Self()
+      var result: Self = Memory.undefined()
       assertNoFailure {
         get(to: &result, for: resource)
       }

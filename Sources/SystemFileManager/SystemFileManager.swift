@@ -9,7 +9,7 @@ public struct SystemFileManager {}
 extension SystemFileManager {
 
   public static func createDirectoryIntermediately(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
-    var status = FileStatus(rawValue: .init())
+    var status: FileStatus = Memory.undefined()
     switch SystemCall.fileStatus(path, relativeTo: base, into: &status) {
     case .success:
       if status.fileType == .directory {

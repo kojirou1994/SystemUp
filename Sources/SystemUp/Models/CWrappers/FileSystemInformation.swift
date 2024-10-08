@@ -2,15 +2,12 @@ import CUtility
 import SystemLibc
 
 /// POSIX filesystem information
-public struct FileSystemInformation: RawRepresentable {
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init(rawValue: statvfs) {
-    self.rawValue = rawValue
-  }
+public struct FileSystemInformation {
 
+  @available(*, deprecated, message: "Use Memory.undefined()")
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() {
-    self.init(rawValue: .init())
+    rawValue = Memory.undefined()
   }
 
   public var rawValue: statvfs
