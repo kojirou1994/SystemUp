@@ -155,6 +155,7 @@ public extension PosixThread {
     try create(attributes: attributes.rawAddress, block)
   }
 
+  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func detach(_ block: @escaping @Sendable () -> Void) throws(Errno) -> ThreadID {
     var attr = try Attributes()

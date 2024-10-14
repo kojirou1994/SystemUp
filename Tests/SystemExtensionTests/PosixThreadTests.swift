@@ -29,9 +29,6 @@ final class PosixThreadTests: XCTestCase {
 
   func testMutex() throws {
     nonisolated(unsafe) var mutex = try PosixMutex()
-    defer {
-      mutex.destroy()
-    }
     nonisolated(unsafe) var value = 0
     let sum = 1_000_000
     DispatchQueue.concurrentPerform(iterations: sum) { _ in
