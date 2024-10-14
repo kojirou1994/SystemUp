@@ -2,39 +2,41 @@ import SystemLibc
 import SystemPackage
 import CUtility
 
-public struct PosixCondition: ~Copyable {
+public struct PosixCondition: ~Copyable, @unchecked Sendable {
+
+  @usableFromInline
+  internal let rawAddress: UnsafeMutablePointer<pthread_cond_t> = .allocate(capacity: 1)
+
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(attributes: borrowing Attributes) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      withUnsafePointer(to: attributes.rawValue) { pthread_cond_init(&rawValue, $0) }
+      pthread_cond_init(rawAddress, attributes.rawAddress)
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_cond_init(&rawValue, nil)
+      pthread_cond_init(rawAddress, nil)
     }.get()
   }
 
-  @usableFromInline
-  internal var rawValue: pthread_cond_t = .init()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  deinit {
+    PosixThread.call {
+      pthread_cond_destroy(rawAddress)
+    }
+    rawAddress.deallocate()
+  }
 }
 
 public extension PosixCondition {
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func destroy() {
-    PosixThread.call {
-      pthread_cond_destroy(&rawValue)
-    }
-  }
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func broadcast() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_cond_broadcast(&rawValue)
+      pthread_cond_broadcast(rawAddress)
     }
   }
 
@@ -42,7 +44,7 @@ public extension PosixCondition {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func signal() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_cond_signal(&rawValue)
+      pthread_cond_signal(rawAddress)
     }
   }
 
@@ -51,7 +53,7 @@ public extension PosixCondition {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func wait(mutex: inout PosixMutex) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_cond_wait(&rawValue, &mutex.rawValue)
+      pthread_cond_wait(rawAddress, mutex.rawAddress)
     }
   }
 
@@ -60,27 +62,47 @@ public extension PosixCondition {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func timedwait(mutex: inout PosixMutex, abstime: UnsafePointer<timespec>) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_cond_timedwait(&rawValue, &mutex.rawValue, abstime)
+      pthread_cond_timedwait(rawAddress, mutex.rawAddress, abstime)
     }
   }
 }
 
 extension PosixCondition {
   public struct Attributes: ~Copyable {
+
+    @usableFromInline
+    internal let rawAddress: UnsafeMutablePointer<pthread_condattr_t>
+
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws(Errno) {
+      rawAddress = .allocate(capacity: 1)
+      try initialize()
+    }
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    deinit {
+      destroy()
+      rawAddress.deallocate()
+    }
+
+    /// destroy and initialize
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public func reset() throws(Errno) {
+      destroy()
+      try initialize()
+    }
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    internal func initialize() throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_condattr_init(&rawValue)
+        pthread_condattr_init(rawAddress)
       }.get()
     }
 
-    @usableFromInline
-    internal var rawValue: pthread_condattr_t = .init()
-
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public consuming func destroy() {
+    internal func destroy() {
       PosixThread.call {
-        pthread_condattr_destroy(&rawValue)
+        pthread_condattr_destroy(rawAddress)
       }
     }
   }
@@ -92,15 +114,13 @@ public extension PosixCondition.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var processShared: PosixMutex.ProcessShared {
     get {
-      withUnsafePointer(to: rawValue) { attr in
-        PosixThread.get {
-          pthread_condattr_getpshared(attr, $0)
-        }
+      PosixThread.get {
+        pthread_condattr_getpshared(rawAddress, $0)
       }
     }
     set {
       PosixThread.call {
-        pthread_condattr_setpshared(&rawValue, newValue.rawValue)
+        pthread_condattr_setpshared(rawAddress, newValue.rawValue)
       }
     }
   }

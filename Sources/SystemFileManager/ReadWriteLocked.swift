@@ -10,10 +10,6 @@ public final class ReadWriteLocked<Value> {
     self.lock = try! .init()
   }
 
-  deinit {
-    lock.destroy()
-  }
-
   public func withWriteLock<R>(_ body: (inout Value) throws -> R) rethrows -> R {
     lock.lockWrite()
     defer {

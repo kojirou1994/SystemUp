@@ -2,40 +2,43 @@ import SystemLibc
 import SystemPackage
 import CUtility
 
-public struct PosixMutex: ~Copyable {
+public struct PosixMutex: ~Copyable, @unchecked Sendable {
+
+  @usableFromInline
+  internal let rawAddress: UnsafeMutablePointer<pthread_mutex_t> = .allocate(capacity: 1)
+
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(attributes: borrowing Attributes) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      withUnsafePointer(to: attributes.rawValue) { pthread_mutex_init(&rawValue, $0) }
+      pthread_mutex_init(rawAddress, attributes.rawAddress)
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_mutex_init(&rawValue, nil)
+      pthread_mutex_init(rawAddress, nil)
     }.get()
   }
 
-  @usableFromInline
-  internal var rawValue: pthread_mutex_t = .init()
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  deinit {
+    PosixThread.call {
+      pthread_mutex_destroy(rawAddress)
+    }
+    rawAddress.deallocate()
+  }
+
 }
 
 public extension PosixMutex {
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func destroy() {
-    PosixThread.call {
-      pthread_mutex_destroy(&rawValue)
-    }
-  }
 
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func lock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_mutex_lock(&rawValue)
+      pthread_mutex_lock(rawAddress)
     }
   }
 
@@ -44,37 +47,53 @@ public extension PosixMutex {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func unlock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_mutex_unlock(&rawValue)
+      pthread_mutex_unlock(rawAddress)
     }
   }
 
   @available(*, noasync)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func tryLock() -> Bool {
-    pthread_mutex_trylock(&rawValue) == 0
+    pthread_mutex_trylock(rawAddress) == 0
   }
 }
 
 extension PosixMutex {
-  public struct Attributes: ~Copyable {
+  public struct Attributes: ~Copyable, @unchecked Sendable {
 
     @usableFromInline
-    internal var rawValue: pthread_mutexattr_t = .init()
+    internal var rawAddress: UnsafeMutablePointer<pthread_mutexattr_t>
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public init(type: MutexType? = nil) throws(Errno) {
-      try SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_mutexattr_init(&rawValue)
-      }.get()
-      if let type = type {
-        self.type = type
-      }
+    public init() throws(Errno) {
+      rawAddress = .allocate(capacity: 1)
+      try initialize()
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public consuming func destroy() {
+    deinit {
+      destroy()
+      rawAddress.deallocate()
+    }
+
+    /// destroy and initialize
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public func reset() throws(Errno) {
+      destroy()
+      try initialize()
+    }
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    internal func initialize() throws(Errno) {
+      try SyscallUtilities.errnoOrZeroOnReturn {
+        pthread_mutexattr_init(rawAddress)
+      }.get()
+    }
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    internal func destroy() {
       PosixThread.call {
-        pthread_mutexattr_destroy(&rawValue)
+        pthread_mutexattr_destroy(rawAddress)
       }
     }
 
@@ -148,16 +167,14 @@ public extension PosixMutex {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var prioceiling: Int32 {
     get {
-      withUnsafePointer(to: rawValue) { mutex in
-        PosixThread.get {
-          pthread_mutex_getprioceiling(mutex, $0)
-        }
+      PosixThread.get {
+        pthread_mutex_getprioceiling(rawAddress, $0)
       }
     }
     set {
       var value: Int32 = 0
       PosixThread.call {
-        pthread_mutex_setprioceiling(&rawValue, newValue, &value)
+        pthread_mutex_setprioceiling(rawAddress, newValue, &value)
       }
     }
   }
@@ -167,15 +184,13 @@ public extension PosixMutex.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var prioceiling: Int32 {
     get {
-      withUnsafePointer(to: rawValue) { mutex in
-        PosixThread.get {
-          pthread_mutexattr_getprioceiling(mutex, $0)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getprioceiling(rawAddress, $0)
       }
     }
     set {
       PosixThread.call {
-        pthread_mutexattr_setprioceiling(&rawValue, newValue)
+        pthread_mutexattr_setprioceiling(rawAddress, newValue)
       }
     }
   }
@@ -183,15 +198,13 @@ public extension PosixMutex.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var `protocol`: Int32 {
     get {
-      withUnsafePointer(to: rawValue) { mutex in
-        PosixThread.get {
-          pthread_mutexattr_getprotocol(mutex, $0)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getprotocol(rawAddress, $0)
       }
     }
     set {
       PosixThread.call {
-        pthread_mutexattr_setprotocol(&rawValue, newValue)
+        pthread_mutexattr_setprotocol(rawAddress, newValue)
       }
     }
   }
@@ -199,15 +212,13 @@ public extension PosixMutex.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var processShared: PosixMutex.ProcessShared {
     get {
-      withUnsafePointer(to: rawValue) { mutex in
-        PosixThread.get {
-          pthread_mutexattr_getpshared(mutex, $0)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getpshared(rawAddress, $0)
       }
     }
     set {
       PosixThread.call {
-        pthread_mutexattr_setpshared(&rawValue, newValue.rawValue)
+        pthread_mutexattr_setpshared(rawAddress, newValue.rawValue)
       }
     }
   }
@@ -215,15 +226,13 @@ public extension PosixMutex.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var type: MutexType {
     get {
-      withUnsafePointer(to: rawValue) { mutex in
-        PosixThread.get {
-          pthread_mutexattr_gettype(mutex, $0)
-        }
+      PosixThread.get {
+        pthread_mutexattr_gettype(rawAddress, $0)
       }
     }
     set {
       PosixThread.call {
-        pthread_mutexattr_settype(&rawValue, newValue.rawValue)
+        pthread_mutexattr_settype(rawAddress, newValue.rawValue)
       }
     }
   }
@@ -233,15 +242,13 @@ public extension PosixMutex.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var policy: Policy {
     get {
-      withUnsafePointer(to: rawValue) { mutex in
-        PosixThread.get {
-          pthread_mutexattr_getpolicy_np(mutex, $0)
-        }
+      PosixThread.get {
+        pthread_mutexattr_getpolicy_np(rawAddress, $0)
       }
     }
     set {
       PosixThread.call {
-        pthread_mutexattr_setpolicy_np(&rawValue, newValue.rawValue)
+        pthread_mutexattr_setpolicy_np(rawAddress, newValue.rawValue)
       }
     }
   }
