@@ -192,6 +192,7 @@ public extension PosixClock {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var monotonicRaw: Self { .init(rawValue: CLOCK_MONOTONIC_RAW) }
 
+  #if canImport(Darwin)
   /// like CLOCK_MONOTONIC_RAW, but reads a value cached by the system at context switch.  This can be read faster, but at a loss of
   /// accuracy as it may return values that are milliseconds old.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -207,6 +208,7 @@ public extension PosixClock {
   /// accuracy as it may return values that are milliseconds old.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var upTimeRawApprox: Self { .init(rawValue: CLOCK_UPTIME_RAW_APPROX) }
+  #endif
 
   /// clock that tracks the amount of CPU (in user- or kernel-mode) used by the calling process.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -332,7 +334,7 @@ public enum TimeOfDay {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func get(t: UnsafeMutablePointer<Timeval>?, tz: UnsafeMutablePointer<Timezone>?) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      SystemLibc.gettimeofday(t?.pointer(to: \.rawValue), tz?.pointer(to: \.rawValue))
+      SystemLibc.gettimeofday(unsafeBitCast(t?.pointer(to: \.rawValue), to: UnsafeMutablePointer<timeval>.self), tz?.pointer(to: \.rawValue))
     }.get()
   }
 
