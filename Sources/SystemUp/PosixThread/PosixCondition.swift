@@ -60,9 +60,11 @@ public extension PosixCondition {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func timedwait(mutex: inout PosixMutex, abstime: UnsafePointer<timespec>) -> Result<Void, Errno> {
+  mutating func timedwait(mutex: inout PosixMutex, abstime: Timespec) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_cond_timedwait(rawAddress, mutex.rawAddress, abstime)
+      withUnsafePointer(to: abstime.rawValue) { abstime in
+        pthread_cond_timedwait(rawAddress, mutex.rawAddress, abstime)
+      }
     }
   }
 }

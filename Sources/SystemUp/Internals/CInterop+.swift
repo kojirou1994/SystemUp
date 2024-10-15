@@ -27,8 +27,4 @@ public extension CInterop {
   typealias UpDev = dev_t
 
   typealias UpNumberOfLinks = nlink_t
-
-  typealias UpStat = stat
-
-  typealias UpTimespec = timespec
 }

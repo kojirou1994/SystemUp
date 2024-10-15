@@ -10,7 +10,7 @@ public struct FileStatus {
     rawValue = Memory.undefined()
   }
 
-  public var rawValue: CInterop.UpStat
+  public var rawValue: stat
 }
 
 extension FileStatus: CustomStringConvertible {
@@ -64,36 +64,36 @@ public extension FileStatus {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  var lastAccessTime: CInterop.UpTimespec {
+  var lastAccessTime: Timespec {
     #if canImport(Darwin)
-    rawValue.st_atimespec
+    .init(rawValue: rawValue.st_atimespec)
     #elseif canImport(Glibc)
-    rawValue.st_atim
+    .init(rawValue: rawValue.st_atim)
     #endif
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  var lastModificationTime: CInterop.UpTimespec {
+  var lastModificationTime: Timespec {
     #if canImport(Darwin)
-    rawValue.st_mtimespec
+    .init(rawValue: rawValue.st_mtimespec)
     #elseif canImport(Glibc)
-    rawValue.st_mtim
+    .init(rawValue: rawValue.st_mtim)
     #endif
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  var lastStatusChangedTime: CInterop.UpTimespec {
+  var lastStatusChangedTime: Timespec {
     #if canImport(Darwin)
-    rawValue.st_ctimespec
+    .init(rawValue: rawValue.st_ctimespec)
     #elseif canImport(Glibc)
-    rawValue.st_ctim
+    .init(rawValue: rawValue.st_ctim)
     #endif
   }
 
   #if canImport(Darwin)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  var creationTime: CInterop.UpTimespec {
-    rawValue.st_birthtimespec
+  var creationTime: Timespec {
+    .init(rawValue: rawValue.st_birthtimespec)
   }
   #endif
 
