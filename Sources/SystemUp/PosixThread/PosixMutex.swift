@@ -36,7 +36,7 @@ public extension PosixMutex {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func lock() -> Result<Void, Errno> {
+  func lock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_mutex_lock(rawAddress)
     }
@@ -45,7 +45,7 @@ public extension PosixMutex {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func unlock() -> Result<Void, Errno> {
+  func unlock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_mutex_unlock(rawAddress)
     }
@@ -53,7 +53,7 @@ public extension PosixMutex {
 
   @available(*, noasync)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func tryLock() -> Bool {
+  func tryLock() -> Bool {
     pthread_mutex_trylock(rawAddress) == 0
   }
 }

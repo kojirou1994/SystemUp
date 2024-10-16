@@ -34,7 +34,7 @@ public extension PosixCondition {
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func broadcast() -> Result<Void, Errno> {
+  func broadcast() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_broadcast(rawAddress)
     }
@@ -42,7 +42,7 @@ public extension PosixCondition {
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func signal() -> Result<Void, Errno> {
+  func signal() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_signal(rawAddress)
     }
@@ -51,7 +51,7 @@ public extension PosixCondition {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func wait(mutex: inout PosixMutex) -> Result<Void, Errno> {
+  func wait(mutex: inout PosixMutex) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cond_wait(rawAddress, mutex.rawAddress)
     }
@@ -60,7 +60,7 @@ public extension PosixCondition {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func timedwait(mutex: inout PosixMutex, abstime: Timespec) -> Result<Void, Errno> {
+  func timedwait(mutex: inout PosixMutex, abstime: Timespec) -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       withUnsafePointer(to: abstime.rawValue) { abstime in
         pthread_cond_timedwait(rawAddress, mutex.rawAddress, abstime)

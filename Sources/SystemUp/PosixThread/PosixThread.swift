@@ -5,7 +5,7 @@ import CUtility
 public enum PosixThread { }
 
 extension PosixThread {
-  public struct ThreadID: ~Copyable {
+  public struct ThreadID {
     @usableFromInline
     internal init(rawValue: pthread_t) {
       self.rawValue = rawValue

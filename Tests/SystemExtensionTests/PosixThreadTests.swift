@@ -28,7 +28,7 @@ final class PosixThreadTests: XCTestCase {
   }
 
   func testMutex() throws {
-    nonisolated(unsafe) var mutex = try PosixMutex()
+    let mutex = try PosixMutex()
     nonisolated(unsafe) var value = 0
     let sum = 1_000_000
     DispatchQueue.concurrentPerform(iterations: sum) { _ in
@@ -36,6 +36,23 @@ final class PosixThreadTests: XCTestCase {
       value += 1
       mutex.unlock()
     }
+    XCTAssertEqual(value, sum)
+
+
+    value = 0
+    var threads = [PosixThread.ThreadID]()
+    for _ in 1...10 {
+      let tid = try PosixThread.create {
+        for _ in 1...(sum/10) {
+          mutex.lock()
+          value += 1
+          mutex.unlock()
+        }
+      }
+
+      threads.append(tid)
+    }
+    threads.forEach { $0.join() }
     XCTAssertEqual(value, sum)
   }
 }

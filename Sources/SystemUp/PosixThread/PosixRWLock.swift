@@ -36,7 +36,7 @@ public extension PosixRWLock {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func lockRead() -> Result<Void, Errno> {
+  func lockRead() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_rwlock_rdlock(rawAddress)
     }
@@ -44,14 +44,14 @@ public extension PosixRWLock {
 
   @available(*, noasync)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func tryLockRead() -> Bool {
+  func tryLockRead() -> Bool {
     pthread_rwlock_tryrdlock(rawAddress) == 0
   }
 
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func lockWrite() -> Result<Void, Errno> {
+  func lockWrite() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_rwlock_wrlock(rawAddress)
     }
@@ -59,14 +59,14 @@ public extension PosixRWLock {
 
   @available(*, noasync)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func tryLockWrite() -> Bool {
+  func tryLockWrite() -> Bool {
     pthread_rwlock_trywrlock(rawAddress) == 0
   }
 
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func unlock() -> Result<Void, Errno> {
+  func unlock() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_rwlock_unlock(rawAddress)
     }
