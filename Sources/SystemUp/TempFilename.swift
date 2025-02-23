@@ -13,8 +13,8 @@ public extension SystemCall {
   @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func createTemporaryFile(template: String, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) -> Result<(FileDescriptor, LazyCopiedCString), Errno> {
-    let template = DynamicCString.copy(cString: template)
-    switch createTemporaryFile(template: template, suffixLength: suffixLength, options: options) {
+    var template = DynamicCString.copy(cString: template)
+    switch createTemporaryFile(template: &template, suffixLength: suffixLength, options: options) {
     case .success(let fd):
       return .success((fd, LazyCopiedCString(cString: template.take(), freeWhenDone: true)))
     case .failure(let error):
@@ -23,7 +23,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func createTemporaryFile(template: borrowing DynamicCString, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) -> Result<FileDescriptor, Errno> {
+  static func createTemporaryFile(template: inout DynamicCString, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) -> Result<FileDescriptor, Errno> {
     SyscallUtilities.valueOrErrno {
       template.withMutableCString { template in
         switch (suffixLength, options) {
