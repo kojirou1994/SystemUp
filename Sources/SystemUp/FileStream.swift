@@ -336,7 +336,7 @@ public extension FileStream {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getDelimitedLine(line: inout UnsafeMutablePointer<CChar>?, linecapp: inout Int, delimiter: UInt8 = .init(ascii: "\n")) throws(Errno) -> Int? {
 
-    let result = SystemLibc.getline(&line, &linecapp, rawValue)
+    let result = SystemLibc.getdelim(&line, &linecapp, numericCast(delimiter), rawValue)
 
     if result == -1 {
       if _fastPath(isEOF) {
@@ -356,13 +356,13 @@ public extension FileStream {
   /// - Parameter delimiter: delimiter character
   /// - Returns: string including the delimiter character. return nil if EOF.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func getDelimitedLine(delimiter: UInt8 = .init(ascii: "\n")) throws(Errno) -> LazyCopiedCString? {
+  func getDelimitedLine(delimiter: UInt8 = .init(ascii: "\n")) throws(Errno) -> DynamicCStringWithLength? {
     var line: UnsafeMutablePointer<CChar>?
     var linecapp = 0
     guard let length = try getDelimitedLine(line: &line, linecapp: &linecapp, delimiter: delimiter) else {
       return nil
     }
-    return .init(cString: line.unsafelyUnwrapped, forceLength: length, freeWhenDone: true)
+    return .init(cString: .init(cString: line.unsafelyUnwrapped), forceLength: length)
   }
 
   // MARK: Wrappers
@@ -373,31 +373,26 @@ public extension FileStream {
     var capp = initialBufferSize
     var buf: UnsafeMutablePointer<CChar>?
     if capp > 0 {
-      buf = .allocate(capacity: capp)
+      buf = try! Memory.allocate(byteCount: capp).get().assumingMemoryBound(to: CChar.self)
     }
     defer {
-      buf?.deallocate()
+      Memory.free(buf)
     }
     var stop = false
-    while !stop, case let length = SystemLibc.getline(&buf, &capp, rawValue),
+    while !stop, case let length = SystemLibc.getdelim(&buf, &capp, numericCast(delimiter), rawValue),
             length > 0 {
       assert(buf != nil)
       let validStr = buf.unsafelyUnwrapped
       var validLength = length
-      if strippingDelimiter {
+      if strippingDelimiter { // and !isEOF ?
         if validStr[length-1] == delimiter {
           validStr[length-1] = 0
           validLength -= 1
         }
       }
-      let str = DynamicCString(cString: validStr)
 
-      do {
-        try body(str, validLength, &stop)
-        _ = str.take()
-      } catch {
-        _ = str.take()
-        throw error
+      try DynamicCString.withTemporaryBorrowed(cString: validStr) { line throws(E) in
+        try body(line, validLength, &stop)
       }
     }
   }
