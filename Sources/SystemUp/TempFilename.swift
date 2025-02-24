@@ -28,15 +28,73 @@ public extension SystemCall {
       template.withMutableCString { template in
         switch (suffixLength, options) {
         case (.none, .none):
-          return mkstemp(template)
+          SystemLibc.mkstemp(template)
         case let (suffixLength?, options?):
-          return mkostemps(template, suffixLength, options.rawValue)
+          SystemLibc.mkostemps(template, suffixLength, options.rawValue)
         case let (suffixLength?, .none):
-          return mkstemps(template, suffixLength)
+          SystemLibc.mkstemps(template, suffixLength)
         case let (.none, options?):
-          return mkostemp(template, options.rawValue)
+          SystemLibc.mkostemp(template, options.rawValue)
         }
       }
     }.map(FileDescriptor.init)
   }
+
+  @available(*, deprecated)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func mktemp(template: inout DynamicCString) throws(Errno) {
+    let result = try SyscallUtilities.unwrap {
+      template.withMutableCString { template in
+        SystemLibc.mktemp(template)
+      }
+    }.get()
+    template.withUnsafeCString { template in
+      assert(result == template)
+    }
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func mkdtemp(template: inout DynamicCString) throws(Errno) {
+    let result = try SyscallUtilities.unwrap {
+      template.withMutableCString { template in
+        SystemLibc.mkdtemp(template)
+      }
+    }.get()
+    template.withUnsafeCString { template in
+      assert(result == template)
+    }
+  }
+}
+
+
+// MARK: NonPosix
+
+public extension SystemCall {
+
+  #if canImport(Darwin)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func createTemporaryFile(template: inout DynamicCString, relativeTo base: RelativeDirectory = .cwd, suffixLength: Int32, options: FileDescriptor.OpenOptions? = nil) -> Result<FileDescriptor, Errno> {
+    SyscallUtilities.valueOrErrno {
+      template.withMutableCString { template in
+        if let options {
+          mkostempsat_np(base.toFD, template, suffixLength, options.rawValue)
+        } else {
+          mkstempsat_np(base.toFD, template, suffixLength)
+        }
+      }
+    }.map(FileDescriptor.init)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func mkdtemp(template: inout DynamicCString, relativeTo base: RelativeDirectory) throws(Errno) {
+    let result = try SyscallUtilities.unwrap {
+      template.withMutableCString { template in
+        SystemLibc.mkdtempat_np(base.toFD, template)
+      }
+    }.get()
+    template.withUnsafeCString { template in
+      assert(result == template)
+    }
+  }
+  #endif
 }
