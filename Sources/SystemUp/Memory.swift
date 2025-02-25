@@ -1,5 +1,6 @@
 import SystemLibc
 import SystemPackage
+import CUtility
 
 public enum Memory {}
 
@@ -24,54 +25,64 @@ public extension Memory {
 public extension Memory {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func allocate(byteCount: Int, alignment: Int? = nil) -> Result<UnsafeMutableRawPointer, Errno> {
-    SyscallUtilities.unwrap {
+  static func allocate(byteCount: Int, alignment: Int? = nil) throws(Errno) -> UnsafeMutableRawPointer {
+    try SyscallUtilities.unwrap {
       if let alignment {
         SystemLibc.aligned_alloc(alignment, byteCount)
       } else {
         SystemLibc.malloc(byteCount)
       }
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func allocateZeroed(size: Int, count: Int) -> Result<UnsafeMutableRawPointer, Errno> {
-    SyscallUtilities.unwrap {
+  static func allocateZeroed(size: Int, count: Int) throws(Errno) -> UnsafeMutableRawPointer {
+    try SyscallUtilities.unwrap {
       SystemLibc.calloc(count, size)
+    }.get()
+  }
+
+  /// posix_memalign
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func allocateAligned(size: Int, alignment: Int) throws(Errno) -> UnsafeMutableRawPointer {
+    try safeInitialize { memptr throws(Errno) in
+      try SyscallUtilities.errnoOrZeroOnReturn {
+        SystemLibc.posix_memalign(&memptr, alignment, size)
+      }.get()
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func free(_ ptr: consuming UnsafeMutableRawPointer?) {
+  static func free(_ ptr: UnsafeMutableRawPointer?) {
     SystemLibc.free(ptr)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func resize(_ ptr: inout UnsafeMutableRawPointer, byteCount: Int) throws(Errno) {
-    ptr = try resized(ptr, byteCount: byteCount).get()
+    ptr = try resized(ptr, byteCount: byteCount)
   }
 
   /// If ptr is NULL, realloc() is identical to a call to malloc() for size bytes.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func resized(_ ptr: UnsafeMutableRawPointer?, byteCount: Int) -> Result<UnsafeMutableRawPointer, Errno> {
+  static func resized(_ ptr: UnsafeMutableRawPointer?, byteCount: Int) throws(Errno) -> UnsafeMutableRawPointer {
     // darwin: If size is zero and ptr is not NULL, a new, minimum sized object is allocated and the original object is freed.
     // gnu: If size is zero, and ptr is not NULL, then the call is equivalent to free(ptr)
     #if canImport(Glibc)
     assert(byteCount > 0, "use free! ok?")
     #endif
 
-    return SyscallUtilities.unwrap {
+    return try SyscallUtilities.unwrap {
       SystemLibc.realloc(ptr, byteCount)
-    }
+    }.get()
   }
 
   #if canImport(Darwin)
   /// it will free the passed pointer when the requested memory cannot be allocated
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func resizeOrFree(_ ptr: consuming UnsafeMutableRawPointer?, byteCount: Int) -> Result<UnsafeMutableRawPointer, Errno> {
-    SyscallUtilities.unwrap {
+  static func resizeOrFree(_ ptr: consuming UnsafeMutableRawPointer?, byteCount: Int) throws(Errno) -> UnsafeMutableRawPointer {
+    try SyscallUtilities.unwrap {
       SystemLibc.reallocf(ptr, byteCount)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -89,25 +100,23 @@ public extension Memory {
   // MARK: Wrappers
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func allocate<T>(of type: T.Type, capacity: Int, alignment: Int? = nil) -> Result<UnsafeMutableBufferPointer<T>, Errno> {
+  static func allocate<T>(of type: T.Type, capacity: Int, alignment: Int? = nil) throws(Errno) -> UnsafeMutableBufferPointer<T> {
     let byteCount = capacity * MemoryLayout<T>.stride
-    return allocate(byteCount: byteCount, alignment: alignment)
-      .map { .init(start: $0.assumingMemoryBound(to: T.self), count: capacity) }
+    return try .init(start: allocate(byteCount: byteCount, alignment: alignment).assumingMemoryBound(to: T.self), count: capacity)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func allocateZeroed<T>(of type: T.Type, capacity: Int) -> Result<UnsafeMutableBufferPointer<T>, Errno> {
-    allocateZeroed(size: MemoryLayout<T>.stride, count: capacity)
-      .map { .init(start: $0.assumingMemoryBound(to: T.self), count: capacity) }
+  static func allocateZeroed<T>(of type: T.Type, capacity: Int) throws(Errno) -> UnsafeMutableBufferPointer<T> {
+    try .init(start: allocateZeroed(size: MemoryLayout<T>.stride, count: capacity).assumingMemoryBound(to: T.self), count: capacity)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func resize<T>(_ buf: inout UnsafeMutableBufferPointer<T>, capacity: Int) throws(Errno) {
-    buf = try .init(start: resized(buf.baseAddress, byteCount: capacity * MemoryLayout<T>.stride).get().assumingMemoryBound(to: T.self), count: capacity)
+    buf = try .init(start: resized(buf.baseAddress, byteCount: capacity * MemoryLayout<T>.stride).assumingMemoryBound(to: T.self), count: capacity)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func resize(_ buf: inout UnsafeMutableRawBufferPointer, byteCount: Int) throws(Errno) {
-    buf = try .init(start: resized(buf.baseAddress, byteCount: byteCount).get(), count: byteCount)
+    buf = try .init(start: resized(buf.baseAddress, byteCount: byteCount), count: byteCount)
   }
 }

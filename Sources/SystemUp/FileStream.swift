@@ -373,7 +373,7 @@ public extension FileStream {
     var capp = initialBufferSize
     var buf: UnsafeMutablePointer<CChar>?
     if capp > 0 {
-      buf = try! Memory.allocate(byteCount: capp).get().assumingMemoryBound(to: CChar.self)
+      buf = try! Memory.allocate(byteCount: capp).assumingMemoryBound(to: CChar.self)
     }
     defer {
       Memory.free(buf)
@@ -401,9 +401,8 @@ public extension FileStream {
   /// - Returns: nonnegative number on success
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  @CStringGeneric()
-  func write(_ string: String) -> Int32? {
-    let result = SystemLibc.fputs(string, rawValue)
+  func write(string: some CStringConvertible) -> Int32? {
+    let result = string.withUnsafeCString { SystemLibc.fputs($0, rawValue) }
     if _slowPath(result == SystemLibc.EOF) {
       return nil
     }
