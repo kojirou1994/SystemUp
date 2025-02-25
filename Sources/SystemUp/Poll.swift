@@ -2,7 +2,7 @@ import SystemPackage
 import SystemLibc
 import CUtility
 
-public enum Poll {
+extension SystemCall {
   public struct PollFD {
     @usableFromInline
     internal var rawValue: pollfd
@@ -12,17 +12,20 @@ public enum Poll {
       rawValue = .init(fd: fd.rawValue, events: events.rawValue, revents: 0)
     }
 
+    /// File descriptor to poll.
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var fd: FileDescriptor {
       .init(rawValue: rawValue.fd)
     }
 
+    /// Events to poll for.
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var events: Events {
       get { .init(rawValue: rawValue.events) }
       set { rawValue.events = newValue.rawValue }
     }
 
+    /// Events which may occur or have occurred.
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var returnedEvents: Events {
       .init(rawValue: rawValue.events)
@@ -36,8 +39,11 @@ public enum Poll {
 
       public var rawValue: Int16
 
+      /// An exceptional condition has occurred on the device or socket.  This flag is output only, and ignored if present in the input events bitmask.
       @_alwaysEmitIntoClient
-      public static var err: Self { .init(macroValue: POLLERR) }
+      public static var error: Self { .init(macroValue: POLLERR) }
+
+      /// The device or socket has been disconnected.  This flag is output only, and ignored if present in the input events bitmask.  Note that POLLHUP and POLLOUT are mutually exclusive and should never be present in the revents bitmask at the same time.
       @_alwaysEmitIntoClient
       public static var hup: Self { .init(macroValue: POLLHUP) }
       /// any readable data available
@@ -60,7 +66,7 @@ public enum Poll {
     }
   }
 
-  public struct Timeout {
+  public struct PollTimeout {
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(milliseconds: Int32) {
       self.milliseconds = milliseconds
@@ -74,18 +80,19 @@ public enum Poll {
 
   /// return nil if the time limit expires
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func call(fds: UnsafeMutableBufferPointer<PollFD>, timeout: Timeout) -> Result<FileDescriptor, Errno>? {
-    let ret = poll(UnsafeMutableRawPointer(fds.baseAddress)?.assumingMemoryBound(to: pollfd.self), numericCast(fds.count), timeout.milliseconds)
+  public static func poll(fds: UnsafeMutableBufferPointer<PollFD>, timeout: PollTimeout) throws(Errno) -> FileDescriptor? {
+    precondition(MemoryLayout<PollFD>.stride == MemoryLayout<pollfd>.stride)
+    let ret = SystemLibc.poll(UnsafeMutableRawPointer(fds.baseAddress)?.assumingMemoryBound(to: pollfd.self), numericCast(fds.count), timeout.milliseconds)
     switch ret {
-    case -1: return .failure(.systemCurrent)
+    case -1: throw .systemCurrent
     case 0: return nil
-    default: return .success(.init(rawValue: ret))
+    default: return .init(rawValue: ret)
     }
   }
 }
 
 #if canImport(Darwin) || os(FreeBSD)
-public extension Poll.PollFD.Events {
+public extension SystemCall.PollFD.Events {
   /// file may have been extended
   @_alwaysEmitIntoClient
   static var fileExtended: Self { .init(macroValue: POLLEXTEND) }
