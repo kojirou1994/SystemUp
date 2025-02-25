@@ -197,6 +197,7 @@ extension Command {
     #elseif os(Linux)
     fileActions.close(fromMinFD: .init(rawValue: 3))
     #endif
+    attrs.resetSignalsLikeTSC()
 
     let args = CStringArray()
     args.append(.copy(bytes: arg0))
