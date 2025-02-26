@@ -21,11 +21,4 @@ public extension SystemCall {
       return SystemLibc.openat(base.toFD, path, oFlag)
     }.map(FileDescriptor.init)
   }
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func close(_ fd: Int32) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      SystemLibc.close(fd)
-    }
-  }
 }
