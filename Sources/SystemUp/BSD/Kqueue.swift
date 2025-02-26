@@ -23,7 +23,7 @@ public struct Kqueue: ~Copyable {
   deinit {
     assertNoFailure {
       SyscallUtilities.retryWhileInterrupted {
-        SystemCall.close(rawValue)
+        SystemCall.close(.init(rawValue: rawValue))
       }
     }
   }
