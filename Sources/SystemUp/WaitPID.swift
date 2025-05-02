@@ -172,7 +172,7 @@ public extension WaitPID {
         // if WNOHANG is specified and there are no stopped or exited children, 0 is returned
         try await Task.sleep(for: checkInterval)
       } else {
-        return .init(pid: consume pid, status: consume status)
+        return .init(pid: pid, status: consume status)
       }
     }
   }
