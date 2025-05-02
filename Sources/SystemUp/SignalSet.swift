@@ -11,12 +11,6 @@ public struct SignalSet: RawRepresentable, BitwiseCopyable, Sendable {
     self.rawValue = rawValue
   }
 
-  @available(*, deprecated, message: "Use Memory.undefined()")
-  @inlinable @inline(__always)
-  @_alwaysEmitIntoClient
-  public init() {
-    self = Memory.undefined()
-  }
 }
 
 // MARK: Base APIs

@@ -135,6 +135,29 @@ public struct Directory: ~Copyable {
     }
   }
 
+  /// don't save result, unsafe now, dot file ignored.
+  @_alwaysEmitIntoClient
+  public func next() throws(Errno) -> Entry? {
+    while true {
+      Errno.reset()
+      if let ptr = readdir(dir) {
+        let entry = Entry(ptr)
+        if entry.isDot {
+          continue
+        }
+        return entry
+      } else {
+        if let err = Errno.systemCurrentValid {
+          // errno changed, error happened!
+          throw err
+        } else {
+          // end of stream
+          return nil
+        }
+      }
+    }
+  }
+
 }
 
 extension dirent {
