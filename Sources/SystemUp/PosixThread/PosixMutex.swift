@@ -62,11 +62,10 @@ extension PosixMutex {
   public struct Attributes: ~Copyable, @unchecked Sendable {
 
     @usableFromInline
-    internal var rawAddress: UnsafeMutablePointer<pthread_mutexattr_t>
+    internal var rawAddress: UnsafeMutablePointer<pthread_mutexattr_t> = .allocate(capacity: 1)
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws(Errno) {
-      rawAddress = .allocate(capacity: 1)
       try initialize()
     }
 

@@ -1,5 +1,4 @@
 import SystemLibc
-import CUtility
 import SystemPackage
 
 public struct SignalSet: RawRepresentable, BitwiseCopyable, Sendable {

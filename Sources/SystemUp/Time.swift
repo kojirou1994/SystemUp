@@ -3,7 +3,7 @@ import SystemPackage
 import CUtility
 
 // seconds since 1970
-public struct TimeT: RawRepresentable, Sendable {
+public struct TimeT: RawRepresentable, Sendable, BitwiseCopyable {
   public var rawValue: time_t
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: time_t) {

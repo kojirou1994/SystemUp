@@ -1,7 +1,6 @@
 import SystemLibc
 import SystemPackage
 import CUtility
-import CGeneric
 
 public extension SystemCall {
   /// create a unique temporary opened file
@@ -10,9 +9,8 @@ public extension SystemCall {
   ///   - suffixLength:suffix bytes length to be kept
   ///   - options: open options for file
   /// - Returns: file descriptor and generated filename string
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func createTemporaryFile(template: String, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) -> Result<(FileDescriptor, LazyCopiedCString), Errno> {
+  static func createTemporaryFile(template: UnsafePointer<CChar>, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) -> Result<(FileDescriptor, LazyCopiedCString), Errno> {
     var template = DynamicCString.copy(cString: template)
     switch createTemporaryFile(template: &template, suffixLength: suffixLength, options: options) {
     case .success(let fd):

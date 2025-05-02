@@ -4,19 +4,15 @@ import SystemPackage
 import CUtility
 
 public struct Kqueue: ~Copyable {
-  @usableFromInline
-  internal init(rawValue: Int32) {
-    self.rawValue = rawValue
-  }
 
-  @usableFromInline
-  internal let rawValue: Int32
+  @_alwaysEmitIntoClient
+  private let rawValue: Int32
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func open() -> Result<Self, Errno> {
-    SyscallUtilities.valueOrErrno {
+  public init() throws(Errno) {
+    rawValue = try SyscallUtilities.valueOrErrno {
       kqueue()
-    }.map(Self.init)
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)

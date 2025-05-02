@@ -1,4 +1,4 @@
-#if os(Linux)
+#if canImport(Glibc)
 import CUtility
 import CSystemUp
 

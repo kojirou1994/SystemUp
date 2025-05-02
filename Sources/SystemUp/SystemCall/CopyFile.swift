@@ -1,7 +1,6 @@
 import SystemLibc
 import SystemPackage
 import CUtility
-import CGeneric
 
 #if canImport(Darwin)
 
@@ -30,9 +29,8 @@ internal func copyfile_swift_callback_fall(what: Int32, stage: Int32, state: cop
 
 public extension SystemCall {
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: String, dst: String, flags: CopyFile.Flags = []) -> Result<Void, Errno> {
+  static func copyFile(src: UnsafePointer<CChar>, dst: UnsafePointer<CChar>, flags: CopyFile.Flags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       copyfile(src, dst, nil, flags.rawValue)
     }
@@ -454,9 +452,8 @@ public extension SystemCall.CopyFile.State {
     }
   }
 
-  @CStringGeneric
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func set(property: Propperty, value: String) -> Result<Void, Errno> {
+  func set(property: Propperty, value: UnsafePointer<CChar>) -> Result<Void, Errno> {
     func set(_ property: Propperty, _ cString: UnsafePointer<CChar>) -> Result<Void, Errno> {
       self.set(property: property, UnsafeRawPointer(cString))
     }
@@ -511,7 +508,7 @@ public extension SystemCall.CopyFile.State {
 
   /// Get the number of data bytes copied so far.  (Only valid for copyfile_state_get(); see below for more details about callbacks.)  If a COPYFILE_CLONE or COPYFILE_CLONE_FORCE operation successfully cloned the requested objects, then this value will be 0.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  var copiedBytes: CInterop.UpSize {
+  var copiedBytes: Int64 {
     try! get(property: .copiedBytes).get()
   }
 

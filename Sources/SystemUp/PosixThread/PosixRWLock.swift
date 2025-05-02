@@ -1,6 +1,5 @@
 import SystemLibc
 import SystemPackage
-import CUtility
 
 public struct PosixRWLock: ~Copyable {
 
@@ -77,11 +76,10 @@ extension PosixRWLock {
   public struct Attributes: ~Copyable {
 
     @usableFromInline
-    internal let rawAddress: UnsafeMutablePointer<pthread_rwlockattr_t>
+    internal let rawAddress: UnsafeMutablePointer<pthread_rwlockattr_t> = .allocate(capacity: 1)
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws(Errno) {
-      rawAddress = .allocate(capacity: 1)
       try initialize()
     }
 

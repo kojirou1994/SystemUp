@@ -1,7 +1,6 @@
 import SystemLibc
 import CUtility
 import SystemPackage
-import CGeneric
 
 public struct PosixEnvironment {
   public var environment: [String: String]
@@ -47,23 +46,20 @@ public extension PosixEnvironment {
     return result
   }
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getenv<R>(_ key: String, _ body: (UnsafePointer<CChar>?) -> R) -> R {
+  static func getenv<R>(_ key: UnsafePointer<CChar>, _ body: (UnsafePointer<CChar>?) -> R) -> R {
     body(SystemLibc.getenv(key))
   }
 
   /// set() may invalidate the result cstring
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func get(key: String) -> String? {
+  static func get(key: UnsafePointer<CChar>) -> String? {
     getenv(key) { $0.map(String.init(cString: )) }
   }
 
-  @CStringGeneric()
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(key: String, value: String, overwrite: Bool = true) -> Result<Void, Errno> {
+  static func set(key: UnsafePointer<CChar>, value: UnsafePointer<CChar>, overwrite: Bool = true) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.setenv(key, value, .init(cBool: overwrite))
     }
@@ -78,10 +74,9 @@ public extension PosixEnvironment {
     }
   }
 
-  @CStringGeneric()
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func unset(key: String) -> Result<Void, Errno> {
+  static func unset(key: UnsafePointer<CChar>) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       return SystemLibc.unsetenv(key)
     }

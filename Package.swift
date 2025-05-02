@@ -29,9 +29,13 @@ let package = Package(
         "SystemLibc",
         .product(name: "SyscallValue", package: "SyscallValue"),
         .product(name: "CUtility", package: "CUtility"),
-        .product(name: "CGeneric", package: "CUtility"),
         .product(name: "SystemPackage", package: "swift-system"),
-      ]),
+      ],
+      swiftSettings: [
+        .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),
+        .unsafeFlags(["-Xfrontend", "-disable-reflection-metadata"]),
+      ]
+    ),
     .target(
       name: "SystemFileManager",
       dependencies: [

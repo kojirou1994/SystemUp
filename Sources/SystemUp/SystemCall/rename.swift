@@ -1,5 +1,4 @@
 import CUtility
-import CGeneric
 import SystemPackage
 import SystemLibc
 
@@ -11,18 +10,16 @@ public extension SystemCall {
   ///   - fd: src path relative opened directory fd
   ///   - newPath: dst path
   ///   - tofd: dst path relative opened directory fd
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func rename(_ src: String, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd) -> Result<Void, Errno> {
+  static func rename(_ src: UnsafePointer<CChar>, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       renameat(srcBase.toFD, src, dstBase.toFD, destPath)
     }
   }
 
-  @CStringGeneric()
   @available(macOS 10.12, *)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func rename(_ src: String, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd, flags: RenameFlags) -> Result<Void, Errno> {
+  static func rename(_ src: UnsafePointer<CChar>, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: UnsafePointer<CChar>, relativeTo dstBase: RelativeDirectory = .cwd, flags: RenameFlags) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno { () -> Int32 in
 #if canImport(Darwin)
       renameatx_np(srcBase.toFD, src, dstBase.toFD, destPath, flags.rawValue)

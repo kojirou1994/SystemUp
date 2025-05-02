@@ -1,13 +1,12 @@
 import SystemLibc
 import SystemPackage
 import CUtility
-import CGeneric
 import protocol Foundation.ContiguousBytes
 
 public extension SystemCall {
-  @CStringGeneric()
+
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func listXattrNames(_ path: String, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+  static func listXattrNames(_ path: UnsafePointer<CChar>, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
@@ -37,9 +36,8 @@ public extension SystemCall {
     }
   }
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattr(_ path: String, attributeName: String, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+  static func getXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
@@ -57,9 +55,8 @@ public extension SystemCall {
     }
   }
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattr(_ fd: FileDescriptor, attributeName: String, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+  static func getXattr(_ fd: FileDescriptor, attributeName: UnsafePointer<CChar>, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
@@ -79,9 +76,8 @@ public extension SystemCall {
   ///   - key: xattr key
   ///   - path: file path
   ///   - options: noFollow, create and replace are accepted
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func setXattr(_ path: String, attributeName: String, value: some ContiguousBytes, options: Xattr.Options) -> Result<Void, Errno> {
+  static func setXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, value: some ContiguousBytes, options: Xattr.Options) -> Result<Void, Errno> {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
     return value.withUnsafeBytes { buffer in
       SyscallUtilities.voidOrErrno { () -> Int32 in
@@ -99,9 +95,8 @@ public extension SystemCall {
   }
 
   #if os(macOS) || os(iOS)
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func setXattr(_ path: String, attributeName: String, value: some ContiguousBytes, position: UInt32, options: Xattr.Options) -> Result<Void, Errno> {
+  static func setXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, value: some ContiguousBytes, position: UInt32, options: Xattr.Options) -> Result<Void, Errno> {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
     return value.withUnsafeBytes { buffer in
       SyscallUtilities.voidOrErrno { () -> Int32 in
@@ -111,9 +106,8 @@ public extension SystemCall {
   }
   #endif
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeXattr(_ path: String, attributeName: String, options: Xattr.Options) -> Result<Void, Errno> {
+  static func removeXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, options: Xattr.Options) -> Result<Void, Errno> {
     #if os(macOS) || os(iOS)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
@@ -130,9 +124,8 @@ public extension SystemCall {
     }
   }
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeXattr(_ fd: FileDescriptor, attributeName: String, options: Xattr.Options) -> Result<Void, Errno> {
+  static func removeXattr(_ fd: FileDescriptor, attributeName: UnsafePointer<CChar>, options: Xattr.Options) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno { () -> Int32 in
       #if os(macOS) || os(iOS)
       fremovexattr(fd.rawValue, attributeName, options.rawValue)

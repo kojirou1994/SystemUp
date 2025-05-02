@@ -1,13 +1,10 @@
-import CUtility
-import CGeneric
 import SystemPackage
 import SystemLibc
 
 public extension SystemCall {
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func truncate(size: Int, for path: String) -> Result<Void, Errno> {
+  static func truncate(size: Int, for path: UnsafePointer<CChar>) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.truncate(path, off_t(size))
     }

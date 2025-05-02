@@ -1,6 +1,5 @@
 import SystemLibc
 import SystemPackage
-import CUtility
 
 public struct PosixCondition: ~Copyable, @unchecked Sendable {
 
@@ -73,11 +72,10 @@ extension PosixCondition {
   public struct Attributes: ~Copyable {
 
     @usableFromInline
-    internal let rawAddress: UnsafeMutablePointer<pthread_condattr_t>
+    internal let rawAddress: UnsafeMutablePointer<pthread_condattr_t> = .allocate(capacity: 1)
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws(Errno) {
-      rawAddress = .allocate(capacity: 1)
       try initialize()
     }
 

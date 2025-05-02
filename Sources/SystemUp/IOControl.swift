@@ -1,6 +1,5 @@
 import SystemLibc
 import SystemPackage
-import CUtility
 
 public enum IOControl { }
 

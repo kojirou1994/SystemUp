@@ -2,15 +2,13 @@
 import SystemLibc
 import SystemPackage
 import CUtility
-import CGeneric
 
 @available(macOS 10.12, iOS 10.0, tvOS 10.0, watchOS 3.0, *)
 public extension SystemCall {
 
   /// create copy on write clones of files
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func cloneFile(_ src: String, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
+  static func cloneFile(_ src: UnsafePointer<CChar>, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: UnsafePointer<CChar>, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.clonefileat(
         srcBase.toFD, src,
@@ -21,9 +19,8 @@ public extension SystemCall {
   }
 
   /// create copy on write clones of files
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func cloneFile(_ fd: FileDescriptor, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
+  static func cloneFile(_ fd: FileDescriptor, toDestination destPath: UnsafePointer<CChar>, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
       SystemLibc.fclonefileat(
         fd.rawValue,

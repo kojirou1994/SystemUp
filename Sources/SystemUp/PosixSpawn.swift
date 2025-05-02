@@ -477,4 +477,14 @@ public extension PosixSpawn.Attributes {
 
     flags.formUnion([.setBlockedSignals, .setSigdefault])
   }
+
+  mutating func resetSignals() {
+    var set: SignalSet = Memory.undefined()
+    set.removeAll()
+    blockedSignals = set
+    set.fillAll()
+    sigdefault = set
+
+    flags.formUnion([.setBlockedSignals, .setSigdefault])
+  }
 }

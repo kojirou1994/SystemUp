@@ -1,51 +1,46 @@
 import SystemPackage
 import SystemLibc
-import CGeneric
 import CUtility
 
 public extension SystemCall {
 
   /// get  working directory path
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getWorkingDirectory() -> Result<FilePath, Errno> {
-    getWorkingDirectoryBuffer().map { path in
-      // TODO: avoid path coping
-      defer {
-        path.deallocate()
-      }
-      return .init(platformString: path)
+  static func getWorkingDirectory() throws(Errno) -> FilePath {
+    // TODO: avoid path coping
+    try getWorkingDirectoryBuffer().withUnsafeCString { path in
+      FilePath(platformString: path)
     }
   }
 
   /// get  working directory path buffer, buffer needs to be released.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getWorkingDirectoryBuffer() -> Result<UnsafeMutablePointer<Int8>, Errno> {
-    SyscallUtilities.unwrap {
+  static func getWorkingDirectoryBuffer() throws(Errno) -> DynamicCString {
+    .init(cString: try SyscallUtilities.unwrap {
       SystemLibc.getcwd(nil, 0)
-    }
+    }.get())
   }
 
   /// copies the absolute pathname of the current working directory into the buffer, including the terminating null byte
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func readWorkingDirectory(into buffer: UnsafeMutableBufferPointer<Int8>) -> Result<Void, Errno> {
+  static func readWorkingDirectory(into buffer: UnsafeMutableBufferPointer<Int8>) throws(Errno) {
     assert(!buffer.isEmpty, "invalid buffer!")
-    return SyscallUtilities.unwrap {
+    _ = try SyscallUtilities.unwrap {
       SystemLibc.getcwd(buffer.baseAddress, buffer.count)
-    }
+    }.get()
   }
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func changeWorkingDirectory(_ path: String) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func changeWorkingDirectory(_ path: UnsafePointer<CChar>) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.chdir(path)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func changeWorkingDirectory(_ fd: FileDescriptor) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func changeWorkingDirectory(_ fd: FileDescriptor) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.fchdir(fd.rawValue)
-    }
+    }.get()
   }
 }

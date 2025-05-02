@@ -1,7 +1,6 @@
 import SystemPackage
 import SystemLibc
 import CUtility
-import CGeneric
 
 public struct Directory: ~Copyable {
 
@@ -13,13 +12,13 @@ public struct Directory: ~Copyable {
   typealias CDirectoryStream = OpaquePointer
   #endif
 
-  @usableFromInline
-  internal init(_ dir: CDirectoryStream) {
+  @_alwaysEmitIntoClient
+  private init(_ dir: CDirectoryStream) {
     self.dir = dir
   }
 
-  @usableFromInline
-  internal let dir: CDirectoryStream
+  @_alwaysEmitIntoClient
+  private let dir: CDirectoryStream
 
   @_alwaysEmitIntoClient
   public static func open(_ path: String) throws(Errno) -> Self {
@@ -38,7 +37,7 @@ public struct Directory: ~Copyable {
   }
 
   @_alwaysEmitIntoClient
-  public static func open(_ fd: consuming FileDescriptor) throws(Errno) -> Self {
+  public static func open(_ fd: FileDescriptor) throws(Errno) -> Self {
     try .init(SyscallUtilities.unwrap {
       fdopendir(fd.rawValue)
     }.get())
@@ -49,6 +48,11 @@ public struct Directory: ~Copyable {
     assertNoFailure {
       SyscallUtilities.voidOrErrno { closedir(dir) }
     }
+  }
+
+  @_alwaysEmitIntoClient
+  public consuming func keepOpened() {
+    discard self
   }
 
   /// return current location in directory stream

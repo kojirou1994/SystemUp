@@ -173,8 +173,8 @@ extension Command {
     var restoreCWD: FilePath?
     if let cwd = self.cwd {
       func backupCWD() throws {
-        restoreCWD = try SystemCall.getWorkingDirectory().get()
-        try SystemCall.changeWorkingDirectory(cwd).get()
+        restoreCWD = try SystemCall.getWorkingDirectory()
+        try SystemCall.changeWorkingDirectory(cwd)
       }
       #if os(macOS)
       if #available(macOS 10.15, *) {
@@ -189,7 +189,9 @@ extension Command {
       #endif
     }
     defer {
-      try! restoreCWD.map(SystemCall.changeWorkingDirectory)?.get()
+      if let restoreCWD {
+        try! restoreCWD.withUnsafeCString(SystemCall.changeWorkingDirectory)
+      }
     }
 
     #if os(macOS)
@@ -197,7 +199,7 @@ extension Command {
     #elseif os(Linux)
     fileActions.close(fromMinFD: .init(rawValue: 3))
     #endif
-    attrs.resetSignalsLikeTSC()
+    attrs.resetSignals()
 
     let args = CStringArray()
     args.append(.copy(bytes: arg0))

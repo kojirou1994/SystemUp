@@ -2,47 +2,53 @@ import SystemPackage
 import SystemUp
 import struct Foundation.Data
 import CUtility
-import CGeneric
 
 public struct SystemFileManager {}
 
 extension SystemFileManager {
 
   public static func createDirectoryIntermediately(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
-    var status: FileStatus = Memory.undefined()
-    switch SystemCall.fileStatus(path, relativeTo: base, into: &status) {
-    case .success:
-      if status.fileType == .directory {
+    do throws(Errno) {
+      let fileType = try fileStatus(path, \.fileType)
+      if fileType == .directory {
+        // existed
         return
       } else {
         throw Errno.fileExists
       }
-    case .failure(let err):
-      switch err {
+    } catch {
+      switch error {
       case .noSuchFileOrDirectory:
         // create parent
         var parent = path
         if parent.removeLastComponent(), !parent.isEmpty {
           try createDirectoryIntermediately(parent, relativeTo: base, permissions: permissions)
         }
+        try path.withUnsafeCString { path throws(Errno) in
+          try SystemCall.createDirectory(path, relativeTo: base, permissions: permissions)
+        }
       default:
-        throw err
+        throw error
       }
     }
-    try SystemCall.createDirectory(path, relativeTo: base, permissions: permissions).get()
+
   }
 
   public static func remove(_ path: FilePath) throws(Errno) {
-    if try fileStatus(path, flags: .noFollow, \.fileType).get() == .directory {
-      return try removeDirectoryRecursive(path)
+    if try fileStatus(path, flags: .noFollow, \.fileType) == .directory {
+      try removeDirectoryRecursive(path)
     } else {
-      return try SystemCall.unlink(path).get()
+      try path.withUnsafeCString { path throws(Errno) in
+        try SystemCall.unlink(path).get()
+      }
     }
 
   }
 
   public static func removeDirectory(_ path: FilePath) throws(Errno) {
-    try SystemCall.unlink(path, flags: .removeDir).get()
+    try path.withUnsafeCString { path throws(Errno) in
+      try SystemCall.unlink(path, flags: .removeDir).get()
+    }
   }
 
   public static func removeDirectoryUntilSuccess(_ path: FilePath) throws(Errno) {
@@ -67,7 +73,10 @@ extension SystemFileManager {
       let childPath = path.appending(entryName)
       switch entry.fileType {
       case .directory: try removeDirectoryRecursive(childPath)
-      default: try SystemCall.unlink(childPath).get()
+      default:
+        try childPath.withUnsafeCString { childPath throws(Errno) in
+          try SystemCall.unlink(childPath).get()
+        }
       }
     })?.get()) != nil { }
 
@@ -111,8 +120,8 @@ extension SystemFileManager {
 public extension SystemFileManager {
 
   private static func length(fd: FileDescriptor) throws -> Int {
-    let status = try fileStatus(fd).get()
-    return Int(status.size)
+    let status = try fileStatus(fd, \.size)
+    return Int(status)
   }
 
   private static func streamRead<T: RangeReplaceableCollection>(fd: FileDescriptor, bufferSize: Int) throws -> T where T.Element == UInt8 {
@@ -202,12 +211,15 @@ public extension SystemFileManager {
 
 // MARK: Determining Access to Files
 public extension SystemFileManager {
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileExists(atPath path: String, relativeTo base: SystemCall.RelativeDirectory = .cwd) -> Bool {
-    switch fileStatus(path, relativeTo: base, { _ in ()}) {
-    case .success: return true
-    case .failure: return false
+  static func fileExists(atPath path: some CStringConvertible, relativeTo base: SystemCall.RelativeDirectory = .cwd) -> Bool {
+    path.withUnsafeCString { path in
+      do {
+        try fileStatus(path, relativeTo: base, { _ in ()})
+        return true
+      } catch {
+        return false
+      }
     }
   }
 }
@@ -217,20 +229,19 @@ public extension SystemFileManager {
 public extension SystemFileManager {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileStatus<R>(_ fd: FileDescriptor, _ property: (FileStatus) -> R = { $0 }) -> Result<R, Errno> {
-    withUnsafeTemporaryAllocation(of: FileStatus.self, capacity: 1) { buf in
-      SystemCall.fileStatus(fd, into: buf.baseAddress!)
-        .map { property(buf[0]) }
-    }
+  static func fileStatus<R>(_ fd: FileDescriptor, _ property: (FileStatus) -> R = { $0 }) throws(Errno) -> R {
+    var buf: FileStatus = Memory.undefined()
+    try SystemCall.fileStatus(fd, into: &buf)
+    return property(buf)
   }
 
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileStatus<R>(_ path: String, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = [], _ property: (FileStatus) -> R = { $0 }) -> Result<R, Errno> {
-    withUnsafeTemporaryAllocation(of: FileStatus.self, capacity: 1) { buf in
-      SystemCall.fileStatus(path, relativeTo: base, flags: flags, into: buf.baseAddress!)
-        .map { property(buf[0]) }
+  static func fileStatus<R>(_ path: some CStringConvertible, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = [], _ property: (FileStatus) -> R = { $0 }) throws(Errno) -> R {
+    var buf: FileStatus = Memory.undefined()
+    try path.withUnsafeCString { path throws(Errno) in
+      try SystemCall.fileStatus(path, relativeTo: base, flags: flags, into: &buf)
     }
+    return property(buf)
   }
 
 }

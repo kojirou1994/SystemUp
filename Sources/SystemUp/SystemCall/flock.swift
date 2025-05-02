@@ -5,17 +5,17 @@ import SystemLibc
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func lock(_ fd: FileDescriptor, flags: LockFlags) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func lock(_ fd: FileDescriptor, flags: LockFlags) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       flock(fd.rawValue, flags.rawValue)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func unlock(_ fd: FileDescriptor) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func unlock(_ fd: FileDescriptor) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       flock(fd.rawValue, LOCK_UN)
-    }
+    }.get()
   }
 
   struct LockFlags: OptionSet, MacroRawRepresentable {

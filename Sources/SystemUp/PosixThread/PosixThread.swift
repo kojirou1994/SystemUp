@@ -27,7 +27,7 @@ public extension PosixThread.ThreadID {
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  consuming func detach() -> Result<Void, Errno> {
+  func detach() -> Result<Void, Errno> {
     SyscallUtilities.errnoOrZeroOnReturn {
       pthread_detach(rawValue)
     }
@@ -36,7 +36,7 @@ public extension PosixThread.ThreadID {
   @available(*, noasync)
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  consuming func join() -> Result<UnsafeMutableRawPointer?, Errno> {
+  func join() -> Result<UnsafeMutableRawPointer?, Errno> {
     var value: UnsafeMutableRawPointer?
     return SyscallUtilities.errnoOrZeroOnReturn {
       pthread_join(rawValue, &value)

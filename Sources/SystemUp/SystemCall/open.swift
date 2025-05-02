@@ -1,12 +1,9 @@
-import CUtility
-import CGeneric
 import SystemPackage
 import SystemLibc
 
 public extension SystemCall {
-  @CStringGeneric()
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ path: String, relativeTo base: RelativeDirectory = .cwd, _ mode: FileDescriptor.AccessMode,
+  static func open(_ path: UnsafePointer<CChar>, relativeTo base: RelativeDirectory = .cwd, _ mode: FileDescriptor.AccessMode,
                    options: FileDescriptor.OpenOptions = .init(),
                    permissions: FilePermissions? = nil) -> Result<FileDescriptor, Errno> {
     
