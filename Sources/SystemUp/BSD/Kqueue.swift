@@ -314,5 +314,26 @@ public extension Kqueue.Filter.Flags {
   /// A lease break to release the lease is requested on the file or directory referenced by the descriptor.
   @_alwaysEmitIntoClient
   static var leaseRelease: Self { .init(macroValue: NOTE_LEASE_RELEASE) }
+
+  @_alwaysEmitIntoClient
+  static var exit: Self { .init(macroValue: NOTE_EXIT) }
+
+  @_alwaysEmitIntoClient
+  static var fork: Self { .init(macroValue: NOTE_FORK) }
+
+  @_alwaysEmitIntoClient
+  static var exec: Self { .init(macroValue: NOTE_EXEC) }
+
+  @_alwaysEmitIntoClient
+  static var signal: Self { .init(macroValue: NOTE_SIGNAL) }
+
+  @_alwaysEmitIntoClient
+  static var exitStatus: Self { .init(macroValue: NOTE_EXITSTATUS) }
+
+  @_alwaysEmitIntoClient
+  static var exitDetail: Self { .init(macroValue: NOTE_EXIT_DETAIL) }
+
+  @_alwaysEmitIntoClient
+  static var pdatamask: Self { .init(macroValue: NOTE_PDATAMASK) }
 }
 #endif
