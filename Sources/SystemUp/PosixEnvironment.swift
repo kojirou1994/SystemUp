@@ -47,8 +47,8 @@ public extension PosixEnvironment {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getenv<R>(_ key: UnsafePointer<CChar>, _ body: (UnsafePointer<CChar>?) -> R) -> R {
-    body(SystemLibc.getenv(key))
+  static func getenv<R: ~Copyable, E: Error>(_ key: UnsafePointer<CChar>, _ body: (UnsafePointer<CChar>?) throws(E) -> R) throws(E) -> R {
+    try body(SystemLibc.getenv(key))
   }
 
   /// set() may invalidate the result cstring
