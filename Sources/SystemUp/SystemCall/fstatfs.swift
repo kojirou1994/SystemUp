@@ -1,5 +1,6 @@
 import SystemPackage
 import SystemLibc
+import CUtility
 
 public extension SystemCall {
 
@@ -11,9 +12,11 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileSystemStatistics(_ path: UnsafePointer<CChar>, into s: inout FileSystemStatistics) throws(Errno) {
+  static func fileSystemStatistics(_ path: borrowing some CStringConvertible & ~Copyable, into s: inout FileSystemStatistics) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      statfs(path, &s.rawValue)
+      path.withUnsafeCString { path in
+        statfs(path, &s.rawValue)
+      }
     }.get()
   }
 
@@ -25,9 +28,11 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileSystemInformation(_ path: UnsafePointer<CChar>, into s: inout FileSystemInformation) throws(Errno) {
+  static func fileSystemInformation(_ path: borrowing some CStringConvertible & ~Copyable, into s: inout FileSystemInformation) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      statvfs(path, &s.rawValue)
+      path.withUnsafeCString { path in
+        statvfs(path, &s.rawValue)
+      }
     }.get()
   }
 }

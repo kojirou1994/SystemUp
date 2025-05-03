@@ -1,5 +1,6 @@
 import SystemPackage
 import SystemLibc
+import CUtility
 
 public extension SystemCall {
 
@@ -11,10 +12,12 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileStatus(_ path: UnsafePointer<CChar>, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = [], into status: UnsafeMutablePointer<FileStatus>) throws(Errno) {
+  static func fileStatus(_ path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = [], into status: UnsafeMutablePointer<FileStatus>) throws(Errno) {
     assert(flags.isSubset(of: [.noFollow]))
     try SyscallUtilities.voidOrErrno {
-      SystemLibc.fstatat(base.toFD, path, status.pointer(to: \.rawValue)!, flags.rawValue)
+      path.withUnsafeCString { path in
+        SystemLibc.fstatat(base.toFD, path, status.pointer(to: \.rawValue)!, flags.rawValue)
+      }
     }.get()
   }
 }
