@@ -4,12 +4,6 @@ import CUtility
 
 public struct FileStatus {
 
-  @available(*, deprecated, message: "Use Memory.undefined()")
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init() {
-    rawValue = Memory.undefined()
-  }
-
   public var rawValue: stat
 }
 

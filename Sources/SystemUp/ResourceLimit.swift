@@ -6,12 +6,6 @@ public struct ResourceLimit {
   @usableFromInline
   internal var rawValue: rlimit
 
-  @available(*, deprecated, message: "Use Memory.undefined()")
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init() {
-    rawValue = .init()
-  }
-
   #if canImport(Darwin)
   public typealias Limit = UInt64
   #else

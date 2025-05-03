@@ -3,13 +3,6 @@ import SystemLibc
 
 /// POSIX filesystem information
 public struct FileSystemInformation {
-
-  @available(*, deprecated, message: "Use Memory.undefined()")
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init() {
-    rawValue = Memory.undefined()
-  }
-
   public var rawValue: statvfs
 }
 

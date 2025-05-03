@@ -10,12 +10,6 @@ public struct SignalAction {
   internal init(rawValue: sigaction) {
     self.rawValue = rawValue
   }
-
-  @available(*, deprecated, message: "Use Memory.undefined()")
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init(uninitialize: Void) {
-    self.rawValue = .init()
-  }
 }
 
 public extension SignalAction {

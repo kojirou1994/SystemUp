@@ -3,16 +3,8 @@ import CSystemUp
 import CUtility
 
 public struct FileSystemStatistics {
-
   /// the c struct
   public var rawValue: statfs
-
-  @available(*, deprecated, message: "Use Memory.undefined()")
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public init() {
-    rawValue = Memory.undefined()
-  }
-
 }
 
 @available(macOS 10.15, iOS 13.0, *)
