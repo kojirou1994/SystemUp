@@ -209,22 +209,6 @@ public extension SystemFileManager {
 
 }
 
-// MARK: Determining Access to Files
-public extension SystemFileManager {
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileExists(atPath path: some CStringConvertible, relativeTo base: SystemCall.RelativeDirectory = .cwd) -> Bool {
-    path.withUnsafeCString { path in
-      do {
-        try fileStatus(path, relativeTo: base, { _ in ()})
-        return true
-      } catch {
-        return false
-      }
-    }
-  }
-}
-
-
 // MARK: Getting and Setting Attributes
 public extension SystemFileManager {
 

@@ -5,9 +5,11 @@ import SystemLibc
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func check(accessibility: Accessibility, for path: UnsafePointer<CChar>, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = []) -> Bool {
-    assert(flags.isSubset(of: [.noFollow, .effectiveAccess]))
-    return SystemLibc.faccessat(base.toFD, path, accessibility.rawValue, flags.rawValue) == 0
+  static func check(accessibility: Accessibility, for path: some CStringConvertible, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = []) -> Bool {
+    assert(flags.isSubset(of: [.noFollow, .noFollowAny, .effectiveAccess]))
+    return path.withUnsafeCString { path in
+      SystemLibc.faccessat(base.toFD, path, accessibility.rawValue, flags.rawValue) == 0
+    }
   }
 
   struct Accessibility: OptionSet, MacroRawRepresentable {

@@ -33,6 +33,9 @@ public enum SystemCall {
     public static var realDevice: Self { .init(macroValue: AT_REALDEV) }
     #endif
 
+    @_alwaysEmitIntoClient
+    public static var noFollowAny: Self { .init(macroValue: AT_SYMLINK_NOFOLLOW_ANY) }
+
     /// Use only the fd and Ignore the path for fstatat(2)
     #if canImport(Darwin)
     @_alwaysEmitIntoClient
