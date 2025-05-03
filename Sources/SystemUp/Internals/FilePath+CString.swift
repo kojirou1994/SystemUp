@@ -14,3 +14,14 @@ extension FilePath: @retroactive CStringConvertible {
     }.get()
   }
 }
+
+
+extension FilePath {
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  public init(_ cString: borrowing DynamicCString) {
+    self = cString.withUnsafeCString { cString in
+      FilePath(platformString: cString)
+    }
+  }
+}
