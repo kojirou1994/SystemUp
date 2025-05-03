@@ -1,32 +1,27 @@
 import SystemPackage
 import SystemLibc
 import SyscallValue
+import CUtility
 
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func realPath(_ path: UnsafePointer<CChar>) -> Result<FilePath, Errno> {
-    realPath(path).map { path in
-      // TODO: avoid path coping
-      defer {
-        path.deallocate()
+  static func realPath(_ path: some CStringConvertible) throws(Errno) -> DynamicCString {
+    try SyscallUtilities.unwrap {
+      path.withUnsafeCString { path in
+        realpath(path, nil)
       }
-      return .init(platformString: path)
-    }
+    }.map(DynamicCString.init).get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func realPath(_ path: UnsafePointer<CChar>) -> Result<UnsafeMutablePointer<Int8>, Errno> {
-    SyscallUtilities.unwrap {
-      realpath(path, nil)
-    }
-  }
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func realPath(_ path: UnsafePointer<CChar>, into buffer: UnsafeMutableBufferPointer<Int8>) -> Result<Void, Errno> {
+  static func realPath(_ path: some CStringConvertible, into buffer: UnsafeMutableBufferPointer<Int8>) throws(Errno) {
     assert(buffer.count >= PATH_MAX)
-    return SyscallUtilities.unwrap {
-      realpath(path, buffer.baseAddress)
-    }
+    let ptr = try SyscallUtilities.unwrap {
+      path.withUnsafeCString { path in
+        realpath(path, buffer.baseAddress)
+      }
+    }.get()
+    assert(ptr == buffer.baseAddress)
   }
 }
