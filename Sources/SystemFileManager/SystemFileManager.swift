@@ -38,17 +38,13 @@ extension SystemFileManager {
     if try fileStatus(path, flags: .noFollow, \.fileType) == .directory {
       try removeDirectoryRecursive(path)
     } else {
-      try path.withUnsafeCString { path throws(Errno) in
-        try SystemCall.unlink(path).get()
-      }
+      try SystemCall.unlink(path)
     }
 
   }
 
   public static func removeDirectory(_ path: FilePath) throws(Errno) {
-    try path.withUnsafeCString { path throws(Errno) in
-      try SystemCall.unlink(path, flags: .removeDir).get()
-    }
+    try SystemCall.unlink(path, flags: .removeDir)
   }
 
   public static func removeDirectoryUntilSuccess(_ path: FilePath) throws(Errno) {
@@ -74,9 +70,7 @@ extension SystemFileManager {
       switch entry.fileType {
       case .directory: try removeDirectoryRecursive(childPath)
       default:
-        try childPath.withUnsafeCString { childPath throws(Errno) in
-          try SystemCall.unlink(childPath).get()
-        }
+        try SystemCall.unlink(childPath)
       }
     })?.get()) != nil { }
 
