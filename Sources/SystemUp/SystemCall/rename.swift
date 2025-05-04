@@ -11,22 +11,30 @@ public extension SystemCall {
   ///   - newPath: dst path
   ///   - tofd: dst path relative opened directory fd
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func rename(_ src: UnsafePointer<CChar>, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: String, relativeTo dstBase: RelativeDirectory = .cwd) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      renameat(srcBase.toFD, src, dstBase.toFD, destPath)
-    }
+  static func rename(_ sourcePath: borrowing some CStringConvertible & ~Copyable, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CStringConvertible & ~Copyable, relativeTo dstBase: RelativeDirectory = .cwd) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
+      sourcePath.withUnsafeCString { sourcePath in
+        destPath.withUnsafeCString { destPath in
+          renameat(srcBase.toFD, sourcePath, dstBase.toFD, destPath)
+        }
+      }
+    }.get()
   }
 
   @available(macOS 10.12, *)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func rename(_ src: UnsafePointer<CChar>, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: UnsafePointer<CChar>, relativeTo dstBase: RelativeDirectory = .cwd, flags: RenameFlags) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno { () -> Int32 in
+  static func rename(_ sourcePath: borrowing some CStringConvertible & ~Copyable, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CStringConvertible & ~Copyable, relativeTo dstBase: RelativeDirectory = .cwd, flags: RenameFlags) throws(Errno) {
+    try SyscallUtilities.voidOrErrno { () -> Int32 in
+      sourcePath.withUnsafeCString { sourcePath in
+        destPath.withUnsafeCString { destPath in
 #if canImport(Darwin)
-      renameatx_np(srcBase.toFD, src, dstBase.toFD, destPath, flags.rawValue)
+          renameatx_np(srcBase.toFD, sourcePath, dstBase.toFD, destPath, flags.rawValue)
 #elseif os(Linux)
-      renameat2(srcBase.toFD, src, dstBase.toFD, destPath, flags.rawValue)
+          renameat2(srcBase.toFD, sourcePath, dstBase.toFD, destPath, flags.rawValue)
 #endif
-    }
+        }
+      }
+    }.get()
   }
 
   struct RenameFlags: OptionSet, MacroRawRepresentable {
