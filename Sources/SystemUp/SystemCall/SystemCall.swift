@@ -33,8 +33,11 @@ public enum SystemCall {
     public static var realDevice: Self { .init(macroValue: AT_REALDEV) }
     #endif
 
+    /// Path should not contain any symlinks
+    #if canImport(Darwin) || os(FreeBSD)
     @_alwaysEmitIntoClient
     public static var noFollowAny: Self { .init(macroValue: AT_SYMLINK_NOFOLLOW_ANY) }
+    #endif
 
     /// Use only the fd and Ignore the path for fstatat(2)
     #if canImport(Darwin)

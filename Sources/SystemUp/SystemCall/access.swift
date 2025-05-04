@@ -6,7 +6,9 @@ public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func check(accessibility: Accessibility, for path: some CStringConvertible, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = []) -> Bool {
+    #if Xcode
     assert(flags.isSubset(of: [.noFollow, .noFollowAny, .effectiveAccess]))
+    #endif
     return path.withUnsafeCString { path in
       SystemLibc.faccessat(base.toFD, path, accessibility.rawValue, flags.rawValue) == 0
     }
