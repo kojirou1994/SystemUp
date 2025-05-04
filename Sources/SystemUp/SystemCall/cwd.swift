@@ -31,9 +31,11 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func changeWorkingDirectory(_ path: UnsafePointer<CChar>) throws(Errno) {
+  static func changeWorkingDirectory(_ path: borrowing some CStringConvertible & ~Copyable) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      SystemLibc.chdir(path)
+      path.withUnsafeCString { path in
+        SystemLibc.chdir(path)
+      }
     }.get()
   }
 
