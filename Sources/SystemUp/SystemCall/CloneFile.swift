@@ -8,25 +8,31 @@ public extension SystemCall {
 
   /// create copy on write clones of files
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func cloneFile(_ src: UnsafePointer<CChar>, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: UnsafePointer<CChar>, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
+  static func cloneFile(_ src: borrowing some CStringConvertible & ~Copyable, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CStringConvertible & ~Copyable, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      SystemLibc.clonefileat(
-        srcBase.toFD, src,
-        dstBase.toFD, destPath,
-        flags.rawValue
-      )
+      src.withUnsafeCString { src in
+        destPath.withUnsafeCString { destPath in
+          SystemLibc.clonefileat(
+            srcBase.toFD, src,
+            dstBase.toFD, destPath,
+            flags.rawValue
+          )
+        }
+      }
     }
   }
 
   /// create copy on write clones of files
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func cloneFile(_ fd: FileDescriptor, toDestination destPath: UnsafePointer<CChar>, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
+  static func cloneFile(_ fd: FileDescriptor, toDestination destPath: borrowing some CStringConvertible & ~Copyable, relativeTo dstBase: RelativeDirectory = .cwd, flags: CloneFlags = []) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno {
-      SystemLibc.fclonefileat(
-        fd.rawValue,
-        dstBase.toFD, destPath,
-        flags.rawValue
-      )
+      destPath.withUnsafeCString { destPath in
+        SystemLibc.fclonefileat(
+          fd.rawValue,
+          dstBase.toFD, destPath,
+          flags.rawValue
+        )
+      }
     }
   }
 

@@ -30,25 +30,29 @@ internal func copyfile_swift_callback_fall(what: Int32, stage: Int32, state: cop
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: UnsafePointer<CChar>, dst: UnsafePointer<CChar>, flags: CopyFile.Flags = []) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      copyfile(src, dst, nil, flags.rawValue)
-    }
+  static func copyFile(src: borrowing some CStringConvertible & ~Copyable, dst: borrowing some CStringConvertible & ~Copyable, flags: CopyFile.Flags = []) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
+      src.withUnsafeCString { src in
+        dst.withUnsafeCString { dst in
+          copyfile(src, dst, nil, flags.rawValue)
+        }
+      }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: UnsafePointer<CChar>?, dst: UnsafePointer<CChar>?, state: borrowing CopyFile.State, flags: CopyFile.Flags = []) -> Result<Void, Errno> {
+  static func copyFile(src: UnsafePointer<CChar>?, dst: UnsafePointer<CChar>?, state: borrowing CopyFile.State, flags: CopyFile.Flags = []) throws(Errno) {
     assert(src != nil || dst != nil, "neither src or dst must be set")
-    return SyscallUtilities.voidOrErrno {
+    try SyscallUtilities.voidOrErrno {
       copyfile(src, dst, state.state, flags.rawValue)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: UnsafePointer<CChar>?, dst: UnsafePointer<CChar>?, state: borrowing CopyFile.State, flags: CopyFile.Flags = [], callback: CopyFile.NativeCallback) -> Result<Void, Errno> {
+  static func copyFile(src: UnsafePointer<CChar>?, dst: UnsafePointer<CChar>?, state: borrowing CopyFile.State, flags: CopyFile.Flags = [], callback: CopyFile.NativeCallback) throws(Errno) {
     assert(state.callbackContext == nil && state.statusCallback == nil, "I'll set them for you!")
-    return withoutActuallyEscaping(callback) { callback in
-      withExtendedLifetime(CopyFile.CallbackBox(callback: callback)) { box in
+    try withoutActuallyEscaping(callback) { callback throws(Errno) in
+      try withExtendedLifetime(CopyFile.CallbackBox(callback: callback)) { box throws(Errno) in
         let ctx = Unmanaged.passUnretained(box).toOpaque()
         state.callbackContext = ctx
         state.statusCallback = copyfile_swift_callback
@@ -56,40 +60,40 @@ public extension SystemCall {
           // context is invalid but cannot set to nil!
           state.statusCallback = copyfile_swift_callback_fall
         }
-        return copyFile(src: src, dst: dst, state: state, flags: flags)
+        try copyFile(src: src, dst: dst, state: state, flags: flags)
       }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: FileDescriptor, dst: FileDescriptor, flags: CopyFile.Flags = []) -> Result<Void, Errno> {
+  static func copyFile(src: FileDescriptor, dst: FileDescriptor, flags: CopyFile.Flags = []) throws(Errno) {
     assert(
       CopyFile.Flags([.recursive, .exclusive, .noFollowSource,
                       .noFollowDestination, .noFollow, .move, .unlink,
                       .clone, .cloneForce])
       .intersection(flags).isEmpty, "has flags for path based copyfile")
-    return SyscallUtilities.voidOrErrno {
+    try SyscallUtilities.voidOrErrno {
       fcopyfile(src.rawValue, dst.rawValue, nil, flags.rawValue)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: FileDescriptor, dst: FileDescriptor, state: borrowing CopyFile.State, flags: CopyFile.Flags = []) -> Result<Void, Errno> {
+  static func copyFile(src: FileDescriptor, dst: FileDescriptor, state: borrowing CopyFile.State, flags: CopyFile.Flags = []) throws(Errno) {
     assert(
       CopyFile.Flags([.recursive, .exclusive, .noFollowSource,
                  .noFollowDestination, .noFollow, .move, .unlink,
                  .clone, .cloneForce])
       .intersection(flags).isEmpty, "has flags for path based copyfile")
-    return SyscallUtilities.voidOrErrno {
+    try SyscallUtilities.voidOrErrno {
       fcopyfile(src.rawValue, dst.rawValue, state.state, flags.rawValue)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: FileDescriptor, dst: FileDescriptor, state: borrowing CopyFile.State, flags: CopyFile.Flags = [], callback: CopyFile.NativeCallback) -> Result<Void, Errno> {
+  static func copyFile(src: FileDescriptor, dst: FileDescriptor, state: borrowing CopyFile.State, flags: CopyFile.Flags = [], callback: CopyFile.NativeCallback) throws(Errno) {
     assert(state.callbackContext == nil && state.statusCallback == nil, "I'll set them for you!")
-    return withoutActuallyEscaping(callback) { callback in
-      withExtendedLifetime(CopyFile.CallbackBox(callback: callback)) { box in
+    try withoutActuallyEscaping(callback) { callback throws(Errno) in
+      try withExtendedLifetime(CopyFile.CallbackBox(callback: callback)) { box throws(Errno) in
         let ctx = Unmanaged.passUnretained(box).toOpaque()
         state.callbackContext = ctx
         state.statusCallback = copyfile_swift_callback
@@ -97,7 +101,7 @@ public extension SystemCall {
           // context is invalid but cannot set to nil!
           state.statusCallback = copyfile_swift_callback_fall
         }
-        return copyFile(src: src, dst: dst, state: state, flags: flags)
+        try copyFile(src: src, dst: dst, state: state, flags: flags)
       }
     }
   }

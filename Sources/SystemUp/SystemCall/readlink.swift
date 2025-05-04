@@ -1,40 +1,41 @@
 import SystemPackage
 import SystemLibc
 import SyscallValue
+import CUtility
 
 public extension SystemCall {
 
   #if canImport(Darwin)
   @available(macOS 13.0, macCatalyst 16.0, *)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func readLink(_ fd: FileDescriptor, into buffer: UnsafeMutableBufferPointer<Int8>) -> Result<Int, Errno> {
-    SyscallUtilities.valueOrErrno {
+  static func readLink(_ fd: FileDescriptor, into buffer: UnsafeMutableBufferPointer<Int8>) throws(Errno) -> Int {
+    try SyscallUtilities.valueOrErrno {
       freadlink(fd.rawValue, buffer.baseAddress, buffer.count)
-    }
+    }.get()
   }
   #endif
 
+  /// ref: https://github.com/rust-lang/rust/blob/622ac043764d5d4ffff8de8cf86a1cc938a8a71b/library/std/src/sys/fs/unix.rs#L1849
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func readLink(_ path: UnsafePointer<CChar>, relativeTo base: RelativeDirectory = .cwd) -> Result<FilePath, Errno> {
+  static func readLink(_ path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd) throws -> DynamicCStringWithLength {
 
     var bufsize = 256
-    var buffer = UnsafeMutableBufferPointer<Int8>.allocate(capacity: bufsize)
-    defer {
-      buffer.deallocate()
-    }
+
+    var buffer = try Memory.allocate(of: Int8.self, capacity: bufsize)
 
     while true {
-
-      switch readLink(path, relativeTo: base, into: buffer) {
-      case .failure(let err): return .failure(err)
-      case .success(let length):
+      do {
+        let length = try readLink(path, relativeTo: base, into: buffer)
         if length != bufsize {
           buffer[length] = 0
-          return .success(.init(platformString: buffer.baseAddress.unsafelyUnwrapped))
+          return .init(cString: .init(cString: buffer.baseAddress!), forceLength: length)
         }
 
         bufsize = bufsize * 2
-        buffer = .init(start: realloc(buffer.baseAddress, bufsize).assumingMemoryBound(to: Int8.self), count: bufsize)
+        try Memory.resize(&buffer, capacity: bufsize)
+      } catch {
+        Memory.free(buffer.baseAddress)
+        throw error
       }
     }
   }
@@ -46,9 +47,11 @@ public extension SystemCall {
   ///   - buffer: destination buffer
   /// - Returns: count of bytes placed in the buffer, readlink() does not append a null byte
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func readLink(_ path: UnsafePointer<CChar>, relativeTo base: RelativeDirectory = .cwd, into buffer: UnsafeMutableBufferPointer<Int8>) -> Result<Int, Errno> {
-    SyscallUtilities.valueOrErrno {
-      readlinkat(base.toFD, path, buffer.baseAddress!, buffer.count)
-    }
+  static func readLink(_ path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, into buffer: UnsafeMutableBufferPointer<Int8>) throws(Errno) -> Int {
+    try SyscallUtilities.valueOrErrno {
+      path.withUnsafeCString { path in
+        readlinkat(base.toFD, path, buffer.baseAddress!, buffer.count)
+      }
+    }.get()
   }
 }
