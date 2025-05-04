@@ -1,12 +1,15 @@
 import SystemPackage
 import SystemLibc
+import CUtility
 
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func createDirectory(_ path: UnsafePointer<CChar>, relativeTo base: RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
+  static func createDirectory(_ path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      SystemLibc.mkdirat(base.toFD, path, permissions.rawValue)
+      path.withUnsafeCString { path in
+        SystemLibc.mkdirat(base.toFD, path, permissions.rawValue)
+      }
     }.get()
   }
 }
