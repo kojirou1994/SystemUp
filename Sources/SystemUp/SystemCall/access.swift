@@ -5,7 +5,7 @@ import SystemLibc
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func check(accessibility: Accessibility, for path: some CStringConvertible, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = []) -> Bool {
+  static func check(accessibility: Accessibility, for path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = []) -> Bool {
     #if Xcode
     assert(flags.isSubset(of: [.noFollow, .noFollowAny, .effectiveAccess]))
     #endif
