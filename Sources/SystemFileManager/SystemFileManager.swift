@@ -88,18 +88,20 @@ extension SystemFileManager {
 
   private static func _subpathsOfDirectory(atPath path: FilePath, basePath: FilePath, into results: inout [FilePath]) throws(Errno) {
     let directory = try Directory.open(path)
-    while true {
-      let result: ()? = try directory.withNextEntry { nextEntry throws(Errno) in
-        let entryName = nextEntry.name
-        let result = basePath.appending(entryName)
-        results.append(result)
-        if nextEntry.fileType == .directory {
-          try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
-        }
-      }?.get()
+    let dfd = directory.fd
+    while let entry = try directory.next() {
+      let entryName = entry.name
+      let result = basePath.appending(entryName)
+      results.append(result)
 
-      if result == nil {
-        break
+      let isDirectory: Bool = switch entry.fileType {
+      case .directory: true
+      case .unknown:
+        try fileStatus(entryName, relativeTo: .directory(dfd), flags: .noFollow, \.fileType) == .directory
+      default: false
+      }
+      if isDirectory {
+        try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
       }
     }
   }
