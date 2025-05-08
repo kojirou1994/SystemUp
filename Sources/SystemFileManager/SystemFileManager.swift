@@ -42,11 +42,15 @@ extension SystemFileManager {
     }
 
   }
-
-  public static func removeDirectory(_ path: FilePath) throws(Errno) {
+  
+  /// remove empty directory
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public static func removeDirectory(_ path: borrowing some CStringConvertible & ~Copyable) throws(Errno) {
     try SystemCall.unlink(path, flags: .removeDir)
   }
-
+  
+  /// remove directory tree and prevente directoryNotEmpty Errno
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func removeDirectoryUntilSuccess(_ path: FilePath) throws(Errno) {
     while true {
       do {
@@ -63,16 +67,17 @@ extension SystemFileManager {
   public static func removeDirectoryRecursive(_ path: FilePath) throws(Errno) {
     let directory = try Directory.open(path)
 
-    while (try directory.withNextEntry({ entry throws(Errno) -> Void in
+    while let entry = try directory.next() {
       // remove each entry, return result
       let entryName = entry.name
       let childPath = path.appending(entryName)
       switch entry.fileType {
       case .directory: try removeDirectoryRecursive(childPath)
+      case .unknown: try remove(childPath)
       default:
         try SystemCall.unlink(childPath)
       }
-    })?.get()) != nil { }
+    }
 
     try removeDirectory(path)
   }
