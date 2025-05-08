@@ -300,6 +300,7 @@ extension Directory.DirectoryType: CustomStringConvertible {
     case .symbolicLink: return "symbolicLink"
     case .socket: return "socket"
     case .wht: return "wht"
+    case .unknown: return "unknown"
     default: return unknownDescription
     }
   }
