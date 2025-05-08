@@ -7,7 +7,7 @@ public enum PosixSpawn {}
 public extension PosixSpawn {
 
   @inlinable
-  static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, arguments: CStringArray, environment: CStringArray, searchPATH: Bool) -> Result<ProcessID, Errno> {
+  static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, arguments: borrowing CStringArray, environment: borrowing CStringArray, searchPATH: Bool) -> Result<ProcessID, Errno> {
     arguments.withUnsafeCArrayPointer { argv in
       environment.withUnsafeCArrayPointer { envp in
         spawn(path, fileActions: fileActions, attributes: attributes, argv: argv, envp: envp, searchPATH: searchPATH)

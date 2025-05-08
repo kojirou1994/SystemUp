@@ -201,7 +201,7 @@ extension Command {
     #endif
     attrs.resetSignals()
 
-    let args = CStringArray()
+    var args = CStringArray()
     args.append(.copy(bytes: arg0))
     args.append(contentsOf: arguments)
 

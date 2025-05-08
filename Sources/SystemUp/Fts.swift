@@ -23,7 +23,8 @@ public struct Fts: ~Copyable {
   }
 
   public static func open<C: Collection>(paths: C, options: OpenOptions) throws(Errno) -> Self where C.Element == FilePath {
-    try .init(withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: paths.count + 1) { array in
+    assert(!paths.isEmpty, "will crash")
+    return try .init(withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: paths.count + 1) { array in
       paths.enumerated().forEach { offset, path in
         path.withPlatformString { path in
           array[offset] = .init(mutating: path)
@@ -35,7 +36,7 @@ public struct Fts: ~Copyable {
   }
 
   @_alwaysEmitIntoClient
-  public static func open(paths: CStringArray, options: OpenOptions) throws(Errno) -> Self {
+  public static func open(paths: borrowing CStringArray, options: OpenOptions) throws(Errno) -> Self {
     try .init(paths.withUnsafeCArrayPointer { array in
       _fts_open(array, options)
     }.get())
