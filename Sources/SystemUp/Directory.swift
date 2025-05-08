@@ -21,14 +21,7 @@ public struct Directory: ~Copyable {
   private let dir: CDirectoryStream
 
   @_alwaysEmitIntoClient
-  public static func open(_ path: String) throws(Errno) -> Self {
-    .init(try SyscallUtilities.unwrap {
-      opendir(path)
-    }.get())
-  }
-
-  @_alwaysEmitIntoClient
-  public static func open(_ path: some CStringConvertible) throws(Errno) -> Self {
+  public static func open(_ path: borrowing some CStringConvertible & ~Copyable) throws(Errno) -> Self {
     .init(try SyscallUtilities.unwrap {
       path.withUnsafeCString { path in
         opendir(path)
@@ -50,6 +43,7 @@ public struct Directory: ~Copyable {
     }
   }
 
+  /// release Directory but keep stream opened, use with open(_ fd: FileDescriptor)
   @_alwaysEmitIntoClient
   public consuming func keepOpened() {
     discard self
@@ -102,8 +96,9 @@ public struct Directory: ~Copyable {
   public func forEachEntries(_ body: (borrowing Entry, _ stop: inout Bool) throws -> Void) throws {
     var stop = false
     while !stop {
-      if (try withNextEntry({ try body($0, &stop) })?.get()) != nil {
+      if let entry = try next() {
         // success
+        try body(entry, &stop)
       } else {
         // no entry
         return
@@ -111,35 +106,14 @@ public struct Directory: ~Copyable {
     }
   }
 
-  /// not thread-safe, dot . and .. is ignored
-  @_alwaysEmitIntoClient
-  public func withNextEntry<R, E: Error>(_ body: (borrowing Entry) throws(E) -> R) throws(E) -> Result<R, Errno>? {
-    while true {
-      Errno.reset()
-      let ptr = readdir(dir)
-      if let ptr {
-        let entry = Entry(ptr)
-        if entry.isDot {
-          continue
-        }
-        return try .success(body(entry))
-      } else {
-        if let err = Errno.systemCurrentValid {
-          // errno changed, error happened!
-          return .failure(err)
-        } else {
-          // end of stream
-          return nil
-        }
-      }
-    }
-  }
-
+  /// not thread-safe
   /// don't save result, unsafe now, dot file ignored.
   @_alwaysEmitIntoClient
-  public func next() throws(Errno) -> Entry? {
-    while true {
+  public func next(resetErrno: Bool = true) throws(Errno) -> Entry? {
+    if resetErrno {
       Errno.reset()
+    }
+    while true {
       if let ptr = readdir(dir) {
         let entry = Entry(ptr)
         if entry.isDot {
@@ -158,15 +132,6 @@ public struct Directory: ~Copyable {
     }
   }
 
-}
-
-extension dirent {
-  @inlinable
-  internal var isDot: Bool {
-    let point = UInt8(ascii: ".")
-    return (d_name.0 == point && d_name.1 == 0)
-    || (d_name.0 == point && d_name.1 == point && d_name.2 == 0)
-  }
 }
 
 extension Directory {
@@ -213,33 +178,35 @@ extension Directory {
     /// is "." or ".."
     @_alwaysEmitIntoClient
     internal var isDot: Bool {
-      entry.pointee.isDot
+      let point = UInt8(ascii: ".")
+      return (entry.pointee.d_name.0 == point && entry.pointee.d_name.1 == 0)
+      || (entry.pointee.d_name.0 == point && entry.pointee.d_name.1 == point && entry.pointee.d_name.2 == 0)
     }
 
     /// entry name (up to MAXPATHLEN bytes)
     @_alwaysEmitIntoClient
     public var name: String {
-      withNameBuffer { buffer in
-        String(decoding: buffer, as: UTF8.self)
+      withNameCString { cString in
+        cString.withUnsafeCString { cString in
+          String(decoding: UnsafeRawBufferPointer(start: cString, count: nameLength), as: UTF8.self)
+        }
       }
     }
 
     @_alwaysEmitIntoClient
-    public func withNameBuffer<R: ~Copyable, E: Error>(_ body: (UnsafeRawBufferPointer) throws(E) -> R) throws(E) -> R {
-      try withNameCString { cString throws(E) in
-        #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-        let length = Int(entry.pointee.d_namlen)
-        #else
-        let length = strlen(cString)
-        #endif
-
-        return try body(.init(start: cString, count: length))
-      }
+    public var nameLength: Int {
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+      Int(entry.pointee.d_namlen)
+#else
+      withNameCString { $0.length }
+#endif
     }
 
+    // TODO: Name Span
+
     @_alwaysEmitIntoClient
-    public func withNameCString<R: ~Copyable, E: Error>(_ body: (UnsafePointer<CChar>) throws(E) -> R) throws(E) -> R {
-      try body(UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self))
+    public func withNameCString<R: ~Copyable, E: Error>(_ body: (borrowing DynamicCString) throws(E) -> R) throws(E) -> R {
+      try DynamicCString.withTemporaryBorrowed(cString: UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self), body)
     }
   }
 

@@ -5,7 +5,7 @@ import CUtility
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func truncate(size: Int, for path: some CStringConvertible) throws(Errno) {
+  static func truncate(size: Int, for path: borrowing some CStringConvertible & ~Copyable) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       path.withUnsafeCString { path in
         SystemLibc.truncate(path, off_t(size))

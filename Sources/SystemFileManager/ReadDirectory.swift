@@ -19,9 +19,11 @@ public actor DirectoryReader {
   }
 
   public func read() throws -> Entry? {
-    try stream.withNextEntry { entry in
-      Entry(entryFileNumber: entry.entryFileNumber, seekOffset: entry.seekOffset, recordLength: entry.recordLength, fileType: entry.fileType, name: entry.name)
-    }?.get()
+    if let entry = try stream.next() {
+      .init(entryFileNumber: entry.entryFileNumber, seekOffset: entry.seekOffset, recordLength: entry.recordLength, fileType: entry.fileType, name: entry.name)
+    } else {
+      nil
+    }
   }
 
 }

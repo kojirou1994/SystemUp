@@ -3,7 +3,7 @@ import SystemUp
 @propertyWrapper
 public final class ReadWriteLocked<Value> {
   private var value: Value
-  private var lock: PosixRWLock
+  private let lock: PosixRWLock
 
   public init(wrappedValue defaultValue: Value) {
     self.value = defaultValue
