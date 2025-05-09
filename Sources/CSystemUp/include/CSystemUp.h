@@ -93,6 +93,9 @@ SWIFT_INLINE unsigned long swift_FIOASYNC() {
 }
 
 #ifdef __APPLE__
+
+#include <removefile.h>
+
 SWIFT_INLINE unsigned long swift_FIOSETOWN() {
   return FIOSETOWN;
 }
