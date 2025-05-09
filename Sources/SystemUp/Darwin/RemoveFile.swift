@@ -20,21 +20,31 @@ internal func removefile_swift_callback(state: removefile_state_t!, path: Unsafe
 
 public extension SystemCall {
 
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, state: borrowing RemoveFile.State, flags: RemoveFile.Flags = []) throws(Errno) {
+  @_alwaysEmitIntoClient @inline(__always)
+  private static func _removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, state: removefile_state_t?, flags: RemoveFile.Flags = []) throws(Errno) {
     let code = path.withUnsafeCString { path in
-      withExtendedLifetime(state) { state in
-        switch base {
-        case .cwd:
-          // a little faster: https://github.com/apple-oss-distributions/removefile/blob/e8685c65267b1def76a63d0fffd6d646faed795e/removefile.c#L255
-          SystemLibc.removefile(path, state.state, flags.rawValue)
-        case .directory(let baseFD):
-          SystemLibc.removefileat(baseFD.rawValue, path, state.state, flags.rawValue)
-        }
+      switch base {
+      case .cwd:
+        // a little faster: https://github.com/apple-oss-distributions/removefile/blob/e8685c65267b1def76a63d0fffd6d646faed795e/removefile.c#L255
+        SystemLibc.removefile(path, state, flags.rawValue)
+      case .directory(let baseFD):
+        SystemLibc.removefileat(baseFD.rawValue, path, state, flags.rawValue)
       }
     }
     if code != 0 {
       throw Errno.systemCurrent
+    }
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, flags: RemoveFile.Flags = []) throws(Errno) {
+    try _removeFile(path: path, relativeTo: base, state: nil, flags: flags)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, state: borrowing RemoveFile.State, flags: RemoveFile.Flags = []) throws(Errno) {
+    try withExtendedLifetime(state) { state throws(Errno) in
+      try _removeFile(path: path, relativeTo: base, state: state.state, flags: flags)
     }
   }
 
