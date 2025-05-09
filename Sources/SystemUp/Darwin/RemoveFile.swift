@@ -175,11 +175,21 @@ extension SystemCall {
 }
 
 public extension SystemCall.RemoveFile.State {
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var error: Errno {
     var e: Int32 = Memory.undefined()
     try! get(property: .errno, to: &e)
     return .init(rawValue: e)
+  }
+
+  var ftsEntry: Fts.Entry {
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    get throws {
+      let v: UnsafeMutablePointer<FTSENT> = try safeInitialize { ptr in
+        try get(property: .ftsent, to: &ptr)
+      }
+      return .init(v)
+    }
   }
 }
 
