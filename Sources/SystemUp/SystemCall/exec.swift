@@ -19,7 +19,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exec(_ executablePath: UnsafePointer<CChar>, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, searchPATH: Bool) throws -> Never {
+  static func exec(_ executablePath: UnsafePointer<CChar>, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, searchPATH: Bool) throws(Errno) -> Never {
     try SyscallUtilities.voidOrErrno {
       searchPATH ? execvp(executablePath, argv) : execv(executablePath, argv)
     }.get()
@@ -28,10 +28,12 @@ public extension SystemCall {
 
 #if os(macOS) || os(FreeBSD)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exec(_ executablePath: UnsafePointer<CChar>, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, withPATH path: UnsafePointer<CChar>) throws -> Never {
+  static func exec(_ executablePath: UnsafePointer<CChar>, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, withPATH path: UnsafePointer<CChar>) throws(Errno) -> Never {
     // searchpath must be non-nil
-    let code: Int32 = execvP(executablePath, path, argv)
-    fatalError("code should be non -1! \(code) error: \(String(cString: strerror(errno)))")
+    try SyscallUtilities.voidOrErrno {
+      execvP(executablePath, path, argv)
+    }.get()
+    fatalError()
   }
 #endif
 
