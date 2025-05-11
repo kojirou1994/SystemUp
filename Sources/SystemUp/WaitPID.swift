@@ -212,6 +212,14 @@ public extension WaitPID {
 
 }
 
+extension WaitPID.ExitStatus {
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  var isSuccess: Bool {
+    self == .exited(0)
+  }
+}
+
 extension WaitPID.ExitStatus: CustomStringConvertible {
   public var description: String {
     if exited {
