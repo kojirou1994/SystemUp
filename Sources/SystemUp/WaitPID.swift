@@ -212,7 +212,7 @@ public extension WaitPID {
 
 }
 
-extension WaitPID.ExitStatus {
+public extension WaitPID.ExitStatus {
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   var isSuccess: Bool {
