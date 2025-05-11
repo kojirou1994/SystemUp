@@ -3,7 +3,7 @@ import SystemUp
 import CUtility
 import SystemLibc
 
-public struct Command {
+public struct Command: Sendable {
 
   public let executable: String
 
@@ -22,7 +22,7 @@ public struct Command {
   public var arg0: String
   public var arguments: [String]
 
-  public enum ChildIO {
+  public enum ChildIO: Sendable {
     case inherit
     case null
     case makePipe
@@ -40,7 +40,7 @@ public struct Command {
 //  private var gui: guid_t?
   private var groups: GroupProcessID?
 
-  public enum EnvironmentSetting {
+  public enum EnvironmentSetting: Sendable {
     case null
     case inherit
     case custom(PosixEnvironment, mergeGlobal: Bool)

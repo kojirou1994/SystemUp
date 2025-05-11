@@ -2,7 +2,7 @@ import SystemLibc
 import CUtility
 import SystemPackage
 
-public struct PosixEnvironment {
+public struct PosixEnvironment: Sendable {
   public var environment: [String: String]
   public init(environment: [String: String]) {
     self.environment = environment

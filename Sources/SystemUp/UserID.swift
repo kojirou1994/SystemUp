@@ -39,7 +39,7 @@ public extension UserID {
   }
 }
 
-public struct GroupProcessID: RawRepresentable {
+public struct GroupProcessID: RawRepresentable, Sendable {
   public let rawValue: gid_t
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: gid_t) {
