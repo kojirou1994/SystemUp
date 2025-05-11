@@ -7,10 +7,16 @@ public struct Command {
 
   public let executable: String
 
-  public init(executable: String, arg0: String? = nil, arguments: [String] = .init()) {
+  public init(
+    executable: String, arg0: String? = nil, arguments: [String] = .init(),
+    stdin: ChildIO? = nil, stdout: ChildIO? = nil, stderr: ChildIO? = nil,
+  ) {
     self.executable = executable
     self.arg0 = arg0 ?? executable
     self.arguments = arguments
+    self.stdin = stdin
+    self.stdout = stdout
+    self.stderr = stderr
   }
 
   public var arg0: String
