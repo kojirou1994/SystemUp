@@ -215,11 +215,11 @@ public extension WaitPID {
 extension WaitPID.ExitStatus: CustomStringConvertible {
   public var description: String {
     if exited {
-      return "exited \(exitStatus)"
+      return "ExitStatus(exited: \(exitStatus))"
     } else if signaled {
-      return "signaled \(terminationSignal)"
+      return "ExitStatus(signaled: \(terminationSignal))"
     } else {
-      return "unknown \(rawValue)"
+      return "ExitStatus(unknown: \(rawValue))"
     }
   }
 }

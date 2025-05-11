@@ -195,3 +195,16 @@ public extension Signal {
   static var user2: Signal { .init(rawValue: SystemLibc.SIGUSR2) }
 
 }
+
+extension Signal: CustomStringConvertible {
+  public var description: String {
+    let name = switch self {
+    case .interrupt: "interrupt"
+    case .terminate: "terminate"
+    case .kill: "kill"
+    // TODO: Complete Names
+    default: "unknown"
+    }
+    return "Signal(\(name): \(rawValue))"
+  }
+}
