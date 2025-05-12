@@ -227,6 +227,7 @@ public extension PosixClock {
     }.get()
   }
 
+  #if os(macOS) || os(Linux)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func set(time: Timespec) throws(Errno) {
     // Only the CLOCK_REALTIME clock can be set, and only the superuser may do so.
@@ -237,6 +238,7 @@ public extension PosixClock {
       }
     }.get()
   }
+  #endif
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getResolution(to output: inout Timespec) throws(Errno) {

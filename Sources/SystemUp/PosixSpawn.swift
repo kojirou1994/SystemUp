@@ -1,3 +1,4 @@
+#if os(macOS) || os(iOS) || os(freeBSD) || os(Linux)
 import SystemLibc
 import SystemPackage
 import CUtility
@@ -488,3 +489,4 @@ public extension PosixSpawn.Attributes {
     flags.formUnion([.setBlockedSignals, .setSigdefault])
   }
 }
+#endif

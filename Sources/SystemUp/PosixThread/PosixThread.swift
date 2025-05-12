@@ -446,7 +446,7 @@ extension PosixThread {
 }
 
 // MARK: Darwin QOS
-#if canImport(Darwin)
+#if os(macOS) || os(iOS)
 public extension PosixThread {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> Result<Void, Errno> {

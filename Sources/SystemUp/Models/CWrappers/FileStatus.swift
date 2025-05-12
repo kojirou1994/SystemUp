@@ -2,7 +2,7 @@ import SystemPackage
 import SystemLibc
 import CUtility
 
-public struct FileStatus {
+public struct FileStatus: BitwiseCopyable {
 
   public var rawValue: stat
 }

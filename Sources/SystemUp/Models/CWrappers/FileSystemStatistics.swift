@@ -2,7 +2,7 @@ import SystemLibc
 import CSystemUp
 import CUtility
 
-public struct FileSystemStatistics {
+public struct FileSystemStatistics: BitwiseCopyable {
   /// the c struct
   public var rawValue: statfs
 }

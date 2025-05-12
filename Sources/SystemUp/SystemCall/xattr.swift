@@ -7,12 +7,12 @@ public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func listXattrNames(_ path: UnsafePointer<CChar>, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
-    #if os(macOS) || os(iOS)
+    #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
     let buffer = mode.toC
     return SyscallUtilities.valueOrErrno { () -> Int in
-      #if os(macOS) || os(iOS)
+      #if canImport(Darwin)
       return listxattr(path, buffer.baseAddress, buffer.count, options.rawValue)
       #elseif os(Linux)
       if options.contains(.noFollow) {
@@ -28,7 +28,7 @@ public extension SystemCall {
   static func listXattrNames(_ fd: FileDescriptor, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     let buffer = mode.toC
     return SyscallUtilities.valueOrErrno { () -> Int in
-      #if os(macOS) || os(iOS)
+      #if canImport(Darwin)
       flistxattr(fd.rawValue, buffer.baseAddress, buffer.count, options.rawValue)
       #elseif os(Linux)
       flistxattr(fd.rawValue, buffer.baseAddress, buffer.count)
@@ -38,12 +38,12 @@ public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func getXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
-    #if os(macOS) || os(iOS)
+    #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
     let buffer = mode.toC
     return SyscallUtilities.valueOrErrno { () -> Int in
-      #if os(macOS) || os(iOS)
+      #if canImport(Darwin)
       return getxattr(path, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
       #elseif os(Linux)
       if options.contains(.noFollow) {
@@ -57,12 +57,12 @@ public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func getXattr(_ fd: FileDescriptor, attributeName: UnsafePointer<CChar>, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
-    #if os(macOS) || os(iOS)
+    #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
     let buffer = mode.toC
     return SyscallUtilities.valueOrErrno { () -> Int in
-      #if os(macOS) || os(iOS)
+      #if canImport(Darwin)
       fgetxattr(fd.rawValue, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
       #elseif os(Linux)
       fgetxattr(fd.rawValue, attributeName, buffer.baseAddress!, buffer.count)
@@ -81,7 +81,7 @@ public extension SystemCall {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
     return value.withUnsafeBytes { buffer in
       SyscallUtilities.voidOrErrno { () -> Int32 in
-        #if os(macOS) || os(iOS)
+        #if canImport(Darwin)
         return setxattr(path, attributeName, buffer.baseAddress, buffer.count, 0, options.rawValue)
         #elseif os(Linux)
         if options.contains(.noFollow) {
@@ -94,7 +94,7 @@ public extension SystemCall {
     }
   }
 
-  #if os(macOS) || os(iOS)
+  #if canImport(Darwin)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func setXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, value: some ContiguousBytes, position: UInt32, options: Xattr.Options) -> Result<Void, Errno> {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
@@ -108,11 +108,11 @@ public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func removeXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, options: Xattr.Options) -> Result<Void, Errno> {
-    #if os(macOS) || os(iOS)
+    #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
     return SyscallUtilities.voidOrErrno { () -> Int32 in
-      #if os(macOS) || os(iOS)
+      #if canImport(Darwin)
       return removexattr(path, attributeName, options.rawValue)
       #elseif os(Linux)
       if options.contains(.noFollow) {
@@ -127,7 +127,7 @@ public extension SystemCall {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func removeXattr(_ fd: FileDescriptor, attributeName: UnsafePointer<CChar>, options: Xattr.Options) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno { () -> Int32 in
-      #if os(macOS) || os(iOS)
+      #if canImport(Darwin)
       fremovexattr(fd.rawValue, attributeName, options.rawValue)
       #elseif os(Linux)
       fremovexattr(fd.rawValue, attributeName)
@@ -268,7 +268,7 @@ extension Xattr {
     /// Don't follow symbolic links
     @_alwaysEmitIntoClient
     public static var noFollow: Self {
-      #if os(macOS) || os(iOS)
+      #if canImport(Darwin)
       Self(rawValue: XATTR_NOFOLLOW)
       #else
       Self(rawValue: 1 << 16) /* not standard! */
@@ -283,7 +283,7 @@ extension Xattr {
     @_alwaysEmitIntoClient
     public static var replace: Self { Self(rawValue: Int32(XATTR_REPLACE)) }
 
-    #if os(macOS) || os(iOS)
+    #if canImport(Darwin)
     /// option for f/getxattr() and f/listxattr() to expose the HFS Compression extended attributes
     @_alwaysEmitIntoClient
     public static var showCompression: Self { Self(rawValue: XATTR_SHOWCOMPRESSION) }
@@ -298,7 +298,7 @@ extension Xattr {
      */
   }
 
-  #if os(macOS) || os(iOS)
+  #if canImport(Darwin)
   @_alwaysEmitIntoClient
   public static var maxNameLength: Int32 { XATTR_MAXNAMELEN }
 

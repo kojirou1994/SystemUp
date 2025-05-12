@@ -2,7 +2,7 @@ import CUtility
 import SystemLibc
 
 /// POSIX filesystem information
-public struct FileSystemInformation {
+public struct FileSystemInformation: BitwiseCopyable {
   public var rawValue: statvfs
 }
 
