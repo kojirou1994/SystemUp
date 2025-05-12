@@ -29,12 +29,12 @@ public func withFixedCVarArgs<R>(_ args: [CVarArg], startIndex: Int = 0, _ body:
 }
 
 // MARK: Output
-public extension LazyCopiedCString {
-  convenience init(format: UnsafePointer<CChar>, _ args: CVarArg...) throws(Errno) {
+public extension DynamicCStringWithLength {
+  init(format: UnsafePointer<CChar>, _ args: CVarArg...) throws(Errno) {
     try self.init(format: format, arguments: args)
   }
 
-  convenience init(format: UnsafePointer<CChar>, arguments: [CVarArg]) throws(Errno) {
+  init(format: UnsafePointer<CChar>, arguments: [CVarArg]) throws(Errno) {
     check(args: arguments)
     var length: Int32 = 0
     let cString = try safeInitialize { str throws(Errno) in
@@ -45,7 +45,7 @@ public extension LazyCopiedCString {
         throw Errno.noMemory
       }
     }
-    self.init(cString: cString, forceLength: Int(length), freeWhenDone: true)
+    self.init(cString: .init(cString: cString), forceLength: Int(length))
   }
 }
 

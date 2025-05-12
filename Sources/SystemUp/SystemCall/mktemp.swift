@@ -3,6 +3,18 @@ import SystemPackage
 import CUtility
 
 public extension SystemCall {
+
+  struct TemporaryFileInfo: ~Copyable {
+    public let fd: FileDescriptor
+    public let filename: DynamicCString
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public init(fd: FileDescriptor, filename: consuming DynamicCString) {
+      self.fd = fd
+      self.filename = filename
+    }
+  }
+
   /// create a unique temporary opened file
   /// - Parameters:
   ///   - template: template string
@@ -10,19 +22,15 @@ public extension SystemCall {
   ///   - options: open options for file
   /// - Returns: file descriptor and generated filename string
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func createTemporaryFile(template: UnsafePointer<CChar>, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) -> Result<(FileDescriptor, LazyCopiedCString), Errno> {
+  static func createTemporaryFile(template: borrowing some CStringConvertible & ~Copyable, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) throws(Errno) -> TemporaryFileInfo  {
     var template = DynamicCString.copy(cString: template)
-    switch createTemporaryFile(template: &template, suffixLength: suffixLength, options: options) {
-    case .success(let fd):
-      return .success((fd, LazyCopiedCString(cString: template.take(), freeWhenDone: true)))
-    case .failure(let error):
-      return .failure(error)
-    }
+    let fd = try createTemporaryFile(template: &template, suffixLength: suffixLength, options: options)
+    return .init(fd: fd, filename: template)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func createTemporaryFile(template: inout DynamicCString, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) -> Result<FileDescriptor, Errno> {
-    SyscallUtilities.valueOrErrno {
+  static func createTemporaryFile(template: inout DynamicCString, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) throws(Errno) -> FileDescriptor {
+    try SyscallUtilities.valueOrErrno {
       template.withMutableCString { template in
         switch (suffixLength, options) {
         case (.none, .none):
@@ -35,7 +43,7 @@ public extension SystemCall {
           SystemLibc.mkostemp(template, options.rawValue)
         }
       }
-    }.map(FileDescriptor.init)
+    }.map(FileDescriptor.init).get()
   }
 
   @available(*, deprecated)
