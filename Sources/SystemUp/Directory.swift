@@ -153,7 +153,7 @@ extension Directory {
 
     @_alwaysEmitIntoClient
     public var seekOffset: CInterop.UpSeekOffset {
-      #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+      #if canImport(Darwin)
       return entry.pointee.d_seekoff
       #else
       return entry.pointee.d_off

@@ -2,19 +2,19 @@ import SystemPackage
 import CSystemUp
 
 public extension CInterop {
-  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+  #if canImport(Darwin)
   typealias UpInodeNumber = UInt64
   #elseif os(Linux)
   typealias UpInodeNumber = ino_t
   #endif
 
-  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+  #if canImport(Darwin)
   typealias UpSeekOffset = UInt64
   #elseif os(Linux)
   typealias UpSeekOffset = off_t
   #endif
 
-  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+  #if canImport(Darwin)
   typealias UpSize = Int64
   #elseif os(Linux)
   typealias UpSize = off_t
