@@ -5,13 +5,27 @@ extension FilePath: @retroactive CStringConvertible {
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   public func withUnsafeCString<R, E>(_ body: (UnsafePointer<CChar>) throws(E) -> R) throws(E) -> R where E : Error, R : ~Copyable {
-    try safeInitialize { (result: inout Result<R, E>?) in
-      withCString { cString in
-        result = .init { () throws(E) -> R in
-          try body(cString)
-        }
+    var v: R!
+    try toTypedThrows(E.self) {
+      try withCString { cString in
+        v = try body(cString)
       }
-    }.get()
+    }
+    return v
+  }
+}
+
+extension FilePath: @retroactive ContiguousUTF8Bytes {
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  public func withContiguousUTF8Bytes<R, E>(_ body: (UnsafeRawBufferPointer) throws(E) -> R) throws(E) -> R where E : Error, R : ~Copyable {
+    var v: R!
+    try toTypedThrows(E.self) {
+      try withCString { cString in
+        v = try body(.init(start: cString, count: self.length))
+      }
+    }
+    return v
   }
 }
 

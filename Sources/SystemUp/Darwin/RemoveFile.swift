@@ -32,6 +32,7 @@ public extension SystemCall {
       }
     }
     if code != 0 {
+      assert(code < 0, "from man page")
       throw Errno.systemCurrent
     }
   }
