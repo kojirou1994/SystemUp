@@ -107,14 +107,14 @@ public struct SocketAddress: ~Copyable {
 
   #if canImport(Darwin)
   /// total length
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public var length: UInt8 {
     rawAddress.pointee.sa_len
   }
   #endif
 
   /// address family
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public var addressFamily: AddressFamily {
     get { .init(rawValue: rawAddress.pointee.sa_family) }
     set { rawAddress.pointee.sa_family = sa_family_t(newValue.rawValue) }
@@ -123,6 +123,7 @@ public struct SocketAddress: ~Copyable {
   public struct IPV4 {
     @usableFromInline
     internal var rawValue: sockaddr_in
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() {
       self.rawValue = .init()
       rawValue.sin_family = sa_family_t(AF_INET)
@@ -142,6 +143,7 @@ public struct SocketAddress: ~Copyable {
     internal var rawValue: sockaddr_un
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func withTempGenericBuf<R: ~Copyable, E: Error>(_ body: (inout SocketAddress, _ length: UInt32) throws(E) -> R) throws(E) -> R {
     try toTypedThrows(E.self) {
       try withUnsafeTemporaryAllocation(of: sockaddr_storage.self, capacity: 1) { buf in
@@ -152,16 +154,19 @@ public struct SocketAddress: ~Copyable {
     }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func asIPV4<R: ~Copyable, E: Error>(_ body: (IPV4) throws(E) -> R) throws(E) -> R {
     assert(addressFamily == .inet)
     return try body(UnsafeRawPointer(rawAddress).assumingMemoryBound(to: IPV4.self).pointee)
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func asIPV6<R: ~Copyable, E: Error>(_ body: (IPV6) throws(E) -> R) throws(E) -> R {
     assert(addressFamily == .inet6)
     return try body(UnsafeRawPointer(rawAddress).assumingMemoryBound(to: IPV6.self).pointee)
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func asUnix<R: ~Copyable, E: Error>(_ body: (Unix) throws(E) -> R) throws(E) -> R {
     assert(addressFamily == .unix)
     return try body(UnsafeRawPointer(rawAddress).assumingMemoryBound(to: Unix.self).pointee)
@@ -173,26 +178,26 @@ public extension SocketAddress.IPV4 {
 
   #if canImport(Darwin)
   /// total length
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var length: UInt8 {
     rawValue.sin_len
   }
   #endif
 
   /// address family
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var addressFamily: AddressFamily {
     assert(rawValue.sin_family == AF_INET)
     return .init(rawValue: rawValue.sin_family)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var port: NetworkByteOrderInteger<UInt16> {
     get { .init(rawValue.sin_port) }
     set { rawValue.sin_port = newValue.value }
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var address: InternetAddress {
     get { .init(rawValue: rawValue.sin_addr) }
     set { rawValue.sin_addr = newValue.rawValue }
@@ -203,35 +208,35 @@ public extension SocketAddress.IPV6 {
 
   #if canImport(Darwin)
   /// total length
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var length: UInt8 {
     rawValue.sin6_len
   }
   #endif
 
   /// address family
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var addressFamily: AddressFamily {
     assert(rawValue.sin6_family == AF_INET6)
     return .init(rawValue: rawValue.sin6_family)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var port: NetworkByteOrderInteger<UInt16> {
     .init(rawValue.sin6_port)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var flowinfo: UInt32 {
     rawValue.sin6_flowinfo
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var address: InternetAddress6 {
     .init(rawValue: rawValue.sin6_addr)
   }
 
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var scopeID: UInt32 {
     rawValue.sin6_scope_id
   }
@@ -241,14 +246,14 @@ public extension SocketAddress.Unix {
 
   #if canImport(Darwin)
   /// total length
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var length: UInt8 {
     rawValue.sun_len
   }
   #endif
 
   /// address family
-  @_alwaysEmitIntoClient
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   var addressFamily: AddressFamily {
     assert(rawValue.sun_family == AF_UNIX)
     return .init(rawValue: rawValue.sun_family)
@@ -256,18 +261,21 @@ public extension SocketAddress.Unix {
 }
 
 public extension SocketAddress.IPV4 {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func asSocket<R: ~Copyable, E: Error>(_ body: (borrowing SocketAddress, _ length: UInt32) throws(E) -> R) throws(E) -> R {
     try body(.init(&rawValue), UInt32((MemoryLayout<sockaddr_in>.size)))
   }
 }
 
 public extension SocketAddress.IPV6 {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func asSocket<R: ~Copyable, E: Error>(_ body: (borrowing SocketAddress, _ length: UInt32) throws(E) -> R) throws(E) -> R {
     try body(.init(&rawValue), UInt32((MemoryLayout<sockaddr_in6>.size)))
   }
 }
 
 public extension SocketAddress.Unix {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   mutating func asSocket<R: ~Copyable, E: Error>(_ body: (borrowing SocketAddress, _ length: UInt32) throws(E) -> R) throws(E) -> R {
     try body(.init(&rawValue), UInt32((MemoryLayout<sockaddr_un>.size)))
   }
@@ -316,12 +324,16 @@ public extension SocketAddress {
     public static var nameRequired: Self { .init(macroValue: SystemLibc.NI_NAMEREQD) }
     @_alwaysEmitIntoClient
     public static var numericFormService: Self { .init(macroValue: SystemLibc.NI_NUMERICSERV) }
+
+    #if canImport(Darwin) || os(FreeBSD)
     @_alwaysEmitIntoClient
     public static var numericScope: Self { .init(macroValue: SystemLibc.NI_NUMERICSCOPE) }
     @_alwaysEmitIntoClient
-    public static var datagramBasedService: Self { .init(macroValue: SystemLibc.NI_DGRAM) }
-    @_alwaysEmitIntoClient
     public static var withScopeID: Self { .init(macroValue: SystemLibc.NI_WITHSCOPEID) }
+    #endif
+
+    @_alwaysEmitIntoClient
+    public static var datagramBasedService: Self { .init(macroValue: SystemLibc.NI_DGRAM) }
 
     @_alwaysEmitIntoClient
     public static var maxHostLength: Int32 { NI_MAXHOST }
@@ -329,10 +341,17 @@ public extension SocketAddress {
     public static var maxServiceLength: Int32 { NI_MAXSERV }
   }
 
-  @_alwaysEmitIntoClient
+  #if canImport(Darwin)
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getnameinfo(host: UnsafeMutableBufferPointer<CChar>, serv: UnsafeMutableBufferPointer<CChar>, flags: GetNameInfoFlags) throws(Errno) {
+    try getnameinfo(length: UInt32(self.length), host: host, serv: serv, flags: flags)
+  }
+  #endif
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func getnameinfo(length: UInt32, host: UnsafeMutableBufferPointer<CChar>, serv: UnsafeMutableBufferPointer<CChar>, flags: GetNameInfoFlags) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      SystemLibc.getnameinfo(rawAddress, socklen_t(length), host.baseAddress, socklen_t(host.count), serv.baseAddress, socklen_t(serv.count), flags.rawValue)
+      SystemLibc.getnameinfo(rawAddress, length, host.baseAddress, socklen_t(host.count), serv.baseAddress, socklen_t(serv.count), flags.rawValue)
     }.get()
   }
 }

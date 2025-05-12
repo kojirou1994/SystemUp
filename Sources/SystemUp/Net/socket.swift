@@ -1,4 +1,5 @@
 import SystemPackage
+import CUtility
 import SystemLibc
 
 public struct SocketDescriptor {
@@ -116,13 +117,23 @@ public extension SocketDescriptor {
   }
 }
 
-public struct SocketType: RawRepresentable, Hashable {
-  public let rawValue: Int32
-
+public struct SocketType {
   @_alwaysEmitIntoClient
-  public init(rawValue: Int32) {
+  private let rawValue: Int32
+
+  #if canImport(Darwin)
+  @_alwaysEmitIntoClient
+  internal init(rawValue: Int32) {
     self.rawValue = rawValue
   }
+  #elseif os(Linux)
+  @_alwaysEmitIntoClient
+  internal init(rawValue: __socket_type) {
+    self.rawValue = numericCast(rawValue.rawValue)
+  }
+  #endif
+
+
 
   @_alwaysEmitIntoClient
   public static var stream: Self { .init(rawValue: SystemLibc.SOCK_STREAM) }
@@ -136,7 +147,7 @@ public struct SocketType: RawRepresentable, Hashable {
   public static var sequencedPacketStream: Self { .init(rawValue: SystemLibc.SOCK_SEQPACKET) }
 }
 
-public struct IPProtocol: RawRepresentable, Hashable {
+public struct IPProtocol: MacroRawRepresentable, Hashable {
   public let rawValue: Int32
 
   @_alwaysEmitIntoClient
@@ -145,7 +156,7 @@ public struct IPProtocol: RawRepresentable, Hashable {
   }
 
   @_alwaysEmitIntoClient
-  public static var dup: Self { .init(rawValue: SystemLibc.IPPROTO_UDP) }
+  public static var dup: Self { .init(macroValue: SystemLibc.IPPROTO_UDP) }
   @_alwaysEmitIntoClient
-  public static var tcp: Self { .init(rawValue: SystemLibc.IPPROTO_TCP) }
+  public static var tcp: Self { .init(macroValue: SystemLibc.IPPROTO_TCP) }
 }

@@ -30,12 +30,14 @@ public struct Flags: RawRepresentable, Hashable {
   public static var passive: Self { .init(rawValue: SystemLibc.AI_PASSIVE) }
   @_alwaysEmitIntoClient
   public static var v4Mapped: Self { .init(rawValue: SystemLibc.AI_V4MAPPED) }
+  #if canImport(Darwin)
   @_alwaysEmitIntoClient
   public static var v4MappedCRF: Self { .init(rawValue: SystemLibc.AI_V4MAPPED_CFG) }
   @_alwaysEmitIntoClient
   public static var `default`: Self { .init(rawValue: SystemLibc.AI_DEFAULT) }
   @_alwaysEmitIntoClient
   public static var unusable: Self { .init(rawValue: SystemLibc.AI_UNUSABLE) }
+  #endif
 }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
