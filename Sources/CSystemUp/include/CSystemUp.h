@@ -3,6 +3,7 @@
 #include <fts.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h>
+#include <arpa/inet.h>
 
 #ifdef __linux__
 
