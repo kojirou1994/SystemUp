@@ -438,6 +438,7 @@ public extension InternetAddress {
 }
 
 public extension InternetAddress {
+  @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   var string: String {
     .init(unsafeUninitializedCapacity: Int(INET_ADDRSTRLEN)) { buffer in
 //      try! assertNoThrow {
@@ -452,6 +453,7 @@ public extension InternetAddress {
 }
 
 public extension InternetAddress6 {
+  @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   var string: String {
     .init(unsafeUninitializedCapacity: Int(INET6_ADDRSTRLEN)) { buffer in
 //      try! assertNoThrow {
