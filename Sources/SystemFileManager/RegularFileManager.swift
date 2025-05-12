@@ -3,7 +3,7 @@ import SystemPackage
 
 public enum RegularFileManager {
   /// src must be regular file, dst must not exist, dst is deleted if failure
-  public static func slowCopyFile(src: FilePath, dst: FilePath) throws {
+  public static func slowCopyFile(src: FilePath, dst: FilePath, bufferSize: Int = 4096) throws {
     let inFD = try FileDescriptor.open(src, .readOnly)
     defer {
       try? inFD.close()
@@ -17,7 +17,7 @@ public enum RegularFileManager {
     }
 
     do {
-      try withUnsafeTemporaryAllocation(byteCount: 4096, alignment: MemoryLayout<UInt>.alignment) { buffer in
+      try withUnsafeTemporaryAllocation(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer in
         while case let length = try inFD.read(into: buffer), length > 0 {
           try outFD.writeAll(UnsafeRawBufferPointer(rebasing: buffer.prefix(length)))
         }
