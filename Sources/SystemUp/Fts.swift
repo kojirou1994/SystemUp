@@ -3,7 +3,7 @@ import CUtility
 import SystemLibc
 
 public struct Fts: ~Copyable {
-  @usableFromInline
+  @_alwaysEmitIntoClient
   internal init(_ handle: UnsafeMutablePointer<FTS>) {
     self.handle = handle
   }
@@ -12,47 +12,44 @@ public struct Fts: ~Copyable {
   internal let handle: UnsafeMutablePointer<FTS>
 
   @_alwaysEmitIntoClient
-  public static func open(path: some CStringConvertible, options: OpenOptions) throws(Errno) -> Self {
-    try .init(withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
-      path.withUnsafeCString { path in
-        array[0] = .init(mutating: path)
-        array[1] = nil
-        return _fts_open(array.baseAddress, options)
-      }
-    }.get())
-  }
-
-  public static func open<C: Collection>(paths: C, options: OpenOptions) throws(Errno) -> Self where C.Element == FilePath {
-    assert(!paths.isEmpty, "will crash")
-    return try .init(withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: paths.count + 1) { array in
-      paths.enumerated().forEach { offset, path in
-        path.withPlatformString { path in
-          array[offset] = .init(mutating: path)
+  public static func open(path: borrowing some CStringConvertible & ~Copyable, options: OpenOptions) throws(Errno) -> Self {
+    try toTypedThrows(Errno.self) {
+      try withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
+        try path.withUnsafeCString { path in
+          array[0] = .init(mutating: path)
+          array[1] = nil
+          return try ftsOpen(array.baseAddress.unsafelyUnwrapped, options)
         }
       }
-      array[paths.count] = nil
-      return _fts_open(array.baseAddress, options)
-    }.get())
+    }
+  }
+
+  /// empty paths will crash
+  @_alwaysEmitIntoClient
+  public static func open(paths: some Sequence<some ContiguousUTF8Bytes>, options: OpenOptions) throws(Errno) -> Self {
+    try withTempUnsafeCStringArray(paths) { argv throws(Errno) in
+      try ftsOpen(argv, options)
+    }
   }
 
   @_alwaysEmitIntoClient
   public static func open(paths: borrowing CStringArray, options: OpenOptions) throws(Errno) -> Self {
-    try .init(paths.withUnsafeCArrayPointer { array in
-      _fts_open(array, options)
-    }.get())
-  }
-
-  @usableFromInline
-  internal static func _fts_open(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>?, _ options: OpenOptions) -> Result<UnsafeMutablePointer<FTS>, Errno> {
-    assert(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
-
-    return SyscallUtilities.unwrap {
-      fts_open(array, options.rawValue, nil)
+    try paths.withUnsafeCArrayPointer { array throws(Errno) in
+      try ftsOpen(array, options)
     }
   }
 
-  @usableFromInline
-  internal func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws(Errno) -> Fts.Entry? {
+  @_alwaysEmitIntoClient
+  public static func ftsOpen(_ array: UnsafePointer<UnsafeMutablePointer<CChar>?>, _ options: OpenOptions) throws(Errno) -> Self {
+    assert(options.contains(.logical) || options.contains(.physical), "at least one of which (either FTS_LOGICAL or FTS_PHYSICAL) must be specified")
+
+    return .init(try SyscallUtilities.unwrap {
+      fts_open(array, options.rawValue, nil)
+    }.get())
+  }
+
+  @_alwaysEmitIntoClient
+  private func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws(Errno) -> Fts.Entry? {
     if let ptr = ptr {
       return .init(ptr)
     }
@@ -193,12 +190,14 @@ extension Fts {
     public var info: Info {
       .init(rawValue: ptr.pointee.fts_info)
     }
-
+    
+    /// A path for accessing the file from the current directory.
     @_alwaysEmitIntoClient
     public var pathToCurrentDirectory: FilePath {
       .init(platformString: ptr.pointee.fts_accpath)
     }
-
+    
+    /// The path for the file relative to the root of the traversal.  This path contains the path specified to fts_open() as a prefix.
     @_alwaysEmitIntoClient
     public var path: FilePath {
       .init(platformString: ptr.pointee.fts_path)
@@ -273,13 +272,13 @@ extension Fts {
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public var inode: ino_t {
+    public var inode: CInterop.UpInodeNumber {
       ptr.pointee.fts_ino
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public var device: dev_t {
-      ptr.pointee.fts_dev
+    public var device: DeviceID {
+      .init(rawValue: ptr.pointee.fts_dev)
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
