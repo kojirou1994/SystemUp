@@ -438,9 +438,14 @@ public extension InternetAddress {
 }
 
 public extension InternetAddress {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var stringLength: Int {
+    Int(INET_ADDRSTRLEN)
+  }
+
   @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   var string: String {
-    .init(unsafeUninitializedCapacity: Int(INET_ADDRSTRLEN)) { buffer in
+    .init(unsafeUninitializedCapacity: stringLength) { buffer in
 //      try! assertNoThrow {
         try! buffer.withMemoryRebound(to: CChar.self) { buffer in
           try InetConvertion.NetworkByteOrder.convert(self, to: buffer)
@@ -453,9 +458,14 @@ public extension InternetAddress {
 }
 
 public extension InternetAddress6 {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var stringLength: Int {
+    Int(INET6_ADDRSTRLEN)
+  }
+
   @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   var string: String {
-    .init(unsafeUninitializedCapacity: Int(INET6_ADDRSTRLEN)) { buffer in
+    .init(unsafeUninitializedCapacity: stringLength) { buffer in
 //      try! assertNoThrow {
         try! buffer.withMemoryRebound(to: CChar.self) { buffer in
           try InetConvertion.NetworkByteOrder.convert(self, to: buffer)
