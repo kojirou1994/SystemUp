@@ -177,7 +177,7 @@ extension Directory {
 
     /// is "." or ".."
     @_alwaysEmitIntoClient
-    internal var isDot: Bool {
+    public var isDot: Bool {
       let point = UInt8(ascii: ".")
       return (entry.pointee.d_name.0 == point && entry.pointee.d_name.1 == 0)
       || (entry.pointee.d_name.0 == point && entry.pointee.d_name.1 == point && entry.pointee.d_name.2 == 0)

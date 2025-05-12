@@ -72,7 +72,7 @@ public struct Fts: ~Copyable {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public func set(entry: Fts.Entry, option: SetOption) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      fts_set(handle, entry.ptr, option.rawValue)
+      fts_set(handle, entry.rawAddress, option.rawValue)
     }.get()
   }
 
@@ -179,28 +179,28 @@ extension Fts {
 
   public struct Entry: Equatable {
     @usableFromInline
-    internal init(_ ptr: UnsafeMutablePointer<FTSENT>) {
-      self.ptr = ptr
+    internal init(_ rawAddress: UnsafeMutablePointer<FTSENT>) {
+      self.rawAddress = rawAddress
     }
 
     @usableFromInline
-    internal let ptr: UnsafeMutablePointer<FTSENT>
+    internal let rawAddress: UnsafeMutablePointer<FTSENT>
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var info: Info {
-      .init(rawValue: ptr.pointee.fts_info)
+      .init(rawValue: rawAddress.pointee.fts_info)
     }
     
     /// A path for accessing the file from the current directory.
     @_alwaysEmitIntoClient
     public var pathToCurrentDirectory: FilePath {
-      .init(platformString: ptr.pointee.fts_accpath)
+      .init(platformString: rawAddress.pointee.fts_accpath)
     }
     
     /// The path for the file relative to the root of the traversal.  This path contains the path specified to fts_open() as a prefix.
     @_alwaysEmitIntoClient
     public var path: FilePath {
-      .init(platformString: ptr.pointee.fts_path)
+      .init(platformString: rawAddress.pointee.fts_path)
     }
 
     @_alwaysEmitIntoClient
@@ -208,33 +208,38 @@ extension Fts {
       #if compiler(<5.7)
       .init(cString: &ptr.pointee.fts_name)
       #else
-      .init(cString: ptr.pointer(to: \.fts_name).unsafelyUnwrapped)
+      .init(cString: rawAddress.pointer(to: \.fts_name).unsafelyUnwrapped)
       #endif
+    }
+
+    @_alwaysEmitIntoClient
+    public var isHidden: Bool {
+      rawAddress.pointee.fts_name == UInt8(ascii: ".")
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var nameLength: UInt16 {
-      ptr.pointee.fts_namelen
+      rawAddress.pointee.fts_namelen
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var level: Int16 {
-      ptr.pointee.fts_level
+      rawAddress.pointee.fts_level
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var errno: Errno? {
-      ptr.pointee.fts_errno == 0 ? nil : .init(rawValue: ptr.pointee.fts_errno)
+      rawAddress.pointee.fts_errno == 0 ? nil : .init(rawValue: rawAddress.pointee.fts_errno)
     }
 
     /// local numeric value
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var number: Int {
       get {
-        ptr.pointee.fts_number
+        rawAddress.pointee.fts_number
       }
       nonmutating _modify {
-        yield &ptr.pointee.fts_number
+        yield &rawAddress.pointee.fts_number
       }
     }
 
@@ -242,53 +247,53 @@ extension Fts {
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var pointer: UnsafeMutableRawPointer? {
       get {
-        ptr.pointee.fts_pointer
+        rawAddress.pointee.fts_pointer
       }
       nonmutating _modify {
-        yield &ptr.pointee.fts_pointer
+        yield &rawAddress.pointee.fts_pointer
       }
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var parentDirectory: Self {
-      .init(ptr.pointee.fts_parent)
+      .init(rawAddress.pointee.fts_parent)
     }
 
     /// next file in directory
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var nextFile: Self? {
-      ptr.pointee.fts_link.map { .init($0) }
+      rawAddress.pointee.fts_link.map { .init($0) }
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var cycleNode: Self? {
-      ptr.pointee.fts_cycle.map { .init($0) }
+      rawAddress.pointee.fts_cycle.map { .init($0) }
     }
 
     /// fd for symlink or chdir
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var symbolicFileDescriptor: FileDescriptor {
-      .init(rawValue: ptr.pointee.fts_symfd)
+      .init(rawValue: rawAddress.pointee.fts_symfd)
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var inode: CInterop.UpInodeNumber {
-      ptr.pointee.fts_ino
+      rawAddress.pointee.fts_ino
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var device: DeviceID {
-      .init(rawValue: ptr.pointee.fts_dev)
+      .init(rawValue: rawAddress.pointee.fts_dev)
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var linkCount: CInterop.UpNumberOfLinks {
-      ptr.pointee.fts_nlink
+      rawAddress.pointee.fts_nlink
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var fileStatus: UnsafePointer<FileStatus>? {
-      .init(OpaquePointer(ptr.pointee.fts_statp))
+      .init(OpaquePointer(rawAddress.pointee.fts_statp))
     }
 
   }
@@ -406,7 +411,7 @@ extension Fts {
 
 extension Fts.Entry: CustomStringConvertible {
   public var description: String {
-    "\(String(describing: Self.self))(ptr: \(ptr), name: \(name), level: \(level))"
+    "\(String(describing: Self.self))(ptr: \(rawAddress), name: \(name), level: \(level))"
   }
 }
 
