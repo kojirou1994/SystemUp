@@ -121,12 +121,11 @@ public struct SocketType {
   @_alwaysEmitIntoClient
   internal let rawValue: Int32
 
-  #if canImport(Darwin)
   @_alwaysEmitIntoClient
   internal init(rawValue: Int32) {
     self.rawValue = rawValue
   }
-  #elseif os(Linux)
+  #if os(Linux)
   @_alwaysEmitIntoClient
   internal init(rawValue: __socket_type) {
     self.rawValue = numericCast(rawValue.rawValue)
