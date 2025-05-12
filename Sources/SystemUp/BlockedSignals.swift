@@ -64,3 +64,21 @@ public enum BlockedSignals {
     }
   }
 }
+
+// MARK: Helper
+
+public extension BlockedSignals {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func restoreAfter<R: ~Copyable, E: Error>(newValue: consuming SignalSet = .empty, _ body: () throws(E) -> R) throws(E) -> R {
+    var oldsig: SignalSet = Memory.undefined()
+    self.manipulate(method: .replace, value: newValue, oldOutput: &oldsig)
+    defer {
+      self.manipulate(method: .replace, value: oldsig)
+    }
+    do {
+      return try body()
+    } catch {
+      throw error
+    }
+  }
+}
