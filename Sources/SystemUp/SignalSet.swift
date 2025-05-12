@@ -77,3 +77,21 @@ public extension SignalSet {
   }
 
 }
+
+
+// MARK: Helper
+public extension SignalSet {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static var all: Self {
+    var v: Self = Memory.undefined()
+    v.fillAll()
+    return v
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static var empty: Self {
+    var v: Self = Memory.undefined()
+    v.removeAll()
+    return v
+  }
+}
