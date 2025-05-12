@@ -119,7 +119,7 @@ public extension SocketDescriptor {
 
 public struct SocketType {
   @_alwaysEmitIntoClient
-  private let rawValue: Int32
+  internal let rawValue: Int32
 
   #if canImport(Darwin)
   @_alwaysEmitIntoClient
@@ -132,8 +132,6 @@ public struct SocketType {
     self.rawValue = numericCast(rawValue.rawValue)
   }
   #endif
-
-
 
   @_alwaysEmitIntoClient
   public static var stream: Self { .init(rawValue: SystemLibc.SOCK_STREAM) }
