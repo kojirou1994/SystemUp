@@ -15,7 +15,8 @@ extension SystemCall {
     /// File descriptor to poll.
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var fd: FileDescriptor {
-      .init(rawValue: rawValue.fd)
+      get { .init(rawValue: rawValue.fd) }
+      set { rawValue.fd = newValue.rawValue }
     }
 
     /// Events to poll for.
@@ -28,7 +29,7 @@ extension SystemCall {
     /// Events which may occur or have occurred.
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var returnedEvents: Events {
-      .init(rawValue: rawValue.events)
+      .init(rawValue: rawValue.revents)
     }
 
     public struct Events: OptionSet, MacroRawRepresentable {
@@ -80,13 +81,13 @@ extension SystemCall {
 
   /// return nil if the time limit expires
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func poll(fds: UnsafeMutableBufferPointer<PollFD>, timeout: PollTimeout) throws(Errno) -> FileDescriptor? {
+  public static func poll(fds: UnsafeMutableBufferPointer<PollFD>, timeout: PollTimeout) throws(Errno) -> Int32? {
     precondition(MemoryLayout<PollFD>.stride == MemoryLayout<pollfd>.stride)
     let ret = SystemLibc.poll(UnsafeMutableRawPointer(fds.baseAddress)?.assumingMemoryBound(to: pollfd.self), numericCast(fds.count), timeout.milliseconds)
     switch ret {
     case -1: throw .systemCurrent
     case 0: return nil
-    default: return .init(rawValue: ret)
+    default: return ret
     }
   }
 }
