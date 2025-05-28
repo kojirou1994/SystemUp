@@ -280,35 +280,18 @@ extension Command {
 
     public mutating func waitOutput() throws -> Output {
       var stdout: [UInt8] = []
-      nonisolated(unsafe) var stderr: [UInt8] = []
+      var stderr: [UInt8] = []
 
-      switch (self.stdout, self.stderr) {
-      case (let out?, let err?):
-        nonisolated(unsafe) var errError: Error?
-        let errThread = try PosixThread.create {
-          do {
-            try readAll(fd: err, dst: &stderr)
-          } catch {
-            print("error output thread error: \(error)")
-            errError = error
-          }
+      try withUnsafeTemporaryAllocation(byteCount: 4096, alignment: MemoryLayout<Int>.alignment) { buffer in
+        switch (self.stdout, self.stderr) {
+        case (let out?, let err?):
+          try Command.collectOutput(p1: out, v1: &stdout, p2: err, v2: &stderr, buffer: buffer)
+        case (let out?, .none):
+          try readAllBlocked(fd: out, dst: &stdout, buffer: buffer)
+        case (.none, let err?):
+          try readAllBlocked(fd: err, dst: &stderr, buffer: buffer)
+        case (.none, .none): break
         }
-        do {
-          try readAll(fd: out, dst: &stdout)
-        } catch {
-          errThread.cancel()
-          errThread.detach()
-          throw error
-        }
-        _ = try errThread.join().get()
-        if let errError {
-          throw errError
-        }
-      case (let out?, .none):
-        try readAll(fd: out, dst: &stdout)
-      case (.none, let err?):
-        try readAll(fd: err, dst: &stderr)
-      case (.none, .none): break
       }
 
       return try .init(status: wait(), output: stdout, error: stderr)
@@ -334,13 +317,81 @@ extension Command {
 
 }
 
-private func readAll(fd: FileDescriptor, dst: inout [UInt8]) throws {
-  var buffer = [UInt8](repeating: 0, count: 4096)
-  try buffer.withUnsafeMutableBytes { buffer in
+private func readAllBlocked(fd: FileDescriptor, dst: inout [UInt8], buffer: UnsafeMutableRawBufferPointer) throws {
     while case let count = try fd.read(into: buffer),
           count > 0 {
       dst.append(contentsOf: UnsafeRawBufferPointer(rebasing: buffer.prefix(count)))
     }
+}
+
+extension Command {
+
+  public static func collectOutput(p1: FileDescriptor, v1: inout [UInt8], p2: FileDescriptor, v2: inout [UInt8], buffer: UnsafeMutableRawBufferPointer) throws {
+    // Set both pipes into nonblocking mode as we're gonna be reading from both
+    // in the `select` loop below, and we wouldn't want one to block the other!
+    try p1.set(nonBlocking: true)
+    try p2.set(nonBlocking: true)
+
+    var fds: [SystemCall.PollFD] = [
+      .init(fd: p1, events: .in),
+      .init(fd: p2, events: .in)
+    ]
+
+//    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 4096, alignment: MemoryLayout<Int>.alignment)
+
+    /// return true if EOF, false if no data can read
+    func readAllNonBlock(fd: FileDescriptor, dst: inout [UInt8]) throws -> Bool {
+      do {
+        while true {
+          let count = try fd.read(into: buffer)
+          if count > 0 {
+            dst.append(contentsOf: UnsafeRawBufferPointer(rebasing: buffer.prefix(count)))
+          } else if count == 0 {
+            return true
+          }
+        }
+      } catch let err as Errno {
+        if err == .wouldBlock || err == .resourceTemporarilyUnavailable {
+          return false
+        } else {
+          throw err
+        }
+      }
+    }
+
+    while true {
+      // wait for either pipe to become readable using `poll`
+      _ = try fds.withUnsafeMutableBufferPointer {
+        try SystemCall.poll(fds: $0, timeout: .indefinite)
+      }
+      if try !fds[0].returnedEvents.isEmpty && readAllNonBlock(fd: p1, dst: &v1) {
+        try p2.set(nonBlocking: false)
+        try readAllBlocked(fd: p2, dst: &v2, buffer: buffer)
+        return
+      }
+
+      if try !fds[1].returnedEvents.isEmpty && readAllNonBlock(fd: p2, dst: &v2) {
+        try p1.set(nonBlocking: false)
+        try readAllBlocked(fd: p1, dst: &v1, buffer: buffer)
+        return
+      }
+    }
+
   }
 }
 
+extension FileDescriptor {
+
+  func set(nonBlocking: Bool) throws(Errno) {
+    let previous = try FileControl.statusFlags(for: self)
+    let new: CInt
+    if nonBlocking {
+      new = previous | FileDescriptor.OpenOptions.nonBlocking.rawValue
+    } else {
+      new = previous & ~FileDescriptor.OpenOptions.nonBlocking.rawValue
+    }
+    if previous != new {
+      try FileControl.set(self, statusFlags: new)
+    }
+  }
+}
