@@ -265,7 +265,7 @@ extension Command {
 #if DEBUG
       assert(running, "process already exited")
 #endif
-      var status = WaitPID.ExitStatus(rawValue: 0)
+      var status: WaitPID.ExitStatus = Memory.undefined()
       _ = try SyscallUtilities.retryWhileInterrupted {
         WaitPID.wait(.processID(pid), status: &status)
       }.get()
@@ -299,10 +299,17 @@ extension Command {
 
   }
 
-  public struct Output {
+  public struct Output: Sendable {
     public let status: WaitPID.ExitStatus
     public let output: [UInt8]
     public let error: [UInt8]
+
+    @inlinable
+    public init(status: WaitPID.ExitStatus, output: [UInt8], error: [UInt8]) {
+      self.status = status
+      self.output = output
+      self.error = error
+    }
 
     @inlinable
     public var outputUTF8String: String {
