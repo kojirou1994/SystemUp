@@ -16,24 +16,27 @@ public enum FileControl { }
 public extension FileControl {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func control(_ fd: FileDescriptor, command: Command) -> Result<Int32, Errno> {
-    SyscallUtilities.valueOrErrno {
+  @discardableResult
+  static func control(_ fd: FileDescriptor, command: Command) throws(Errno) -> Int32 {
+    try SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func control(_ fd: FileDescriptor, command: Command, value: Int32) -> Result<Int32, Errno> {
-    SyscallUtilities.valueOrErrno {
+  @discardableResult
+  static func control(_ fd: FileDescriptor, command: Command, value: Int32) throws(Errno) -> Int32 {
+    try SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue, value)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func control(_ fd: FileDescriptor, command: Command, ptr: UnsafeMutableRawPointer) -> Result<Int32, Errno> {
-    SyscallUtilities.valueOrErrno {
+  @discardableResult
+  static func control(_ fd: FileDescriptor, command: Command, ptr: UnsafeMutableRawPointer) throws(Errno) -> Int32 {
+    try SyscallUtilities.valueOrErrno {
       fcntl(fd.rawValue, command.rawValue, ptr)
-    }
+    }.get()
   }
 
   struct Command: MacroRawRepresentable {
@@ -68,22 +71,22 @@ public extension FileControl.Command {
 public extension FileControl {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func duplicate(_ fd: FileDescriptor) throws(Errno) -> FileDescriptor {
-    try control(fd, command: .duplicateFD).map(FileDescriptor.init).get()
+    try .init(rawValue: control(fd, command: .duplicateFD))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func duplicateCloseOnExec(_ fd: FileDescriptor) throws(Errno) -> FileDescriptor {
-    try control(fd, command: .duplicateFDCloseOnExec).map(FileDescriptor.init).get()
+    try .init(rawValue: control(fd, command: .duplicateFDCloseOnExec))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func flags(for fd: FileDescriptor) throws(Errno) -> FileDescriptorFlags {
-    try .init(rawValue: control(fd, command: .getFlags).get())
+    try .init(rawValue: control(fd, command: .getFlags))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(_ fd: FileDescriptor, flags: FileDescriptorFlags) throws(Errno) {
-    _ = try control(fd, command: .setFlags, value: flags.rawValue).get()
+    try control(fd, command: .setFlags, value: flags.rawValue)
   }
 
   struct FileDescriptorFlags: OptionSet, MacroRawRepresentable {
@@ -98,23 +101,62 @@ public extension FileControl {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func statusFlags(for fd: FileDescriptor) throws(Errno) -> Int32 {
-    try control(fd, command: .getStatusFlags).get()
+  static func statusFlags(for fd: FileDescriptor) throws(Errno) -> FileStatusFlags {
+    try .init(rawValue: control(fd, command: .getStatusFlags))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(_ fd: FileDescriptor, statusFlags: Int32) throws(Errno) {
-    _ = try control(fd, command: .setStatusFlags, value: statusFlags).get()
+  static func set(_ fd: FileDescriptor, statusFlags: FileStatusFlags) throws(Errno) {
+    try control(fd, command: .setStatusFlags, value: statusFlags.rawValue)
+  }
+
+  struct FileStatusFlags: OptionSet, MacroRawRepresentable {
+    public var rawValue: Int32
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public var accessMode: FileDescriptor.AccessMode {
+      .init(rawValue: rawValue & O_ACCMODE)
+    }
+
+    @_alwaysEmitIntoClient
+    public static var readOnly: Self { .init(macroValue: O_RDONLY) }
+    @_alwaysEmitIntoClient
+    public static var writeOnly: Self { .init(macroValue: O_WRONLY) }
+    @_alwaysEmitIntoClient
+    public static var readWrite: Self { .init(macroValue: O_RDWR) }
+
+    @_alwaysEmitIntoClient
+    public static var nonBlocking: Self { .init(macroValue: O_NONBLOCK) }
+    @_alwaysEmitIntoClient
+    public static var append: Self { .init(macroValue: O_APPEND) }
+    @_alwaysEmitIntoClient
+    public static var sync: Self { .init(macroValue: O_SYNC) }
+    @_alwaysEmitIntoClient
+    public static var dataSync: Self { .init(macroValue: O_DSYNC) }
+    #if canImport(Glibc)
+    @_alwaysEmitIntoClient
+    public static var readSync: Self { .init(macroValue: O_RSYNC) }
+    @_alwaysEmitIntoClient
+    public static var directIO: Self { .init(macroValue: O_DIRECT) }
+//    @_alwaysEmitIntoClient
+//    public static var noUpdateAccessTime: Self { .init(macroValue: O_NOATIME) }
+    #endif
+    @_alwaysEmitIntoClient
+    public static var asyncIO: Self { .init(macroValue: O_ASYNC) }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func processID(for fd: FileDescriptor) throws(Errno) -> ProcessID {
-    try control(fd, command: .getProcessID).map(ProcessID.init).get()
+    try .init(rawValue: control(fd, command: .getProcessID))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(_ fd: FileDescriptor, processID: ProcessID) throws(Errno) {
-    _ = try control(fd, command: .setProcessID, value: processID.rawValue).get()
+    try control(fd, command: .setProcessID, value: processID.rawValue)
   }
 
 }
@@ -155,27 +197,41 @@ public extension FileControl.Command {
 
 public extension FileControl {
 
-  static func path(for fd: FileDescriptor) throws(Errno) -> String {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func path(for fd: FileDescriptor) throws(Errno) -> FilePath {
     try toTypedThrows(Errno.self) {
-      try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
-        _ = try control(fd, command: .getPath, ptr: buffer.baseAddress!).get()
-        return strlen(buffer.baseAddress!)
-      }
-    }
-  }
-
-  static func nonFirmlinkedPath(for fd: FileDescriptor) throws(Errno) -> String {
-    try toTypedThrows(Errno.self) {
-      try String(bytesCapacity: Int(MAXPATHLEN)) { buffer in
-        _ = try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!).get()
-        return strlen(buffer.baseAddress!)
+      try withUnsafeTemporaryAllocation(of: CChar.self, capacity: Int(MAXPATHLEN)) { buffer in
+        try control(fd, command: .getPath, ptr: buffer.baseAddress!)
+        return FilePath(platformString: buffer.baseAddress!)
       }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func path(for fd: FileDescriptor, to buffer: UnsafeMutableRawBufferPointer) throws(Errno) {
+    assert(buffer.count >= MAXPATHLEN)
+    try control(fd, command: .getPath, ptr: buffer.baseAddress!)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func nonFirmlinkedPath(for fd: FileDescriptor) throws(Errno) -> FilePath {
+    try toTypedThrows(Errno.self) {
+      try withUnsafeTemporaryAllocation(of: CChar.self, capacity: Int(MAXPATHLEN)) { buffer in
+        try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!)
+        return FilePath(platformString: buffer.baseAddress!)
+      }
+    }
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func nonFirmlinkedPath(for fd: FileDescriptor, to buffer: UnsafeMutableRawBufferPointer) throws(Errno) {
+    assert(buffer.count >= MAXPATHLEN)
+    try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func preAllocate(_ fd: FileDescriptor, options: inout PreAllocateOptions) throws(Errno) {
-    _ = try control(fd, command: .preAllocate, ptr: &options).get()
+    try control(fd, command: .preAllocate, ptr: &options)
   }
 
   struct PreAllocateOptions {

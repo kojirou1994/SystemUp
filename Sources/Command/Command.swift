@@ -336,8 +336,8 @@ extension Command {
   public static func collectOutput(p1: FileDescriptor, v1: inout [UInt8], p2: FileDescriptor, v2: inout [UInt8], buffer: UnsafeMutableRawBufferPointer) throws {
     // Set both pipes into nonblocking mode as we're gonna be reading from both
     // in the `select` loop below, and we wouldn't want one to block the other!
-    try p1.set(nonBlocking: true)
-    try p2.set(nonBlocking: true)
+    try Command.set(fd: p1, nonBlocking: true)
+    try Command.set(fd: p2, nonBlocking: true)
 
     var fds: [SystemCall.PollFD] = [
       .init(fd: p1, events: .in),
@@ -372,13 +372,13 @@ extension Command {
         try SystemCall.poll(fds: $0, timeout: .indefinite)
       }
       if try !fds[0].returnedEvents.isEmpty && readAllNonBlock(fd: p1, dst: &v1) {
-        try p2.set(nonBlocking: false)
+        try Command.set(fd: p2, nonBlocking: false)
         try readAllBlocked(fd: p2, dst: &v2, buffer: buffer)
         return
       }
 
       if try !fds[1].returnedEvents.isEmpty && readAllNonBlock(fd: p2, dst: &v2) {
-        try p1.set(nonBlocking: false)
+        try Command.set(fd: p1, nonBlocking: false)
         try readAllBlocked(fd: p1, dst: &v1, buffer: buffer)
         return
       }
@@ -387,18 +387,17 @@ extension Command {
   }
 }
 
-extension FileDescriptor {
-
-  func set(nonBlocking: Bool) throws(Errno) {
-    let previous = try FileControl.statusFlags(for: self)
-    let new: CInt
+extension Command {
+  public static func set(fd: FileDescriptor, nonBlocking: Bool) throws(Errno) {
+    let previous = try FileControl.statusFlags(for: fd)
+    let new: FileControl.FileStatusFlags
     if nonBlocking {
-      new = previous | FileDescriptor.OpenOptions.nonBlocking.rawValue
+      new = previous.union(.nonBlocking)
     } else {
-      new = previous & ~FileDescriptor.OpenOptions.nonBlocking.rawValue
+      new = previous.subtracting(.nonBlocking)
     }
     if previous != new {
-      try FileControl.set(self, statusFlags: new)
+      try FileControl.set(fd, statusFlags: new)
     }
   }
 }
