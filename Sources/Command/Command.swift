@@ -125,7 +125,10 @@ extension Command {
   /// spawn a new process
   /// - Parameter body: customize FileActions, default setup will be disabled
   /// - Returns: child process
-  public func spawn(_ body: ((inout PosixSpawn.FileActions) throws -> Void)? = nil) throws -> ChildProcess {
+  public func spawn(
+    _ body: ((inout PosixSpawn.FileActions) throws -> Void)? = nil,
+    attributesHandler: (inout PosixSpawn.Attributes) throws -> Void = { $0.resetSignals() },
+  ) throws -> ChildProcess {
     let env: CStringArray
     switch self.environment {
     case .null:
@@ -205,7 +208,7 @@ extension Command {
     #elseif os(Linux)
     fileActions.close(fromMinFD: .init(rawValue: 3))
     #endif
-    attrs.resetSignals()
+    try attributesHandler(&attrs)
 
     var args = CStringArray()
     args.append(.copy(bytes: arg0))
