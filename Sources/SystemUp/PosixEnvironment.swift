@@ -57,6 +57,11 @@ public extension PosixEnvironment {
     getenv(key) { $0.map(String.init(cString: )) }
   }
 
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func contains(key: UnsafePointer<CChar>) -> Bool {
+    getenv(key) { $0 != nil }
+  }
+
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(key: UnsafePointer<CChar>, value: UnsafePointer<CChar>, overwrite: Bool = true) -> Result<Void, Errno> {
