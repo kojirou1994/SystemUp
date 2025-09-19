@@ -1,13 +1,13 @@
 {
-  "originHash" : "e4b0954fe1e1c6920a97d39b78693fce79cbbdfd4c1a7bc0f795e291074346b7",
+  "originHash" : "f7c5d89e5289f76974c99119b788f0244bc80b363306b50cc23dc5679bc1ddea",
   "pins" : [
     {
       "identity" : "cutility",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
-        "revision" : "dd0b6ad0b7460fda9480ce743af26c884b0dfe94",
-        "version" : "0.6.4"
+        "revision" : "a7b167a2af856231f83e0fa9cb21637d01a97c4c",
+        "version" : "0.6.7"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-syntax.git",
       "state" : {
-        "revision" : "0687f71944021d616d34d922343dcef086855920",
-        "version" : "600.0.1"
+        "revision" : "f99ae8aa18f0cf0d53481901f88a0991dc3bd4a2",
+        "version" : "601.0.1"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "a34201439c74b53f0fd71ef11741af7e7caf01e1",
-        "version" : "1.4.2"
+        "revision" : "395a77f0aa927f0ff73941d7ac35f2b46d47c9db",
+        "version" : "1.6.3"
       }
     },
     {

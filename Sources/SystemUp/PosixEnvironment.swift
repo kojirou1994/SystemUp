@@ -57,6 +57,7 @@ public extension PosixEnvironment {
     getenv(key) { $0.map(String.init(cString: )) }
   }
 
+  /// thread-safe, libc locked
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func contains(key: UnsafePointer<CChar>) -> Bool {
     getenv(key) { $0 != nil }
