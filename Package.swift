@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 
 import PackageDescription
 
@@ -34,6 +34,7 @@ let package = Package(
       swiftSettings: [
         .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),
         .unsafeFlags(["-Xfrontend", "-disable-reflection-metadata"]),
+        .enableExperimentalFeature("Extern"),
       ]
     ),
     .target(
