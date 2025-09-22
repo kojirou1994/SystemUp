@@ -20,13 +20,7 @@ public extension PosixEnvironment {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var environ: NullTerminatedArray<UnsafeMutablePointer<CChar>> {
-    let environ: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>
-    #if canImport(Darwin)
-    environ = NSGetEnviron().pointee
-    #elseif os(Linux)
-    environ = swift_get_environ()
-    #endif
-    return .init(environ)
+    .init(SystemCall._environ)
   }
 
   /// not thread-safe
