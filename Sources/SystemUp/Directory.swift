@@ -6,7 +6,7 @@ public struct Directory: ~Copyable {
 
   #if canImport(Darwin)
   @usableFromInline
-  typealias CDirectoryStream = UnsafeMutablePointer<DIR>
+  typealias CDirectoryStream = UnsafeMutablePointer<SystemLibc.DIR>
   #else
   @usableFromInline
   typealias CDirectoryStream = OpaquePointer
@@ -20,59 +20,68 @@ public struct Directory: ~Copyable {
   @_alwaysEmitIntoClient
   private let dir: CDirectoryStream
 
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   public static func open(_ path: borrowing some CStringConvertible & ~Copyable) throws(Errno) -> Self {
     .init(try SyscallUtilities.unwrap {
       path.withUnsafeCString { path in
-        opendir(path)
+        SystemLibc.opendir(path)
       }
     }.get())
   }
 
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   public static func open(_ fd: FileDescriptor) throws(Errno) -> Self {
     try .init(SyscallUtilities.unwrap {
-      fdopendir(fd.rawValue)
+      SystemLibc.fdopendir(fd.rawValue)
     }.get())
   }
 
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   deinit {
     assertNoFailure {
-      SyscallUtilities.voidOrErrno { closedir(dir) }
+      SyscallUtilities.voidOrErrno { SystemLibc.closedir(dir) }
     }
   }
 
   /// release Directory but keep stream opened, use with open(_ fd: FileDescriptor)
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   public consuming func keepOpened() {
     discard self
   }
 
   /// return current location in directory stream
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   public func tell() -> Int {
-    let r = telldir(dir)
+    let r = SystemLibc.telldir(dir)
     assert(r != -1)
     return r
   }
 
   /// resets the position of the named directory stream to the beginning of the directory.
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   public func rewind() {
-    rewinddir(dir)
+    SystemLibc.rewinddir(dir)
   }
 
   /// sets the position of the next readdir() operation on the directory stream
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   public func seek(to location: Int) {
-    seekdir(dir, location)
+    SystemLibc.seekdir(dir, location)
   }
 
   /// returns the integer file descriptor associated with the named directory stream
+  @unsafe
+  @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   public var fd: FileDescriptor {
-    .init(rawValue: dirfd(dir))
+    .init(rawValue: SystemLibc.dirfd(dir))
   }
 
   @available(*, deprecated, message: "unsafe")
@@ -80,7 +89,7 @@ public struct Directory: ~Copyable {
   public func read(into entry: UnsafeMutablePointer<dirent>) -> Result<Bool, Errno> {
     var entryPtr: UnsafeMutablePointer<dirent>?
     return SyscallUtilities.voidOrErrno {
-      readdir_r(dir, entry, &entryPtr)
+      SystemLibc.readdir_r(dir, entry, &entryPtr)
     }
     .map { _ in
       if _slowPath(entryPtr == nil) {
@@ -91,35 +100,20 @@ public struct Directory: ~Copyable {
     }
   }
 
-  /// directory stream iterate helper
+  /// dot file ignored
+  @_lifetime(&self)
   @_alwaysEmitIntoClient
-  public func forEachEntries(_ body: (borrowing Entry, _ stop: inout Bool) throws -> Void) throws {
-    var stop = false
-    while !stop {
-      if let entry = try next() {
-        // success
-        try body(entry, &stop)
-      } else {
-        // no entry
-        return
-      }
-    }
-  }
-
-  /// not thread-safe
-  /// don't save result, unsafe now, dot file ignored.
-  @_alwaysEmitIntoClient
-  public func next(resetErrno: Bool = true) throws(Errno) -> Entry? {
+  public mutating func next(resetErrno: Bool = true) throws(Errno) -> Entry? {
     if resetErrno {
       Errno.reset()
     }
     while true {
-      if let ptr = readdir(dir) {
+      if let ptr = SystemLibc.readdir(dir) {
         let entry = Entry(ptr)
         if entry.isDot {
           continue
         }
-        return entry
+        return _overrideLifetime(entry, mutating: &self)
       } else {
         if let err = Errno.systemCurrentValid {
           // errno changed, error happened!
@@ -136,13 +130,14 @@ public struct Directory: ~Copyable {
 
 extension Directory {
 
-  public struct Entry: ~Copyable {
+  public struct Entry: ~Copyable, ~Escapable {
 
     @usableFromInline
-    internal let entry: UnsafeMutablePointer<dirent>
+    internal let entry: UnsafeMutablePointer<SystemLibc.dirent>
 
     @_alwaysEmitIntoClient
-    init(_ entry: UnsafeMutablePointer<dirent>) {
+    @_lifetime(borrow entry)
+    init(_ entry: UnsafeMutablePointer<SystemLibc.dirent>) {
       self.entry = entry
     }
 

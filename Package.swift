@@ -35,6 +35,8 @@ let package = Package(
         .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),
         .unsafeFlags(["-Xfrontend", "-disable-reflection-metadata"]),
         .enableExperimentalFeature("Extern"),
+        .enableExperimentalFeature("LifetimeDependence"),
+        .enableExperimentalFeature("Lifetimes"),
       ]
     ),
     .target(
