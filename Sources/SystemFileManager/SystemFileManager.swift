@@ -65,7 +65,7 @@ extension SystemFileManager {
   }
 
   public static func removeDirectoryRecursive(_ path: FilePath) throws(Errno) {
-    let directory = try Directory.open(path)
+    var directory = try Directory.open(path)
 
     while let entry = try directory.next() {
       // remove each entry, return result
@@ -92,7 +92,7 @@ extension SystemFileManager {
   }
 
   private static func _subpathsOfDirectory(atPath path: FilePath, basePath: FilePath, into results: inout [FilePath]) throws(Errno) {
-    let directory = try Directory.open(path)
+    var directory = try Directory.open(path)
     let dfd = directory.fd
     while let entry = try directory.next() {
       let entryName = entry.name
