@@ -33,7 +33,7 @@ extension FilePath: @retroactive ContiguousUTF8Bytes {
 extension FilePath {
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
-  public init(_ cString: borrowing DynamicCString) {
+  public init(_ cString: borrowing some CStringConvertible & ~Copyable & ~Escapable) {
     self = cString.withUnsafeCString { cString in
       FilePath(platformString: cString)
     }

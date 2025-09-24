@@ -212,7 +212,7 @@ extension Fts {
       #endif
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var isHidden: Bool {
       rawAddress.pointee.fts_name == UInt8(ascii: ".")
     }
