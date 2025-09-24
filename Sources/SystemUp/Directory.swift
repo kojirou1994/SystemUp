@@ -205,7 +205,6 @@ extension Directory {
 
     // TODO: Name Span
 
-    }
   }
 
 }
