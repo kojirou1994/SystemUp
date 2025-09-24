@@ -1,5 +1,6 @@
 import SystemLibc
 import SystemPackage
+import CUtility
 
 public struct Signal: RawRepresentable, Hashable, Sendable {
   public let rawValue: CInt
@@ -54,6 +55,12 @@ public extension Signal {
     SyscallUtilities.voidOrErrno {
       SystemLibc.raise(rawValue)
     }
+  }
+  
+  /// Beginning with Mac OS X 10.7, this string is unique to each thread.
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var messageString: StaticCString? {
+    SystemLibc.strsignal(rawValue).map { StaticCString(cString: $0) }
   }
 }
 
