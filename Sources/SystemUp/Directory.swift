@@ -181,27 +181,30 @@ extension Directory {
     /// entry name (up to MAXPATHLEN bytes)
     @_alwaysEmitIntoClient
     public var name: String {
-      withNameCString { cString in
-        cString.withUnsafeCString { cString in
-          String(decoding: UnsafeRawBufferPointer(start: cString, count: nameLength), as: UTF8.self)
-        }
+      nameCString.withUnsafeCString { cString in
+        String(decoding: UnsafeRawBufferPointer(start: cString, count: nameLength), as: UTF8.self)
       }
     }
 
     @_alwaysEmitIntoClient
     public var nameLength: Int {
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if canImport(Darwin)
       Int(entry.pointee.d_namlen)
 #else
-      withNameCString { $0.length }
+      nameCString.length
 #endif
+    }
+
+    public var nameCString: ReferenceCString {
+      @_lifetime(borrow self)
+      @_transparent
+      borrowing get {
+        _overrideLifetime(.init(cString: UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self)), borrowing: self)
+      }
     }
 
     // TODO: Name Span
 
-    @_alwaysEmitIntoClient
-    public func withNameCString<R: ~Copyable, E: Error>(_ body: (borrowing DynamicCString) throws(E) -> R) throws(E) -> R {
-      try DynamicCString.withTemporaryBorrowed(cString: UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self), body)
     }
   }
 
