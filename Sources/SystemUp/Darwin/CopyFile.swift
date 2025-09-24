@@ -30,7 +30,7 @@ internal func copyfile_swift_callback_fall(what: Int32, stage: Int32, state: cop
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func copyFile(src: borrowing some CStringConvertible & ~Copyable, dst: borrowing some CStringConvertible & ~Copyable, flags: CopyFile.Flags = []) throws(Errno) {
+  static func copyFile(src: borrowing some CString, dst: borrowing some CString, flags: CopyFile.Flags = []) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       src.withUnsafeCString { src in
         dst.withUnsafeCString { dst in

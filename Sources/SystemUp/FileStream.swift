@@ -400,7 +400,7 @@ public extension FileStream {
   /// - Returns: nonnegative number on success
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func write(string: borrowing some CStringConvertible & ~Copyable) -> Int32? {
+  func write(string: borrowing some CString) -> Int32? {
     let result = string.withUnsafeCString { string in
       SystemLibc.fputs(string, rawValue)
     }

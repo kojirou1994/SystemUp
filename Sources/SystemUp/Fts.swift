@@ -12,7 +12,7 @@ public struct Fts: ~Copyable {
   internal let handle: UnsafeMutablePointer<FTS>
 
   @_alwaysEmitIntoClient
-  public static func open(path: borrowing some CStringConvertible & ~Copyable, options: OpenOptions) throws(Errno) -> Self {
+  public static func open(path: borrowing some CString, options: OpenOptions) throws(Errno) -> Self {
     try toTypedThrows(Errno.self) {
       try withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
         try path.withUnsafeCString { path in

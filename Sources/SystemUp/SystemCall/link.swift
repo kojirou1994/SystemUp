@@ -5,7 +5,7 @@ import CUtility
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func createHardLink(_ linkPath: borrowing some CStringConvertible & ~Copyable, relativeTo linkBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CStringConvertible & ~Copyable, relativeTo dstBase: RelativeDirectory = .cwd, flags: AtFlags = []) throws(Errno) {
+  static func createHardLink(_ linkPath: borrowing some CString, relativeTo linkBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CString, relativeTo dstBase: RelativeDirectory = .cwd, flags: AtFlags = []) throws(Errno) {
     assert(flags.isSubset(of: [.follow]))
     try SyscallUtilities.voidOrErrno {
       linkPath.withUnsafeCString { linkPath in

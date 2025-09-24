@@ -1,13 +1,13 @@
 {
-  "originHash" : "d508403c0c8e71c65653213bd8c4b2b0b5a3f629a5aa59155b772e5d0fd6650a",
+  "originHash" : "688ef86f05363f53bc5d5877ff1f8cc247c0f544e88bed8ac346794d75e7b409",
   "pins" : [
     {
       "identity" : "cutility",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
-        "revision" : "c35e9ec617d3afdb9a1233e0e4c248a22da42481",
-        "version" : "0.6.9"
+        "revision" : "7a23b5ea5dc56d2828c4f8bdc7a5ad7e2b0935cd",
+        "version" : "0.7.0"
       }
     },
     {

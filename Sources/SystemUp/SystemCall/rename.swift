@@ -11,7 +11,7 @@ public extension SystemCall {
   ///   - newPath: dst path
   ///   - tofd: dst path relative opened directory fd
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func rename(_ sourcePath: borrowing some CStringConvertible & ~Copyable, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CStringConvertible & ~Copyable, relativeTo dstBase: RelativeDirectory = .cwd) throws(Errno) {
+  static func rename(_ sourcePath: borrowing some CString, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CString, relativeTo dstBase: RelativeDirectory = .cwd) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       sourcePath.withUnsafeCString { sourcePath in
         destPath.withUnsafeCString { destPath in
@@ -23,7 +23,7 @@ public extension SystemCall {
 
   @available(macOS 10.12, *)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func rename(_ sourcePath: borrowing some CStringConvertible & ~Copyable, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CStringConvertible & ~Copyable, relativeTo dstBase: RelativeDirectory = .cwd, flags: RenameFlags) throws(Errno) {
+  static func rename(_ sourcePath: borrowing some CString, relativeTo srcBase: RelativeDirectory = .cwd, toDestination destPath: borrowing some CString, relativeTo dstBase: RelativeDirectory = .cwd, flags: RenameFlags) throws(Errno) {
     try SyscallUtilities.voidOrErrno { () -> Int32 in
       sourcePath.withUnsafeCString { sourcePath in
         destPath.withUnsafeCString { destPath in

@@ -45,7 +45,7 @@ extension SystemFileManager {
   
   /// remove empty directory
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func removeDirectory(_ path: borrowing some CStringConvertible & ~Copyable) throws(Errno) {
+  public static func removeDirectory(_ path: borrowing some CString) throws(Errno) {
     try SystemCall.unlink(path, flags: .removeDir)
   }
   

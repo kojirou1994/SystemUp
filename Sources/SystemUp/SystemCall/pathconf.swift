@@ -9,7 +9,7 @@ public extension SystemCall {
   ///   - path: the name of a file or directory
   ///   - variable: the system variable to be queried
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func pathconf(_ path: borrowing some CStringConvertible & ~Copyable, variable: PathConfVariable) throws(Errno) -> Int {
+  static func pathconf(_ path: borrowing some CString, variable: PathConfVariable) throws(Errno) -> Int {
     Errno.reset()
     let result = path.withUnsafeCString { path in
       SystemLibc.pathconf(path, variable.rawValue)

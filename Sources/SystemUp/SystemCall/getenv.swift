@@ -6,13 +6,13 @@ import CUtility
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getenv(_ name: borrowing some CStringConvertible & ~Copyable) -> UnsafeMutablePointer<CChar>? {
+  static func getenv(_ name: borrowing some CString) -> UnsafeMutablePointer<CChar>? {
     name.withUnsafeCString { SystemLibc.getenv($0) }
   }
 
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func setenv(name: borrowing some CStringConvertible & ~Copyable, value: borrowing some CStringConvertible & ~Copyable, overwrite: Bool = true) throws(Errno) {
+  static func setenv(name: borrowing some CString, value: borrowing some CString, overwrite: Bool = true) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       name.withUnsafeCString { name in
         value.withUnsafeCString { value in
@@ -30,7 +30,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func unsetenv(name: borrowing some CStringConvertible & ~Copyable) throws(Errno) {
+  static func unsetenv(name: borrowing some CString) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       name.withUnsafeCString { name in
         SystemLibc.unsetenv(name)

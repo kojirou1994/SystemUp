@@ -22,7 +22,7 @@ public struct Directory: ~Copyable {
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  public static func open(_ path: borrowing some CStringConvertible & ~Copyable) throws(Errno) -> Self {
+  public static func open(_ path: borrowing some CString) throws(Errno) -> Self {
     .init(try SyscallUtilities.unwrap {
       path.withUnsafeCString { path in
         SystemLibc.opendir(path)

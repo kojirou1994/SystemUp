@@ -7,7 +7,7 @@ public extension SystemCall {
 
   /// generic exec helper
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exec(_ executablePath: borrowing some CStringConvertible & ~Copyable, arguments: some Sequence<some ContiguousUTF8Bytes>, searchPATH: Bool) throws(Errno) -> Never {
+  static func exec(_ executablePath: borrowing some CString, arguments: some Sequence<some ContiguousUTF8Bytes>, searchPATH: Bool) throws(Errno) -> Never {
     assert(arguments.first(where: { _ in true }) != nil, "The first argument, by convention, should point to the file name associated with the file being executed.")
 
     try withTempUnsafeCStringArray(arguments) { argv throws(Errno) in
@@ -16,7 +16,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exec(_ executablePath: borrowing some CStringConvertible & ~Copyable, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, envp: UnsafePointer<UnsafeMutablePointer<CChar>?>?) throws(Errno) -> Never {
+  static func exec(_ executablePath: borrowing some CString, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, envp: UnsafePointer<UnsafeMutablePointer<CChar>?>?) throws(Errno) -> Never {
     try SyscallUtilities.voidOrErrno {
       // __envp must be non-nil
       executablePath.withUnsafeCString { executablePath in
@@ -33,7 +33,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exec(_ executablePath: borrowing some CStringConvertible & ~Copyable, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, searchPATH: Bool) throws(Errno) -> Never {
+  static func exec(_ executablePath: borrowing some CString, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, searchPATH: Bool) throws(Errno) -> Never {
     try SyscallUtilities.voidOrErrno {
       executablePath.withUnsafeCString { executablePath in
         searchPATH ? execvp(executablePath, argv) : execv(executablePath, argv)
@@ -44,7 +44,7 @@ public extension SystemCall {
 
 #if os(macOS) || os(FreeBSD)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exec(_ executablePath: borrowing some CStringConvertible & ~Copyable, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, withPATH path: UnsafePointer<CChar>) throws(Errno) -> Never {
+  static func exec(_ executablePath: borrowing some CString, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, withPATH path: UnsafePointer<CChar>) throws(Errno) -> Never {
     // searchpath must be non-nil
     try SyscallUtilities.voidOrErrno {
       executablePath.withUnsafeCString { executablePath in

@@ -12,7 +12,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileStatus(_ path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = [], into status: UnsafeMutablePointer<FileStatus>) throws(Errno) {
+  static func fileStatus(_ path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = [], into status: UnsafeMutablePointer<FileStatus>) throws(Errno) {
     assert(flags.isSubset(of: [.noFollow]))
     try SyscallUtilities.voidOrErrno {
       path.withUnsafeCString { path in

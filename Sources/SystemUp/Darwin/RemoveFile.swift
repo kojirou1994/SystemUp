@@ -21,7 +21,7 @@ internal func removefile_swift_callback(state: removefile_state_t!, path: Unsafe
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inline(__always)
-  private static func _removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, state: removefile_state_t?, flags: RemoveFile.Flags = []) throws(Errno) {
+  private static func _removeFile(path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, state: removefile_state_t?, flags: RemoveFile.Flags = []) throws(Errno) {
     let code = path.withUnsafeCString { path in
       switch base {
       case .cwd:
@@ -38,12 +38,12 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, flags: RemoveFile.Flags = []) throws(Errno) {
+  static func removeFile(path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, flags: RemoveFile.Flags = []) throws(Errno) {
     try _removeFile(path: path, relativeTo: base, state: nil, flags: flags)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, state: borrowing RemoveFile.State, flags: RemoveFile.Flags = []) throws(Errno) {
+  static func removeFile(path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, state: borrowing RemoveFile.State, flags: RemoveFile.Flags = []) throws(Errno) {
     try withExtendedLifetime(state) { state throws(Errno) in
       try _removeFile(path: path, relativeTo: base, state: state.state, flags: flags)
     }
@@ -51,7 +51,7 @@ public extension SystemCall {
 
   /// Example Usage of RemoveFile
   @_alwaysEmitIntoClient
-  static func removeFile(path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, flags: RemoveFile.Flags = [], statusCallback: @escaping RemoveFile.NativeCallback, confirmCallback: @escaping RemoveFile.NativeCallback, errorCallback: @escaping RemoveFile.NativeCallback) throws(Errno) {
+  static func removeFile(path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, flags: RemoveFile.Flags = [], statusCallback: @escaping RemoveFile.NativeCallback, confirmCallback: @escaping RemoveFile.NativeCallback, errorCallback: @escaping RemoveFile.NativeCallback) throws(Errno) {
     var state = try RemoveFile.State()
     //   assert(state.callbackContext == nil && state.statusCallback == nil, "I'll set them for you!")
     try! state.set(property: .statusCallback, unsafeBitCast(removefile_swift_callback as removefile_callback_t, to: UnsafeRawPointer.self))

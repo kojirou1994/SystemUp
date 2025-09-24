@@ -17,7 +17,7 @@ public extension SystemCall {
 
   /// ref: https://github.com/rust-lang/rust/blob/622ac043764d5d4ffff8de8cf86a1cc938a8a71b/library/std/src/sys/fs/unix.rs#L1849
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func readLink(_ path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd) throws -> DynamicCStringWithLength {
+  static func readLink(_ path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd) throws -> DynamicCStringWithLength {
 
     var bufsize = 256
 
@@ -47,7 +47,7 @@ public extension SystemCall {
   ///   - buffer: destination buffer
   /// - Returns: count of bytes placed in the buffer, readlink() does not append a null byte
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func readLink(_ path: borrowing some CStringConvertible & ~Copyable, relativeTo base: RelativeDirectory = .cwd, into buffer: UnsafeMutableBufferPointer<Int8>) throws(Errno) -> Int {
+  static func readLink(_ path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, into buffer: UnsafeMutableBufferPointer<Int8>) throws(Errno) -> Int {
     try SyscallUtilities.valueOrErrno {
       path.withUnsafeCString { path in
         readlinkat(base.toFD, path, buffer.baseAddress!, buffer.count)

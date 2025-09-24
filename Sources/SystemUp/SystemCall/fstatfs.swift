@@ -12,7 +12,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileSystemStatistics(_ path: borrowing some CStringConvertible & ~Copyable, into s: inout FileSystemStatistics) throws(Errno) {
+  static func fileSystemStatistics(_ path: borrowing some CString, into s: inout FileSystemStatistics) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       path.withUnsafeCString { path in
         statfs(path, &s.rawValue)
@@ -28,7 +28,7 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileSystemInformation(_ path: borrowing some CStringConvertible & ~Copyable, into s: inout FileSystemInformation) throws(Errno) {
+  static func fileSystemInformation(_ path: borrowing some CString, into s: inout FileSystemInformation) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       path.withUnsafeCString { path in
         statvfs(path, &s.rawValue)
