@@ -2,7 +2,7 @@ import SystemLibc
 import CUtility
 import SystemPackage
 
-public struct ResourceUsage: Sendable {
+public struct ResourceUsage: Sendable, BitwiseCopyable {
   @usableFromInline
   internal var rawValue: rusage
 
@@ -33,4 +33,86 @@ public extension ResourceUsage.Who {
   static var currentProcess: Self { .init(macroValue: RUSAGE_SELF) }
   @_alwaysEmitIntoClient
   static var currentProcessChildren: Self { .init(macroValue: RUSAGE_CHILDREN) }
+}
+
+public extension ResourceUsage {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var userTime: Timeval {
+    .init(rawValue: rawValue.ru_utime)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var systemTime: Timeval {
+    .init(rawValue: rawValue.ru_stime)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var maxResidentSetSize: Int {
+    rawValue.ru_maxrss
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var integralSharedMemorySize: Int {
+    rawValue.ru_ixrss
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var integralUnsharedDataSize: Int {
+    rawValue.ru_idrss
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var integralUnsharedStackSize: Int {
+    rawValue.ru_isrss
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var pageReclaims: Int {
+    rawValue.ru_minflt
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var pageFaults: Int {
+    rawValue.ru_majflt
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var swaps: Int {
+    rawValue.ru_nswap
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var blockInputOperations: Int {
+    rawValue.ru_inblock
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var blockOutputOperations: Int {
+    rawValue.ru_oublock
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var ipcMessagesSent: Int {
+    rawValue.ru_msgsnd
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var ipcMessagesReceived: Int {
+    rawValue.ru_msgrcv
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var signalsReceived: Int {
+    rawValue.ru_nsignals
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var voluntaryContextSwitches: Int {
+    rawValue.ru_nvcsw
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  var involuntaryContextSwitches: Int {
+    rawValue.ru_nivcsw
+  }
 }
