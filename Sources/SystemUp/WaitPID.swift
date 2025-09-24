@@ -39,7 +39,7 @@ extension WaitPID {
     }
   }
 
-  public struct ExitStatus: RawRepresentable, Hashable, Sendable {
+  public struct ExitStatus: RawRepresentable, Hashable, Sendable, BitwiseCopyable {
     public var rawValue: Int32
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init(rawValue: Int32) {
@@ -155,7 +155,7 @@ public extension WaitPID {
         let result = SyscallUtilities.retryWhileInterrupted {
           WaitPID.wait(target, status: &status, options: [], rusage: nil)
         }
-        continuation.resume(with: result.map { .init(pid: $0, status: consume status) })
+        continuation.resume(with: result.map { .init(pid: $0, status: status) })
       }
     }
   }
@@ -187,7 +187,7 @@ public extension WaitPID {
         let result = SyscallUtilities.retryWhileInterrupted {
           WaitPID.wait(target, status: &status, options: [], rusage: &rusage)
         }
-        continuation.resume(with: result.map { (.init(pid: $0, status: consume status), consume rusage) })
+        continuation.resume(with: result.map { (.init(pid: $0, status: status), rusage) })
       }
     }
   }
