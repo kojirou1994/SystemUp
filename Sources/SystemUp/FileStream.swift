@@ -35,7 +35,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func open(_ path: some CStringConvertible, mode: Mode) throws(Errno) -> Self {
+  static func open(_ path: borrowing some CString, mode: Mode) throws(Errno) -> Self {
     try .init(rawValue: SyscallUtilities.unwrap {
       path.withUnsafeCString { path in
         SystemLibc.fopen(path, mode.rawValue)
@@ -74,7 +74,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  borrowing func reopen(_ path: some CStringConvertible, mode: Mode) throws(Errno) {
+  borrowing func reopen(_ path: borrowing some CString, mode: Mode) throws(Errno) {
     let v = try SyscallUtilities.unwrap {
       path.withUnsafeCString { path in
         SystemLibc.freopen(path, mode.rawValue, rawValue)

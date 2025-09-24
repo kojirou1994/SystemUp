@@ -221,7 +221,7 @@ public extension SystemFileManager {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fileStatus<R>(_ path: some CStringConvertible, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = [], _ property: (FileStatus) -> R = { $0 }) throws(Errno) -> R {
+  static func fileStatus<R>(_ path: borrowing some CString, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = [], _ property: (FileStatus) -> R = { $0 }) throws(Errno) -> R {
     var buf: FileStatus = Memory.undefined()
     try path.withUnsafeCString { path throws(Errno) in
       try SystemCall.fileStatus(path, relativeTo: base, flags: flags, into: &buf)
