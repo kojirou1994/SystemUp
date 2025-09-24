@@ -6,17 +6,19 @@ import SystemLibc
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(flags: FileFlags, for path: UnsafePointer<CChar>) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      chflags(path, flags.rawValue)
-    }
+  static func set(flags: FileFlags, for path: borrowing some CString) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
+      path.withUnsafeCString { path in
+        SystemLibc.chflags(path, flags.rawValue)
+      }
+    }.get()
   }
   
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(flags: FileFlags, for fd: FileDescriptor) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
-      fchflags(fd.rawValue, flags.rawValue)
-    }
+  static func set(flags: FileFlags, for fd: FileDescriptor) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
+      SystemLibc.fchflags(fd.rawValue, flags.rawValue)
+    }.get()
   }
 
   struct FileFlags: OptionSet, MacroRawRepresentable {
