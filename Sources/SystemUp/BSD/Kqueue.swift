@@ -1,5 +1,5 @@
 #if canImport(Darwin)
-import Darwin
+import Darwin.C
 import SystemPackage
 import CUtility
 
@@ -17,23 +17,23 @@ public struct Kqueue: ~Copyable {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   deinit {
-    assertNoFailure {
-      SyscallUtilities.retryWhileInterrupted {
-        SystemCall.close(.init(rawValue: rawValue))
+    try? assertNoThrow {
+      try SyscallUtilities.retryWhileInterrupted { () throws(Errno) in
+        try SystemCall.close(.init(rawValue: rawValue))
       }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func register(change: __shared Kevent, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) -> Result<Int, Errno> {
-    withUnsafePointer(to: change) { e in
-      register(changes: .init(start: e, count: 1), eventsOutputTo: dest, timeout: timeout)
+  public func register(change: __shared Kevent, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) throws(Errno) -> Int {
+    try withUnsafePointer(to: change) { e throws(Errno) in
+      try register(changes: .init(start: e, count: 1), eventsOutputTo: dest, timeout: timeout)
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func register(changes: UnsafeBufferPointer<Kevent>, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) -> Result<Int, Errno> {
-    SyscallUtilities.valueOrErrno {
+  public func register(changes: UnsafeBufferPointer<Kevent>, eventsOutputTo dest: UnsafeMutableBufferPointer<Kevent> = .init(start: nil, count: 0), timeout: UnsafePointer<timespec>? = nil) throws(Errno) -> Int {
+    try SyscallUtilities.valueOrErrno {
       kevent(
         rawValue,
         UnsafeRawPointer(changes.baseAddress)?.assumingMemoryBound(to: kevent.self),
@@ -42,7 +42,7 @@ public struct Kqueue: ~Copyable {
         numericCast(dest.count),
         timeout
       )
-    }.map(Int.init)
+    }.map(Int.init).get()
   }
 
   public struct Kevent: RawRepresentable {
@@ -61,7 +61,7 @@ public struct Kqueue: ~Copyable {
       self.init(identifier: identifier, filter: filter.rawValue, flags: actions.rawValue, filterFlags: filterFlags.rawValue, filterData: filterData, userDataIdentifier: userDataIdentifier)
     }
 
-    @_alwaysEmitIntoClient
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var filter: Filter {
       _read { yield Filter(rawValue: rawValue.filter) }
     }

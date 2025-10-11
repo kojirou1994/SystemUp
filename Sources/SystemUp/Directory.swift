@@ -86,9 +86,9 @@ public struct Directory: ~Copyable {
 
   @available(*, deprecated, message: "unsafe")
   @_alwaysEmitIntoClient
-  public func read(into entry: UnsafeMutablePointer<dirent>) -> Result<Bool, Errno> {
+  public func read(into entry: UnsafeMutablePointer<dirent>) throws(Errno) -> Bool {
     var entryPtr: UnsafeMutablePointer<dirent>?
-    return SyscallUtilities.voidOrErrno {
+    return try SyscallUtilities.voidOrErrno {
       SystemLibc.readdir_r(dir, entry, &entryPtr)
     }
     .map { _ in
@@ -97,7 +97,7 @@ public struct Directory: ~Copyable {
       }
       assert(OpaquePointer(entry) == OpaquePointer(entryPtr))
       return true
-    }
+    }.get()
   }
 
   /// dot file ignored

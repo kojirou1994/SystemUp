@@ -20,22 +20,24 @@ extension FileDescriptor {
 public extension FileDescriptor {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func isatty() -> Result<Void, Errno> {
+  func isatty() throws(Errno) {
     let ret = SystemLibc.isatty(rawValue)
     assert([0, 1].contains(ret))
     if ret == 1 {
-      return .success(())
+      return
     } else {
       // should be 0
-      return .failure(.systemCurrent)
+      throw .systemCurrent
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var isTerminal: Bool {
-    switch isatty() {
-    case .success: return true
-    case .failure: return false
+    do {
+      try isatty()
+      return true
+    } catch {
+      return false
     }
   }
 
@@ -46,24 +48,24 @@ public extension FileDescriptor {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func getTTYName(into buffer: UnsafeMutablePointer<CChar>, capacity: Int) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func getTTYName(into buffer: UnsafeMutablePointer<CChar>, capacity: Int) throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       ttyname_r(rawValue, buffer, capacity)
-    }
+    }.get()
   }
 
-  var ttyName: String? {
-    let capacity = Int(PATH_MAX)
-    return try? String(bytesCapacity: capacity) { buffer in
-      let buffer = buffer.assumingMemoryBound(to: CChar.self)
-      switch getTTYName(into: buffer.baseAddress!, capacity: buffer.count) {
-      case .success: break
-      case .failure(let err):
-        assert(err != .outOfRange, "The bufsize is too small!!")
-        throw err
-      }
-      return strlen(buffer.baseAddress!)
-    }
-  }
+//  var ttyName: String? {
+//    let capacity = Int(PATH_MAX)
+//    return try? String(bytesCapacity: capacity) { buffer in
+//      let buffer = buffer.assumingMemoryBound(to: CChar.self)
+//      switch getTTYName(into: buffer.baseAddress!, capacity: buffer.count) {
+//      case .success: break
+//      case .failure(let err):
+//        assert(err != .outOfRange, "The bufsize is too small!!")
+//        throw err
+//      }
+//      return strlen(buffer.baseAddress!)
+//    }
+//  }
 
 }

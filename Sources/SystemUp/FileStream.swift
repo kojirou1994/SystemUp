@@ -90,22 +90,21 @@ public extension FileStream {
     }.get())
   }
 
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  consuming func close() -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  consuming func close() throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.fclose(rawValue)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient
   consuming func closeAfter<R: ~Copyable, E: Error>(_ body: (borrowing Self) throws(E) -> R) throws(E) -> R {
     do {
       let result = try body(self)
-      close()
+      try? close()
       return result
     } catch {
-      close()
+      try? close()
       throw error
     }
   }
@@ -203,21 +202,19 @@ public extension FileStream {
 // MARK: flush a stream
 public extension FileStream {
 
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func flush() -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  func flush() throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.fflush(rawValue)
-    }
+    }.get()
   }
 
   /// flushes all open output streams.
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func flushAll() -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func flushAll() throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.fflush(nil)
-    }
+    }.get()
   }
 }
 

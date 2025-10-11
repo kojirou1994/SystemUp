@@ -34,21 +34,19 @@ public struct PosixMutex: ~Copyable, @unchecked Sendable {
 public extension PosixMutex {
 
   @available(*, noasync)
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func lock() -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func lock() throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_mutex_lock(rawAddress)
-    }
+    }.get()
   }
 
   @available(*, noasync)
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func unlock() -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func unlock() throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_mutex_unlock(rawAddress)
-    }
+    }.get()
   }
 
   @available(*, noasync)

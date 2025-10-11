@@ -30,22 +30,22 @@ public extension Proc.BSDInfo {
   var ppid: UInt32 { info.pbi_ppid }
 
   @_alwaysEmitIntoClient
-  var uid: uid_t { info.pbi_uid }
+  var uid: UserID { .init(rawValue: info.pbi_uid) }
 
   @_alwaysEmitIntoClient
-  var gid: gid_t { info.pbi_gid }
+  var gid: GroupProcessID { .init(rawValue: info.pbi_gid) }
 
   @_alwaysEmitIntoClient
-  var ruid: uid_t { info.pbi_ruid }
+  var ruid: UserID { .init(rawValue: info.pbi_ruid) }
 
   @_alwaysEmitIntoClient
-  var rgid: gid_t { info.pbi_rgid }
+  var rgid: GroupProcessID { .init(rawValue: info.pbi_rgid) }
 
   @_alwaysEmitIntoClient
-  var svuid: uid_t { info.pbi_svuid }
+  var svuid: UserID { .init(rawValue: info.pbi_svuid) }
 
   @_alwaysEmitIntoClient
-  var svgid: gid_t { info.pbi_svgid }
+  var svgid: GroupProcessID { .init(rawValue: info.pbi_svgid) }
 
   @_alwaysEmitIntoClient
   var comm: String {
@@ -145,22 +145,22 @@ public extension Proc.BSDShortInfo {
   var processParentID: UInt32 { info.pbsi_ppid }
 
   @_alwaysEmitIntoClient
-  var uid: uid_t { info.pbsi_uid }
+  var uid: UserID { .init(rawValue: info.pbsi_uid) }
 
   @_alwaysEmitIntoClient
-  var gid: gid_t { info.pbsi_gid }
+  var gid: GroupProcessID { .init(rawValue: info.pbsi_gid) }
 
   @_alwaysEmitIntoClient
-  var ruid: uid_t { info.pbsi_ruid }
+  var ruid: UserID { .init(rawValue: info.pbsi_ruid) }
 
   @_alwaysEmitIntoClient
-  var rgid: gid_t { info.pbsi_rgid }
+  var rgid: GroupProcessID { .init(rawValue: info.pbsi_rgid) }
 
   @_alwaysEmitIntoClient
-  var svuid: uid_t { info.pbsi_svuid }
+  var svuid: UserID { .init(rawValue: info.pbsi_svuid) }
 
   @_alwaysEmitIntoClient
-  var svgid: gid_t { info.pbsi_svgid }
+  var svgid: GroupProcessID { .init(rawValue: info.pbsi_svgid) }
 
   @_alwaysEmitIntoClient
   var comm: String {

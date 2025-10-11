@@ -6,15 +6,17 @@ import SyscallValue
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getInteger(systemVariable: SystemVariableInteger) -> Result<Int, Errno> {
-    SyscallUtilities.valueOrErrno {
+  static func getInteger(systemVariable: SystemVariableInteger) throws(Errno) -> Int {
+    try SyscallUtilities.valueOrErrno {
       SystemLibc.sysconf(systemVariable.rawValue)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getString(systemVariable: SystemVariableString) -> Result<String, Errno> {
-    SyscallUtilities.preallocateSyscall { getString(systemVariable: systemVariable, fixEmptyCString: false, mode: $0) }
+  static func getString(systemVariable: SystemVariableString) throws(Errno) -> String {
+    try SyscallUtilities.preallocateSyscall { mode throws(Errno) in
+      try getString(systemVariable: systemVariable, fixEmptyCString: false, mode: mode)
+    }
   }
 
   /// get string-valued configurable variables
@@ -23,7 +25,7 @@ public extension SystemCall {
   ///   - fixEmptyCString: if true and result is empty string, set \0 to buffer[0]
   /// - Returns: the buffer size needed to hold the entire configuration-defined value, including the terminating null byte. if the variable does not have a configuration defined value, 0 is returned.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getString(systemVariable: SystemVariableString, fixEmptyCString: Bool, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+  static func getString(systemVariable: SystemVariableString, fixEmptyCString: Bool, mode: SyscallUtilities.PreAllocateCallMode) throws(Errno) -> Int {
     Errno.reset()
     let buf = mode.toC
     let result = SystemLibc.confstr(systemVariable.rawValue, buf.baseAddress, buf.count)
@@ -31,7 +33,7 @@ public extension SystemCall {
     if result == 0 {
       if let err = Errno.systemCurrentValid {
         // If the call to confstr() is not successful, 0 is returned and errno is set appropriately
-        return .failure(err)
+        throw err
       } else {
         // if the variable does not have a configuration defined value, 0 is returned and errno is not modified.
         if fixEmptyCString, !buf.isEmpty {
@@ -40,7 +42,7 @@ public extension SystemCall {
       }
     }
 
-    return .success(result)
+    return result
   }
 
   struct SystemVariableInteger: MacroRawRepresentable {

@@ -226,18 +226,18 @@ extension SystemCall {
       }
 
       @_alwaysEmitIntoClient @inlinable @inline(__always)
-      public func get(property: Propperty, _ value: UnsafeMutableRawPointer) -> Result<Void, Errno> {
-        SyscallUtilities.voidOrErrno {
+      public func get(property: Propperty, _ value: UnsafeMutableRawPointer) throws(Errno) {
+        try SyscallUtilities.voidOrErrno {
           copyfile_state_get(state, property.rawValue, value)
-        }
+        }.get()
       }
 
       @_alwaysEmitIntoClient @inlinable @inline(__always)
-      public func set(property: Propperty, _ value: UnsafeRawPointer) -> Result<Void, Errno> {
+      public func set(property: Propperty, _ value: UnsafeRawPointer) throws(Errno) {
         // value must not be nil
-        SyscallUtilities.voidOrErrno {
+        try SyscallUtilities.voidOrErrno {
           copyfile_state_set(state, property.rawValue, value)
-        }
+        }.get()
       }
 
       public struct Propperty: MacroRawRepresentable, Equatable {
@@ -430,36 +430,39 @@ extension SystemCall.CopyFile.What: CustomStringConvertible {
 public extension SystemCall.CopyFile.State {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func get<T: FixedWidthInteger>(property: Propperty) -> Result<T, Errno> {
+  func get<T: FixedWidthInteger>(property: Propperty) throws(Errno) -> T {
     var result: T = 0
-    return get(property: property, &result).map { result }
+    try get(property: property, &result)
+    return result
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func get(property: Propperty) -> Result<Bool, Errno> {
+  func get(property: Propperty) throws(Errno) -> Bool {
     var result = false
-    return get(property: property, &result).map { result }
+    try get(property: property, &result)
+    return result
   }
 
+  // TODO: borrowed cstring
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func withUnsafeCString<R: ~Copyable, E: Error>(property: Propperty, _ body: (UnsafeMutablePointer<CChar>?) throws(E) -> R) throws(E) -> R {
     assert([.srcFilename, .dstFilename, .xattrName].contains(property))
     var ptr: UnsafeMutablePointer<CChar>?
-    try! get(property: property, &ptr).get()
+    try! get(property: property, &ptr)
     return try body(ptr)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func set<T>(property: Propperty, value: T) -> Result<Void, Errno> {
-    withUnsafeBytes(of: value) { buffer in
-      set(property: property, buffer.baseAddress!)
+  func set<T>(property: Propperty, value: T) throws(Errno) {
+    try withUnsafeBytes(of: value) { buffer throws(Errno) in
+      try set(property: property, buffer.baseAddress!)
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func set(property: Propperty, value: UnsafePointer<CChar>) -> Result<Void, Errno> {
-    func set(_ property: Propperty, _ cString: UnsafePointer<CChar>) -> Result<Void, Errno> {
-      self.set(property: property, UnsafeRawPointer(cString))
+  func set(property: Propperty, value: UnsafePointer<CChar>) throws(Errno) {
+    func set(_ property: Propperty, _ cString: UnsafePointer<CChar>) throws(Errno) {
+      try self.set(property: property, UnsafeRawPointer(cString))
     }
     // string will be copied
     assert([.srcFilename, .dstFilename, .xattrName].contains(property))
@@ -475,18 +478,19 @@ public extension SystemCall.CopyFile.State {
       }
     }
     #endif
-    return set(property, value)
+    return try set(property, value)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var callbackContext: UnsafeMutableRawPointer? {
     get {
       var result: UnsafeMutableRawPointer?
-      return try! get(property: .callbackContext, &result).map { result }.get()
+      try! get(property: .callbackContext, &result)
+      return result
     }
     nonmutating set {
       if let newValue {
-        try! set(property: .callbackContext, newValue).get()
+        try! set(property: .callbackContext, newValue)
       } else {
         assertionFailure("callbackContext cannot override by nil")
       }
@@ -497,13 +501,12 @@ public extension SystemCall.CopyFile.State {
   var statusCallback: SystemCall.CopyFile.CCallback? {
     get {
       var result: UnsafeRawPointer?
-      return try! get(property: .statusCallback, &result)
-        .map { unsafeBitCast(result, to: SystemCall.CopyFile.CCallback?.self) }
-        .get()
+      try! get(property: .statusCallback, &result)
+      return unsafeBitCast(result, to: SystemCall.CopyFile.CCallback?.self)
     }
     nonmutating set {
       if let newValue {
-        try! set(property: .statusCallback, unsafeBitCast(newValue, to: UnsafeRawPointer.self)).get()
+        try! set(property: .statusCallback, unsafeBitCast(newValue, to: UnsafeRawPointer.self))
       } else {
         assertionFailure("statusCallback cannot override by nil")
       }
@@ -513,25 +516,25 @@ public extension SystemCall.CopyFile.State {
   /// Get the number of data bytes copied so far.  (Only valid for copyfile_state_get(); see below for more details about callbacks.)  If a COPYFILE_CLONE or COPYFILE_CLONE_FORCE operation successfully cloned the requested objects, then this value will be 0.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var copiedBytes: Int64 {
-    try! get(property: .copiedBytes).get()
+    try! get(property: .copiedBytes)
   }
 
   /// True if a COPYFILE_CLONE or COPYFILE_CLONE_FORCE operation successfully cloned the requested objects.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var wasCloned: Bool {
-    try! get(property: .wasCloned).get()
+    try! get(property: .wasCloned)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var srcFD: FileDescriptor {
-    get { .init(rawValue: try! get(property: .srcFD).get()) }
-    nonmutating set { try! set(property: .srcFD, value: newValue.rawValue).get() }
+    get { .init(rawValue: try! get(property: .srcFD)) }
+    nonmutating set { try! set(property: .srcFD, value: newValue.rawValue) }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var dstFD: FileDescriptor {
-    get { .init(rawValue: try! get(property: .dstFD).get()) }
-    nonmutating set { try! set(property: .dstFD, value: newValue.rawValue).get() }
+    get { .init(rawValue: try! get(property: .dstFD)) }
+    nonmutating set { try! set(property: .dstFD, value: newValue.rawValue) }
   }
 
   @_alwaysEmitIntoClient @inlinable
@@ -575,14 +578,14 @@ public extension SystemCall {
   static func copyFileRange(
     inputFD: FileDescriptor, inputOffset: UnsafeMutablePointer<Int>? = nil,
     outputFD: FileDescriptor, outputOffset: UnsafeMutablePointer<Int>? = nil,
-    length: Int) -> Result<Int, Errno> {
-    SyscallUtilities.valueOrErrno {
+    length: Int) throws(Errno) -> Int {
+    try SyscallUtilities.valueOrErrno {
       /*
        The flags argument is provided to allow for future extensions and
        currently must be set to 0.
        */
       SystemLibc.copy_file_range(inputFD.rawValue, inputOffset, outputFD.rawValue, outputOffset, length, 0)
-    }
+    }.get()
   }
 }
 #endif

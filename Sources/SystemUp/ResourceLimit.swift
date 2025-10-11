@@ -49,29 +49,29 @@ public extension ResourceLimit {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(_ limit: Self, for resource: Resource) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func set(_ limit: Self, for resource: Resource) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: limit) { limit in
         setrlimit(resource.rawValue, limit.pointer(to: \.rawValue)!)
       }
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func get(to limit: inout Self, for resource: Resource) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func get(to limit: inout Self, for resource: Resource) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       withUnsafeMutablePointer(to: &limit) { limit in
         getrlimit(resource.rawValue, limit.pointer(to: \.rawValue)!)
       }
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static subscript(resource: Resource) -> Self {
     get {
       var result: Self = Memory.undefined()
-      assertNoFailure {
-        get(to: &result, for: resource)
+      try! assertNoThrow {
+        try get(to: &result, for: resource)
       }
       return result
     }

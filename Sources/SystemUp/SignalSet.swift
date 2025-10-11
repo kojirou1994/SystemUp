@@ -66,14 +66,13 @@ public extension SignalSet {
     }
   }
 
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func suspend() -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  mutating func suspend() throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: self.rawValue) { sigset in
         sigsuspend(sigset)
       }
-    }
+    }.get()
   }
 
 }

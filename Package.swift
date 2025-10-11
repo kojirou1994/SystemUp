@@ -12,8 +12,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
-    .package(url: "https://github.com/kojirou1994/SyscallValue.git", from: "1.0.0"),
-    .package(url: "https://github.com/kojirou1994/CUtility.git", from: "0.8.0"),
+    .package(url: "https://github.com/kojirou1994/CUtility.git", from: "0.8.1"),
   ],
   targets: [
     .target(
@@ -27,7 +26,7 @@ let package = Package(
       name: "SystemUp",
       dependencies: [
         "SystemLibc",
-        .product(name: "SyscallValue", package: "SyscallValue"),
+        .product(name: "SyscallValue", package: "CUtility"),
         .product(name: "CUtility", package: "CUtility"),
         .product(name: "SystemPackage", package: "swift-system"),
       ],

@@ -79,8 +79,8 @@ public extension SystemCall {
 
   #if canImport(Darwin)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func createTemporaryFile(template: inout DynamicCString, relativeTo base: RelativeDirectory = .cwd, suffixLength: Int32, options: FileDescriptor.OpenOptions? = nil) -> Result<FileDescriptor, Errno> {
-    SyscallUtilities.valueOrErrno {
+  static func createTemporaryFile(template: inout DynamicCString, relativeTo base: RelativeDirectory = .cwd, suffixLength: Int32, options: FileDescriptor.OpenOptions? = nil) throws(Errno) -> FileDescriptor {
+    try SyscallUtilities.valueOrErrno {
       template.withMutableCString { template in
         if let options {
           mkostempsat_np(base.toFD, template, suffixLength, options.rawValue)
@@ -88,7 +88,7 @@ public extension SystemCall {
           mkstempsat_np(base.toFD, template, suffixLength)
         }
       }
-    }.map(FileDescriptor.init)
+    }.map(FileDescriptor.init).get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)

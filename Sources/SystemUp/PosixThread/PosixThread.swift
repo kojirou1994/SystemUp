@@ -17,39 +17,37 @@ extension PosixThread {
 }
 
 public extension PosixThread.ThreadID {
-  @discardableResult
+
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func cancel() -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func cancel() throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_cancel(rawValue)
-    }
+    }.get()
   }
 
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func detach() -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func detach() throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_detach(rawValue)
-    }
+    }.get()
   }
 
   @available(*, noasync)
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func join() -> Result<UnsafeMutableRawPointer?, Errno> {
+  func join() throws(Errno) -> UnsafeMutableRawPointer? {
     var value: UnsafeMutableRawPointer?
-    return SyscallUtilities.errnoOrZeroOnReturn {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_join(rawValue, &value)
-    }.map { value }
+    }.get()
+    return value
   }
 
   /// send a signal to a specified thread
-  @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func send(signal: Signal) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func send(signal: Signal) throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_kill(rawValue, signal.rawValue)
-    }
+    }.get()
   }
 }
 
@@ -449,10 +447,10 @@ extension PosixThread {
 #if os(macOS) || os(iOS)
 public extension PosixThread {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  static func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_set_qos_class_self_np(qos, relativePriority)
-    }
+    }.get()
   }
 }
 
@@ -474,10 +472,10 @@ public extension PosixThread.ThreadID {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_get_qos_class_np(rawValue, qos, relativePriority)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -493,17 +491,17 @@ public extension PosixThread.ThreadID {
 
 public extension PosixThread.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_attr_get_qos_class_np(rawAddress, qos, relativePriority)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) -> Result<Void, Errno> {
-    SyscallUtilities.errnoOrZeroOnReturn {
+  mutating func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) throws(Errno) {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       pthread_attr_set_qos_class_np(rawAddress, qos, relativePriority)
-    }
+    }.get()
   }
 }
 #endif

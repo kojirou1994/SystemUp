@@ -1,7 +1,7 @@
 import SystemLibc
 import SystemPackage
 
-public struct UserID: RawRepresentable, Sendable {
+public struct UserID: RawRepresentable, Sendable, BitwiseCopyable {
   public let rawValue: uid_t
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: uid_t) {
@@ -39,7 +39,7 @@ public extension UserID {
   }
 }
 
-public struct GroupProcessID: RawRepresentable, Sendable {
+public struct GroupProcessID: RawRepresentable, Sendable, BitwiseCopyable {
   public let rawValue: gid_t
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: gid_t) {

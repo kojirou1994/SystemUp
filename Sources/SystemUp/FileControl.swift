@@ -4,10 +4,10 @@ import CUtility
 
 public extension FileDescriptor {
   @inlinable @inline(__always)
-  func sync() -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  func sync() throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.fsync(rawValue)
-    }
+    }.get()
   }
 }
 

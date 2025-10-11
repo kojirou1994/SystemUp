@@ -19,18 +19,18 @@ public extension SystemCall {
   /// - Parameter microseconds: microseconds
   @available(*, deprecated, message: "The usleep() function is obsolescent.  Use nanosleep(2) instead.")
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func usleep(microseconds: UInt32) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func usleep(microseconds: UInt32) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.usleep(microseconds)
-    }
+    }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func nanosleep(rqtp: Timespec, rmtp: UnsafeMutablePointer<Timespec>?) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  static func nanosleep(rqtp: Timespec, rmtp: UnsafeMutablePointer<Timespec>?) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: rqtp.rawValue) { rqtp in
         SystemLibc.nanosleep(rqtp, rmtp?.pointer(to: \.rawValue))
       }
-    }
+    }.get()
   }
 }

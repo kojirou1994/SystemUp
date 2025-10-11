@@ -86,16 +86,18 @@ public extension Proc {
 
   @_alwaysEmitIntoClient
   static func listPIDs(_ type: ListPIDType) throws(Errno) -> [ProcessID] {
-    try SyscallUtilities.preallocateSyscall { Proc.listPIDs(type, mode: $0) }.get()
+    try SyscallUtilities.preallocateSyscall { mode throws(Errno) in
+      try Proc.listPIDs(type, mode: mode)
+    }
   }
 
   /// return buffer size
   @_alwaysEmitIntoClient
-  static func listPIDs(_ type: ListPIDType, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int32, Errno> {
+  static func listPIDs(_ type: ListPIDType, mode: SyscallUtilities.PreAllocateCallMode) throws(Errno) -> Int32 {
     let buffer = mode.toC
-    return SyscallUtilities.valueOrErrno {
+    return try SyscallUtilities.valueOrErrno {
       proc_listpids(type.type, type.typeinfo, buffer.baseAddress, Int32(buffer.count))
-    }
+    }.get()
   }
 
   struct PIDFDInfoType: RawRepresentable {
@@ -123,13 +125,14 @@ public extension Proc {
     public static var fdChannelInfo: Self { .init(rawValue: PROC_PIDFDCHANNELINFO) }
   }
 
-  /// success when value > 0
+  /// success when value >= 0
   @_alwaysEmitIntoClient
   private static func bufferSizeOrErrno(_ body: () -> Int32) -> Result<Int32, Errno> {
     let v = body()
-    if v > 0 {
+    if _fastPath(v >= 0) {
       return .success(v)
     } else {
+      assert(v == -1, "why!")
       return .failure(.systemCurrent)
     }
   }
@@ -209,12 +212,12 @@ public extension Proc {
   }
 
   @_alwaysEmitIntoClient
-  static func listFDs(pid: ProcessID) -> Result<[FDInfo], Errno> {
-    SyscallUtilities.preallocateSyscall { mode in
+  static func listFDs(pid: ProcessID) throws(Errno) -> [FDInfo] {
+    try SyscallUtilities.preallocateSyscall { mode throws(Errno) in
       let buffer = mode.toC
-      return SyscallUtilities.valueOrErrno {
+      return try SyscallUtilities.valueOrErrno {
         proc_pidinfo(pid.rawValue, PIDInfoType.listFDs.rawValue, 0, buffer.baseAddress, Int32(buffer.count))
-      }
+      }.get()
     }
   }
 
@@ -227,37 +230,39 @@ public extension Proc {
   }
 
   @_alwaysEmitIntoClient
-  static func taskAllInfo(pid: ProcessID, into info: inout TaskAllInfo) -> Result<Int32, Errno> {
-    pidInfo(pid: pid, type: .taskAllInfo, arg: 0, value: &info)
+  static func taskAllInfo(pid: ProcessID, into info: inout TaskAllInfo) throws(Errno) {
+    try pidInfo(pid: pid, type: .taskAllInfo, arg: 0, value: &info)
   }
 
   @_alwaysEmitIntoClient
-  static func bsdInfo(pid: ProcessID, into info: inout BSDInfo) -> Result<Int32, Errno> {
-    pidInfo(pid: pid, type: .bsdInfo, arg: 0, value: &info)
+  static func bsdInfo(pid: ProcessID, into info: inout BSDInfo) throws(Errno) {
+    try pidInfo(pid: pid, type: .bsdInfo, arg: 0, value: &info)
   }
 
   @_alwaysEmitIntoClient
-  static func taskInfo(pid: ProcessID, into info: inout TaskInfo) -> Result<Int32, Errno> {
-    pidInfo(pid: pid, type: .taskInfo, arg: 0, value: &info)
+  static func taskInfo(pid: ProcessID, into info: inout TaskInfo) throws(Errno) {
+    try pidInfo(pid: pid, type: .taskInfo, arg: 0, value: &info)
   }
 
   @_alwaysEmitIntoClient
-  static func bsdShortInfo(pid: ProcessID, into info: inout BSDShortInfo) -> Result<Int32, Errno> {
-    pidInfo(pid: pid, type: .bsdShortInfo, arg: 0, value: &info)
+  static func bsdShortInfo(pid: ProcessID, into info: inout BSDShortInfo) throws(Errno) {
+    try pidInfo(pid: pid, type: .bsdShortInfo, arg: 0, value: &info)
   }
 
   @_alwaysEmitIntoClient
-  static func vnodePathInfo(pid: ProcessID, into info: inout VnodePathInfo) -> Result<Int32, Errno> {
-    pidInfo(pid: pid, type: .vnodePathInfo, arg: 0, value: &info)
+  static func vnodePathInfo(pid: ProcessID, into info: inout VnodePathInfo) throws(Errno) {
+    try pidInfo(pid: pid, type: .vnodePathInfo, arg: 0, value: &info)
   }
 
   @_alwaysEmitIntoClient
-  private static func pidInfo<R>(pid: ProcessID, type: PIDInfoType, arg: UInt64, value: inout R) -> Result<Int32, Errno> {
-    bufferSizeOrErrno {
+  static func pidInfo<R>(pid: ProcessID, type: PIDInfoType, arg: UInt64, value: inout R) throws(Errno) {
+    let bytes = try bufferSizeOrErrno {
       withUnsafeMutableBytes(of: &value) { buffer in
+        // -1 or bytes written
         proc_pidinfo(pid.rawValue, type.rawValue, arg, buffer.baseAddress, Int32(buffer.count))
       }
-    }
+    }.get()
+    assert(bytes == MemoryLayout<R>.size, "size mismatch!")
   }
 
 }

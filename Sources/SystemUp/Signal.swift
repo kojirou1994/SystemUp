@@ -14,47 +14,45 @@ public struct Signal: RawRepresentable, Hashable, Sendable {
 public extension Signal {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(handler: SignalHandler, for signals: any Sequence<Self>) {
-    signals.forEach { signal in
-      assertNoFailure {
-        signal.set(handler: handler)
-      }
+  static func set(handler: SignalHandler, for signals: any Sequence<Self>) throws(Errno) {
+    for signal in signals {
+      _ = try signal.set(handler: handler)
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func set(handler: SignalHandler) -> Result<SignalHandler, Errno> {
+  func set(handler: SignalHandler) throws(Errno) -> SignalHandler {
     assert(self != .kill && self != .stop)
     let result = SystemLibc.signal(rawValue, handler.body)
     if unsafeBitCast(result, to: UnsafeRawPointer?.self) == unsafeBitCast(SystemLibc.SIG_ERR, to: UnsafeRawPointer?.self) {
-      return .failure(.systemCurrent)
+      throw .systemCurrent
     }
-    return .success(.init(result))
+    return .init(result)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func set(action: SignalAction) -> Result<SignalAction, Errno> {
+  func set(action: SignalAction) throws(Errno) -> SignalAction {
     var old: SignalAction = Memory.undefined()
-    return set(action: action, oldAction: &old)
-      .map { old }
+    try set(action: action, oldAction: &old)
+    return old
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func set(action: SignalAction, oldAction: UnsafeMutablePointer<SignalAction>?) -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  func set(action: SignalAction, oldAction: UnsafeMutablePointer<SignalAction>?) throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: action.rawValue) { action in
         sigaction(rawValue, action, oldAction?.pointer(to: \.rawValue))
       }
-    }
+    }.get()
   }
 
   /// sends a signal to the calling process(single-threaded program) or thread(multithreaded program).
   /// - Returns: void on success or any of the errors specified for the library functions getpid(2) and pthread_kill(2).
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func sendToCurrentThread() -> Result<Void, Errno> {
-    SyscallUtilities.voidOrErrno {
+  func sendToCurrentThread() throws(Errno) {
+    try SyscallUtilities.voidOrErrno {
       SystemLibc.raise(rawValue)
-    }
+    }.get()
   }
   
   /// Beginning with Mac OS X 10.7, this string is unique to each thread.

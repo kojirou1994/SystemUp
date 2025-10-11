@@ -1,13 +1,13 @@
 {
-  "originHash" : "aa036ef1b8899c876cbf16b334f0f3aacd38d6b840b1330f28201949532d7036",
+  "originHash" : "d9dcb2a00f1f2297a799a4d1ea62371a55ac456d7dc240870908d3ac10312134",
   "pins" : [
     {
       "identity" : "cutility",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
-        "revision" : "41ddf58a8165f38073b848a1fba3f33b668abd83",
-        "version" : "0.8.0"
+        "revision" : "96b0e90e7ffcfd6c6206739994f960122ec1436a",
+        "version" : "0.8.1"
       }
     },
     {
@@ -26,15 +26,6 @@
       "state" : {
         "revision" : "395a77f0aa927f0ff73941d7ac35f2b46d47c9db",
         "version" : "1.6.3"
-      }
-    },
-    {
-      "identity" : "syscallvalue",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/kojirou1994/SyscallValue.git",
-      "state" : {
-        "revision" : "588d71ca35d5f8b707692059774d8516de1727f3",
-        "version" : "1.0.1"
       }
     }
   ],

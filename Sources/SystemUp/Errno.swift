@@ -34,17 +34,25 @@ public extension Errno {
 
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
-  func copyErrorMessage(to buf: UnsafeMutableBufferPointer<CChar>) -> Result<Void, Errno> {
+  func copyErrorMessage(to buf: UnsafeMutableBufferPointer<CChar>) throws(Errno) {
     assert(!buf.isEmpty)
-    return SyscallUtilities.errnoOrZeroOnReturn {
+    try SyscallUtilities.errnoOrZeroOnReturn {
       SystemLibc.strerror_r(rawValue, buf.baseAddress.unsafelyUnwrapped, buf.count)
+    }.get()
+  }
+
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  static func print(_ string: borrowing some CString) {
+    string.withUnsafeCString { string in
+      perror(string)
     }
   }
 
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
-  static func print(_ string: UnsafePointer<CChar>? = nil) {
-    perror(string)
+  static func print() {
+    perror(nil)
   }
 }
 

@@ -8,10 +8,10 @@ public enum WaitPID {}
 public extension WaitPID {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func wait(_ target: TargetID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
-                   rusage: UnsafeMutablePointer<ResourceUsage>? = nil) -> Result<ProcessID, Errno> {
-    SyscallUtilities.valueOrErrno {
+                   rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> ProcessID {
+    try SyscallUtilities.valueOrErrno {
       wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage?.pointer(to: \.rawValue))
-    }.map(ProcessID.init)
+    }.map(ProcessID.init).get()
   }
 }
 

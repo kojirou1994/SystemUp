@@ -32,12 +32,15 @@ public extension SyscallUtilities {
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  static func retryWhileInterrupted<T>(_ body: () -> Result<T, Errno>) -> Result<T, Errno> {
+  static func retryWhileInterrupted<T>(_ body: () throws(Errno) -> T) throws(Errno) -> T {
     while true {
-      switch body() {
-      case .success(let v): return .success(v)
-      case .failure(.interrupted): break
-      case .failure(let e): return .failure(e)
+      do {
+        return try body()
+      } catch {
+        switch error {
+        case .interrupted: break
+        default: throw error
+        }
       }
     }
   }
@@ -82,6 +85,13 @@ public func assertNoFailure<R, E>(file: StaticString = #file, line: UInt = #line
     assertionFailure("Impossible Error: \(error)", file: file, line: line)
   }
   return result
+}
+
+@inlinable @inline(__always)
+@_alwaysEmitIntoClient
+public func assertNoThrow<R, E: Error>(file: StaticString = #file, line: UInt = #line, _ body: () throws(E) -> R) throws(E) -> R {
+  try assertNoFailure(file: file, line: line) { .init(catching: body) }
+    .get()
 }
 
 @inlinable @inline(__always)
