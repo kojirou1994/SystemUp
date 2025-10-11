@@ -8,6 +8,7 @@
 #ifdef __linux__
 
 #define __USE_GNU 1
+#include <string.h>
 #include <spawn.h>
 #include <sys/types.h>
 #include <sys/stat.h>

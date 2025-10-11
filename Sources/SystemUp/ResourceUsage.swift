@@ -2,7 +2,7 @@ import SystemLibc
 import CUtility
 import SystemPackage
 
-public struct ResourceUsage: Sendable, BitwiseCopyable {
+public struct ResourceUsage: Sendable {
   @usableFromInline
   internal var rawValue: rusage
 
@@ -14,6 +14,10 @@ public struct ResourceUsage: Sendable, BitwiseCopyable {
     }
   }
 }
+
+#if canImport(Darwin)
+extension ResourceUsage: BitwiseCopyable {}
+#endif
 
 public extension ResourceUsage {
 
