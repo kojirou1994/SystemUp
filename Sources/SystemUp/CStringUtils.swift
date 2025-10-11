@@ -113,12 +113,14 @@ public extension CStringUtils {
     }.map { .init($0) }
   }
 
+  #if canImport(Darwin) || os(FreeBSD)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func search(_ string: UnsafePointer<CChar>, substring: borrowing some CString, bytesLimit: Int) -> UnsafePointer<CChar>? {
     substring.withUnsafeCString { substring in
       SystemLibc.strnstr(string, substring, bytesLimit)
     }.map { .init($0) }
   }
+  #endif
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func copy(_ string: borrowing some CString, bytesLimit: Int? = nil) throws(Errno) -> DynamicCString {
@@ -134,3 +136,64 @@ public extension CStringUtils {
   }
 }
 
+
+func demo() {
+  memset(nil, 0, 0)
+}
+
+
+// TODO
+/*
+
+ public func memchr(_ __s: UnsafeRawPointer!, _ __c: Int32, _ __n: Int) -> UnsafeMutableRawPointer!
+
+ public func memcpy(_ __dst: UnsafeMutableRawPointer!, _ __src: UnsafeRawPointer!, _ __n: Int) -> UnsafeMutableRawPointer!
+
+ public func memmove(_ __dst: UnsafeMutableRawPointer!, _ __src: UnsafeRawPointer!, _ __len: Int) -> UnsafeMutableRawPointer!
+
+ public func memset(_ __b: UnsafeMutableRawPointer!, _ __c: Int32, _ __len: Int) -> UnsafeMutableRawPointer!
+
+ public func strtok(_ __str: UnsafeMutablePointer<CChar>!, _ __sep: UnsafePointer<CChar>!) -> UnsafeMutablePointer<CChar>!
+
+ public func strxfrm(_ __s1: UnsafeMutablePointer<CChar>!, _ __s2: UnsafePointer<CChar>!, _ __n: Int) -> Int
+
+ public func strtok_r(_ __str: UnsafeMutablePointer<CChar>!, _ __sep: UnsafePointer<CChar>!, _ __lasts: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>!) -> UnsafeMutablePointer<CChar>!
+
+ public func memccpy(_ __dst: UnsafeMutableRawPointer!, _ __src: UnsafeRawPointer!, _ __c: Int32, _ __n: Int) -> UnsafeMutableRawPointer!
+
+ @available(macOS 10.9, *)
+ public func memset_s(_ __s: UnsafeMutableRawPointer!, _ __smax: Int, _ __c: Int32, _ __n: Int) -> errno_t
+
+ @available(macOS 10.7, *)
+ public func memmem(_ __big: UnsafeRawPointer!, _ __big_len: Int, _ __little: UnsafeRawPointer!, _ __little_len: Int) -> UnsafeMutableRawPointer!
+
+ @available(macOS 10.5, *)
+ public func memset_pattern4(_ __b: UnsafeMutableRawPointer!, _ __pattern4: UnsafeRawPointer!, _ __len: Int)
+
+ @available(macOS 10.5, *)
+ public func memset_pattern8(_ __b: UnsafeMutableRawPointer!, _ __pattern8: UnsafeRawPointer!, _ __len: Int)
+
+ @available(macOS 10.5, *)
+ public func memset_pattern16(_ __b: UnsafeMutableRawPointer!, _ __pattern16: UnsafeRawPointer!, _ __len: Int)
+
+ @available(macOS 15.4, *)
+ public func strchrnul(_ __s: UnsafePointer<CChar>!, _ __c: Int32) -> UnsafeMutablePointer<CChar>!
+
+ public func strlcat(_ __dst: UnsafeMutablePointer<CChar>!, _ __source: UnsafePointer<CChar>!, _ __size: Int) -> Int
+
+ public func strlcpy(_ __dst: UnsafeMutablePointer<CChar>!, _ __source: UnsafePointer<CChar>!, _ __size: Int) -> Int
+
+ public func strmode(_ __mode: Int32, _ __bp: UnsafeMutablePointer<CChar>!)
+
+ public func strsep(_ __stringp: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>!, _ __delim: UnsafePointer<CChar>!) -> UnsafeMutablePointer<CChar>!
+
+ public func swab(_: UnsafeRawPointer!, _: UnsafeMutableRawPointer!, _ __len: Int)
+
+ @available(macOS 10.12.1, *)
+ public func timingsafe_bcmp(_ __b1: UnsafeRawPointer!, _ __b2: UnsafeRawPointer!, _ __len: Int) -> Int32
+
+ @available(macOS 11.0, *)
+ public func strsignal_r(_ __sig: Int32, _ __strsignalbuf: UnsafeMutablePointer<CChar>!, _ __buflen: Int) -> Int32
+
+
+ */
