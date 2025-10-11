@@ -269,9 +269,9 @@ extension Command {
       assert(running, "process already exited")
 #endif
       var status: WaitPID.ExitStatus = Memory.undefined()
-      _ = try SyscallUtilities.retryWhileInterrupted {
-        WaitPID.wait(.processID(pid), status: &status)
-      }.get()
+      _ = try SyscallUtilities.retryWhileInterrupted { () throws(Errno) in
+        try WaitPID.wait(.processID(pid), status: &status)
+      }
 
       pipes.closeLocal()
 #if DEBUG
