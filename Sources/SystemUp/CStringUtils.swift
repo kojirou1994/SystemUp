@@ -137,11 +137,6 @@ public extension CStringUtils {
 }
 
 
-func demo() {
-  memset(nil, 0, 0)
-}
-
-
 // TODO
 /*
 
