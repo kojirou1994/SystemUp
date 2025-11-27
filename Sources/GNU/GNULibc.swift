@@ -1,6 +1,5 @@
 #if canImport(Glibc)
 import CUtility
-import CSystemUp
 
 public enum GNULibc {
 }
