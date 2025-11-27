@@ -211,7 +211,7 @@ extension Command {
     try attributesHandler(&attrs)
 
     var args = CStringArray()
-    args.append(.copy(bytes: arg0))
+    args.append(try! .copy(bytes: arg0))
     args.append(contentsOf: arguments)
 
     do {

@@ -1,3 +1,4 @@
+#if canImport(CSystemUp)
 #if canImport(Darwin)
 @_exported import Darwin.C
 #elseif canImport(Glibc)
@@ -6,6 +7,9 @@
 @_exported import Musl
 #endif
 @_exported import CSystemUp
+#else
+@_exported import LittleC
+#endif
 
 #if os(Linux)
 @_silgen_name("vasprintf")

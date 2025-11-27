@@ -1,5 +1,5 @@
 import SystemLibc
-import CSystemUp
+import SystemLibc
 import CUtility
 
 public struct FileSystemStatistics: BitwiseCopyable {

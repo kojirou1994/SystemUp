@@ -7,7 +7,7 @@ public extension SystemCall {
 
   /// generic exec helper
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func exec(_ executablePath: borrowing some CString, arguments: some Sequence<some ContiguousUTF8Bytes>, searchPATH: Bool) throws(Errno) -> Never {
+  static func exec(_ executablePath: borrowing some CString, arguments: some Collection<some ContiguousUTF8Bytes>, searchPATH: Bool) throws(Errno) -> Never {
     assert(arguments.first(where: { _ in true }) != nil, "The first argument, by convention, should point to the file name associated with the file being executed.")
 
     try withTempUnsafeCStringArray(arguments) { argv throws(Errno) in

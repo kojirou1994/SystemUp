@@ -1,5 +1,6 @@
 import SystemLibc
-import SystemPackage
+import struct SystemPackage.Errno
+import struct SystemPackage.FileDescriptor
 import CUtility
 
 public struct FileStream: ~Copyable {
@@ -430,17 +431,17 @@ public extension FileStream {
 public extension FileStream {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardInput: FileStream {
-    .init(rawValue: SystemLibc.swift_get_stdin())
+    .init(rawValue: SystemLibc.stdin)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardOutput: FileStream {
-    .init(rawValue: SystemLibc.swift_get_stdout())
+    .init(rawValue: SystemLibc.stdout)
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var standardError: FileStream {
-    .init(rawValue: SystemLibc.swift_get_stderr())
+    .init(rawValue: SystemLibc.stderr)
   }
 }
 

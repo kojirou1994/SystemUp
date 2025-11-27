@@ -136,6 +136,16 @@ public extension CStringUtils {
   }
 }
 
+public extension DynamicCString {
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func copy(bytes: borrowing some ContiguousUTF8Bytes & ~Copyable & ~Escapable) throws(Errno) -> Self {
+    try bytes.withContiguousUTF8Bytes { buffer throws(Errno) in
+      try CStringUtils.copy(buffer.baseAddress!, bytesLimit: buffer.count)
+    }
+  }
+
+}
 
 // TODO
 /*

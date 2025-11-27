@@ -23,7 +23,7 @@ public extension SystemCall {
   /// - Returns: file descriptor and generated filename string
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func createTemporaryFile(template: borrowing some CString, suffixLength: Int32? = nil, options: FileDescriptor.OpenOptions? = nil) throws(Errno) -> TemporaryFileInfo  {
-    var template = DynamicCString.copy(cString: template)
+    var template = try CStringUtils.copy(template)
     let fd = try createTemporaryFile(template: &template, suffixLength: suffixLength, options: options)
     return .init(fd: fd, filename: template)
   }

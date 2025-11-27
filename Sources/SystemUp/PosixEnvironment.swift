@@ -11,7 +11,7 @@ public struct PosixEnvironment: Sendable {
   public var envCArray: CStringArray {
     var result = CStringArray()
     result.reserveCapacity(environment.count)
-    environment.forEach { result.append(.copy(bytes: "\($0)=\($1)")) }
+    environment.forEach { result.append(try! .copy(bytes: "\($0)=\($1)")) }
     return result
   }
 }

@@ -26,7 +26,7 @@ public struct Fts: ~Copyable {
 
   /// empty paths will crash
   @_alwaysEmitIntoClient
-  public static func open(paths: some Sequence<some ContiguousUTF8Bytes>, options: OpenOptions) throws(Errno) -> Self {
+  public static func open(paths: some Collection<some ContiguousUTF8Bytes>, options: OpenOptions) throws(Errno) -> Self {
     try withTempUnsafeCStringArray(paths) { argv throws(Errno) in
       try ftsOpen(argv, options)
     }

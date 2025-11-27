@@ -1,5 +1,5 @@
 import SystemPackage
-import CSystemUp
+import SystemLibc
 
 public extension CInterop {
   #if canImport(Darwin)

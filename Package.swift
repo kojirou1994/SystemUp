@@ -12,7 +12,8 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
-    .package(url: "https://github.com/kojirou1994/CUtility.git", from: "0.8.1"),
+    .package(url: "https://github.com/kojirou1994/CUtility.git", branch: "main"),
+    .package(url: "https://github.com/kojirou1994/LittleC.git", branch: "main"),
   ],
   targets: [
     .target(
@@ -20,7 +21,7 @@ let package = Package(
     .target(
       name: "SystemLibc",
       dependencies: [
-        "CSystemUp",
+        .product(name: "LittleC", package: "LittleC"),
       ]),
     .target(
       name: "SystemUp",
