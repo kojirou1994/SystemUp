@@ -1,5 +1,4 @@
 import Foundation
-import SystemPackage
 
 extension SystemFileManager {
   @available(iOS 11.0, *)

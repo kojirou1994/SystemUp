@@ -1,4 +1,3 @@
-import SystemPackage
 import CUtility
 import SystemLibc
 
@@ -192,16 +191,16 @@ extension Fts {
     }
     
     /// A path for accessing the file from the current directory.
-    @_alwaysEmitIntoClient
-    public var pathToCurrentDirectory: FilePath {
-      .init(platformString: rawAddress.pointee.fts_accpath)
-    }
+//    @_alwaysEmitIntoClient
+//    public var pathToCurrentDirectory: FilePath {
+//      .init(platformString: rawAddress.pointee.fts_accpath)
+//    }
     
     /// The path for the file relative to the root of the traversal.  This path contains the path specified to fts_open() as a prefix.
-    @_alwaysEmitIntoClient
-    public var path: FilePath {
-      .init(platformString: rawAddress.pointee.fts_path)
-    }
+//    @_alwaysEmitIntoClient
+//    public var path: FilePath {
+//      .init(platformString: rawAddress.pointee.fts_path)
+//    }
 
     @_alwaysEmitIntoClient
     public var name: String {

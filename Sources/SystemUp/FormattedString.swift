@@ -1,6 +1,5 @@
 import CUtility
 import SystemLibc
-import SystemPackage
 
 @usableFromInline
 internal func check(args: [CVarArg]) {

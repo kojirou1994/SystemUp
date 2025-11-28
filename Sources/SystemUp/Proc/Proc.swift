@@ -1,6 +1,5 @@
 #if os(macOS)
 import SystemLibc
-import SystemPackage
 import CUtility
 import SyscallValue
 
@@ -37,16 +36,16 @@ public extension Proc {
   @_alwaysEmitIntoClient
   static var pathInfoMaxSize: Int32 { 4 * MAXPATHLEN }
   
-  @_alwaysEmitIntoClient
-  static func path(pid: ProcessID) throws(Errno) -> FilePath {
-    try toTypedThrows(Errno.self) {
-      try withUnsafeTemporaryAllocation(byteCount: Int(pathInfoMaxSize), alignment: MemoryLayout<UInt8>.alignment) { buffer in
-        let length = try path(pid: pid, into: buffer).get()
-        buffer[Int(length)] = 0
-        return .init(platformString: buffer.baseAddress!.assumingMemoryBound(to: CInterop.Char.self))
-      }
-    }
-  }
+//  @_alwaysEmitIntoClient
+//  static func path(pid: ProcessID) throws(Errno) -> FilePath {
+//    try toTypedThrows(Errno.self) {
+//      try withUnsafeTemporaryAllocation(byteCount: Int(pathInfoMaxSize), alignment: MemoryLayout<UInt8>.alignment) { buffer in
+//        let length = try path(pid: pid, into: buffer).get()
+//        buffer[Int(length)] = 0
+//        return .init(platformString: buffer.baseAddress!.assumingMemoryBound(to: CInterop.Char.self))
+//      }
+//    }
+//  }
 
   /// result is c-string length(no \0), return 0 if buffer is too small
   @_alwaysEmitIntoClient

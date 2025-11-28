@@ -1,5 +1,4 @@
 import SystemLibc
-import SystemPackage
 
 public struct UserID: RawRepresentable, Sendable, BitwiseCopyable {
   public let rawValue: uid_t

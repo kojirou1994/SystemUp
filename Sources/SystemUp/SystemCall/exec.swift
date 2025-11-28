@@ -1,5 +1,4 @@
 #if os(macOS) || os(iOS) || os(freeBSD) || os(Linux)
-import SystemPackage
 import SystemLibc
 import CUtility
 

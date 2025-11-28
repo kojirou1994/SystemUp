@@ -1,6 +1,5 @@
 import SystemLibc
 import CUtility
-import SystemPackage
 
 public struct ResourceUsage: Sendable {
   @usableFromInline

@@ -1,6 +1,5 @@
 #if os(macOS)
 import SystemLibc
-import SystemPackage
 
 extension Proc {
   public enum Dirty {

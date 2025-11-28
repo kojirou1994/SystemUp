@@ -1,20 +1,19 @@
-import SystemPackage
 import SystemLibc
 import SyscallValue
 import CUtility
 
-extension FileDescriptor {
-  public func read<T: SyscallValue>(upToCount count: Int) throws(Errno) -> T {
-    try toTypedThrows(Errno.self) {
-      try T.init(bytesCapacity: count) { buffer in
-        try read(into: buffer)
-      }
-    }
-  }
-
-  @inlinable @inline(__always)
-  internal static var currentWorkingDirectory: Self { .init(rawValue: SystemLibc.AT_FDCWD) }
-}
+//extension FileDescriptor {
+//  public func read<T: SyscallValue>(upToCount count: Int) throws(Errno) -> T {
+//    try toTypedThrows(Errno.self) {
+//      try T.init(bytesCapacity: count) { buffer in
+//        try read(into: buffer)
+//      }
+//    }
+//  }
+//
+//  @inlinable @inline(__always)
+//  internal static var currentWorkingDirectory: Self { .init(rawValue: SystemLibc.AT_FDCWD) }
+//}
 
 // MARK: TTY
 public extension FileDescriptor {

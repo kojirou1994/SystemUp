@@ -1,12 +1,12 @@
-import SystemPackage
 import SystemLibc
 
+public enum CInterop { }
 public extension CInterop {
-  #if canImport(Darwin)
-  typealias UpInodeNumber = UInt64
-  #elseif os(Linux)
+//  #if canImport(Darwin)
+//  typealias UpInodeNumber = UInt64
+//  #elseif os(Linux)
   typealias UpInodeNumber = ino_t
-  #endif
+//  #endif
 
   #if canImport(Darwin)
   typealias UpSeekOffset = UInt64
@@ -14,11 +14,11 @@ public extension CInterop {
   typealias UpSeekOffset = off_t
   #endif
 
-  #if canImport(Darwin)
-  typealias UpSize = Int64
-  #elseif os(Linux)
+//  #if canImport(Darwin)
+//  typealias UpSize = Int64
+//  #elseif os(Linux)
   typealias UpSize = off_t
-  #endif
+//  #endif
 
   typealias UpBlocksCount = blkcnt_t
 

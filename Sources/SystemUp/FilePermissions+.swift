@@ -1,4 +1,3 @@
-import SystemPackage
 
 public extension FilePermissions {
   @_alwaysEmitIntoClient @inlinable @inline(__always)

@@ -1,15 +1,47 @@
-import SystemPackage
 import SystemLibc
 import CUtility
 
+public struct Errno: RawRepresentable, Error, Hashable {
+  public let rawValue: CInt
+  @_alwaysEmitIntoClient
+  public init(rawValue: CInt) {
+    self.rawValue = rawValue
+  }
+}
+
+
+//extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
+//
+//  @inline(never)
+//  public var description: String {
+//    guard let ptr = system_strerror(self.rawValue) else { return "unknown error" }
+//    return String(cString: ptr)
+//  }
+//
+//  /// The corresponding C function is `strerror(3)`.
+//  public var debugDescription: String { self.description }
+//}
+
+
+//extension Errno {
+//  @_alwaysEmitIntoClient
+//  public static func ~=(_ lhs: Errno, _ rhs: Error) -> Bool {
+//    guard let value = rhs as? Errno else { return false }
+//    return lhs == value
+//  }
+//}
+
+
 public extension Errno {
+
 
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   static var systemCurrent: Self {
-    get { .init(rawValue: SystemLibc.swift_get_errno()) }
-    set { SystemLibc.swift_set_errno(newValue.rawValue) }
+    get { .init(rawValue: SystemLibc.errno) }
+    set { SystemLibc.errno = newValue.rawValue }
   }
+
 
   /// set errno to 0.
   @_alwaysEmitIntoClient
@@ -22,7 +54,7 @@ public extension Errno {
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   static var systemCurrentValid: Self? {
-    let v = SystemLibc.swift_get_errno()
+    let v = SystemLibc.errno
     return v == 0 ? nil : .init(rawValue: v)
   }
 
@@ -57,7 +89,7 @@ public extension Errno {
 }
 
 #if canImport(Darwin)
-extension Errno: @retroactive CaseIterable {
+extension Errno: CaseIterable {
   public static var allCases: some Collection<Errno> {
     let n = 0..<SystemLibc.sys_nerr
     let s = n.lazy.map(Errno.init)

@@ -1,6 +1,5 @@
 import SystemLibc
 import CUtility
-import SystemPackage
 
 public struct PosixEnvironment: Sendable {
   public var environment: [String: String]
@@ -20,7 +19,7 @@ public extension PosixEnvironment {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var environ: NullTerminatedArray<UnsafeMutablePointer<CChar>> {
-    .init(SystemCall._environ)
+    .init(SystemLibc.environ)
   }
 
   /// not thread-safe

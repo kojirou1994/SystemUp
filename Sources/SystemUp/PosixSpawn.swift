@@ -1,6 +1,5 @@
 #if os(macOS) || os(iOS) || os(freeBSD) || os(Linux)
 import SystemLibc
-import SystemPackage
 import CUtility
 
 public enum PosixSpawn {}
@@ -123,8 +122,8 @@ extension PosixSpawn {
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func open(_ path: FilePath, _ mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions = .init(), permissions: FilePermissions? = nil, fd: FileDescriptor) {
-      path.withPlatformString { path in
+    public mutating func open(_ path: borrowing some CString, _ mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions = .init(), permissions: FilePermissions? = nil, fd: FileDescriptor) {
+      path.withUnsafeCString { path in
         open(path, mode, options: options, permissions: permissions, fd: fd)
       }
     }
@@ -166,18 +165,14 @@ extension PosixSpawn {
     #if os(macOS) || os(Linux)
     @available(macOS 10.15, *)
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func chdir(_ path: UnsafePointer<CChar>) {
+    public mutating func chdir(_ path: borrowing some CString) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
-          posix_spawn_file_actions_addchdir_np(&fileActions, path)
+          path.withUnsafeCString { path in
+            posix_spawn_file_actions_addchdir_np(&fileActions, path)
+          }
         }
       }
-    }
-
-    @available(macOS 10.15, *)
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func chdir(_ path: FilePath) {
-      path.withPlatformString { chdir($0) }
     }
 
     @available(macOS 10.15, *)

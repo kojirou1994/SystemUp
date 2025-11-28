@@ -1,4 +1,3 @@
-import SystemPackage
 import SystemLibc
 import CUtility
 
@@ -36,17 +35,6 @@ public extension SystemCall {
         SystemLibc.unsetenv(name)
       }
     }.get()
-  }
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static var _environ: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?> {
-    let environ: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>
-    #if canImport(Darwin)
-    environ = NSGetEnviron().pointee
-    #elseif os(Linux)
-    environ = swift_get_environ()
-    #endif
-    return environ
   }
 
   #if canImport(Darwin)

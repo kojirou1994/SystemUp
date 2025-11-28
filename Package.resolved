@@ -1,5 +1,5 @@
 {
-  "originHash" : "32297aa13af68e11b31354ca6e8925140e142800fa99771e9a207606eb82eca3",
+  "originHash" : "b0c61febcc564b9591b4b5258013607e81b75031790b61ef7344e33c4dee815d",
   "pins" : [
     {
       "identity" : "cutility",
@@ -16,7 +16,7 @@
       "location" : "https://github.com/kojirou1994/LittleC.git",
       "state" : {
         "branch" : "main",
-        "revision" : "6b898abbc89a2a90c6a43a8a21b7aa850e40f005"
+        "revision" : "b67ea5747ae0e007b683d08970aaa90407a60258"
       }
     },
     {

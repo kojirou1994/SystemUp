@@ -1,5 +1,4 @@
 import SystemLibc
-import SystemPackage
 
 public struct PosixRWLock: ~Copyable {
 

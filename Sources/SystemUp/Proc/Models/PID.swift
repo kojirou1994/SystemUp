@@ -1,7 +1,6 @@
 #if os(macOS)
 import CUtility
 import SystemLibc
-import SystemPackage
 
 extension Proc {
   public struct BSDInfo {

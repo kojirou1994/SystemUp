@@ -1,6 +1,4 @@
 import SystemLibc
-import struct SystemPackage.Errno
-import struct SystemPackage.FileDescriptor
 import CUtility
 
 public struct FileStream: ~Copyable {

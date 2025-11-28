@@ -29,7 +29,6 @@ let package = Package(
         "SystemLibc",
         .product(name: "SyscallValue", package: "CUtility"),
         .product(name: "CUtility", package: "CUtility"),
-        .product(name: "SystemPackage", package: "swift-system"),
       ],
       swiftSettings: [
         .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),

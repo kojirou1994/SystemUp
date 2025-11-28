@@ -1,5 +1,4 @@
 import SystemLibc
-import SystemPackage
 import CUtility
 
 #if canImport(Darwin)

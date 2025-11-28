@@ -1,6 +1,5 @@
 #if canImport(Darwin)
 import Darwin.C
-import SystemPackage
 import CUtility
 
 public struct Kqueue: ~Copyable {

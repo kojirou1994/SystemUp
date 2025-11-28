@@ -1,5 +1,4 @@
 import SystemLibc
-import SystemPackage
 import CUtility
 
 public extension FileDescriptor {
@@ -197,15 +196,15 @@ public extension FileControl.Command {
 
 public extension FileControl {
 
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func path(for fd: FileDescriptor) throws(Errno) -> FilePath {
-    try toTypedThrows(Errno.self) {
-      try withUnsafeTemporaryAllocation(of: CChar.self, capacity: Int(MAXPATHLEN)) { buffer in
-        try control(fd, command: .getPath, ptr: buffer.baseAddress!)
-        return FilePath(platformString: buffer.baseAddress!)
-      }
-    }
-  }
+//  @_alwaysEmitIntoClient @inlinable @inline(__always)
+//  static func path(for fd: FileDescriptor) throws(Errno) -> FilePath {
+//    try toTypedThrows(Errno.self) {
+//      try withUnsafeTemporaryAllocation(of: CChar.self, capacity: Int(MAXPATHLEN)) { buffer in
+//        try control(fd, command: .getPath, ptr: buffer.baseAddress!)
+//        return FilePath(platformString: buffer.baseAddress!)
+//      }
+//    }
+//  }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func path(for fd: FileDescriptor, to buffer: UnsafeMutableRawBufferPointer) throws(Errno) {
@@ -213,15 +212,15 @@ public extension FileControl {
     try control(fd, command: .getPath, ptr: buffer.baseAddress!)
   }
 
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func nonFirmlinkedPath(for fd: FileDescriptor) throws(Errno) -> FilePath {
-    try toTypedThrows(Errno.self) {
-      try withUnsafeTemporaryAllocation(of: CChar.self, capacity: Int(MAXPATHLEN)) { buffer in
-        try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!)
-        return FilePath(platformString: buffer.baseAddress!)
-      }
-    }
-  }
+//  @_alwaysEmitIntoClient @inlinable @inline(__always)
+//  static func nonFirmlinkedPath(for fd: FileDescriptor) throws(Errno) -> FilePath {
+//    try toTypedThrows(Errno.self) {
+//      try withUnsafeTemporaryAllocation(of: CChar.self, capacity: Int(MAXPATHLEN)) { buffer in
+//        try control(fd, command: .getNonFirmlinkedPath, ptr: buffer.baseAddress!)
+//        return FilePath(platformString: buffer.baseAddress!)
+//      }
+//    }
+//  }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func nonFirmlinkedPath(for fd: FileDescriptor, to buffer: UnsafeMutableRawBufferPointer) throws(Errno) {

@@ -1,5 +1,4 @@
 #if canImport(Darwin)
-import SystemPackage
 import MachO
 
 public extension SystemCall {

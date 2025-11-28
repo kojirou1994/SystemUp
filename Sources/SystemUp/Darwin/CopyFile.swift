@@ -1,5 +1,4 @@
 import SystemLibc
-import SystemPackage
 import CUtility
 
 #if canImport(Darwin)
@@ -537,15 +536,15 @@ public extension SystemCall.CopyFile.State {
     nonmutating set { try! set(property: .dstFD, value: newValue.rawValue) }
   }
 
-  @_alwaysEmitIntoClient @inlinable
-  var src: FilePath? {
-    withUnsafeCString(property: .srcFilename) { $0.map { FilePath(platformString: $0) } }
-  }
-
-  @_alwaysEmitIntoClient @inlinable
-  var dst: FilePath? {
-    withUnsafeCString(property: .dstFilename) { $0.map { FilePath(platformString: $0) } }
-  }
+//  @_alwaysEmitIntoClient @inlinable
+//  var src: FilePath? {
+//    withUnsafeCString(property: .srcFilename) { $0.map { FilePath(platformString: $0) } }
+//  }
+//
+//  @_alwaysEmitIntoClient @inlinable
+//  var dst: FilePath? {
+//    withUnsafeCString(property: .dstFilename) { $0.map { FilePath(platformString: $0) } }
+//  }
 
 }
 

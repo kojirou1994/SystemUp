@@ -1,3 +1,4 @@
+#if canImport(SystemPackage)
 import CUtility
 import SystemPackage
 
@@ -53,3 +54,4 @@ extension FilePath.Component: @retroactive CStringConvertible {
     return v
   }
 }
+#endif

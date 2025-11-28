@@ -1,17 +1,16 @@
-import SystemPackage
 import SystemLibc
 import CUtility
 
 public extension SystemCall {
 
   /// get  working directory path
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getWorkingDirectory() throws(Errno) -> FilePath {
-    // TODO: avoid path coping
-    try getWorkingDirectoryBuffer().withUnsafeCString { path in
-      FilePath(platformString: path)
-    }
-  }
+//  @_alwaysEmitIntoClient @inlinable @inline(__always)
+//  static func getWorkingDirectory() throws(Errno) -> FilePath {
+//    // TODO: avoid path coping
+//    try getWorkingDirectoryBuffer().withUnsafeCString { path in
+//      FilePath(platformString: path)
+//    }
+//  }
 
   /// get  working directory path buffer, buffer needs to be released.
   @_alwaysEmitIntoClient @inlinable @inline(__always)

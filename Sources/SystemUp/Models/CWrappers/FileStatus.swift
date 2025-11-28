@@ -1,4 +1,3 @@
-import SystemPackage
 import SystemLibc
 import CUtility
 
@@ -124,11 +123,11 @@ public extension FileStatus {
 
   struct FileType: MacroRawRepresentable, Equatable {
 
-    public init(rawValue: CInterop.Mode) {
+    public init(rawValue: mode_t) {
       self.rawValue = rawValue
     }
 
-    public let rawValue: CInterop.Mode
+    public let rawValue: mode_t
   }
 }
 
