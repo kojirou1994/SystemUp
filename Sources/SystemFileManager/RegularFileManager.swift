@@ -3,7 +3,7 @@ import CUtility
 
 public enum RegularFileManager {
   /// src must be regular file, dst must not exist, dst is deleted if failure
-  public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int = 4096) throws {
+  public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int = 4096) throws(Errno) {
     let inFD = try SystemCall.open(src, .readOnly)
     defer {
       try? SystemCall.close(inFD)
@@ -17,19 +17,22 @@ public enum RegularFileManager {
     }
 
     do {
-      try withUnsafeTemporaryAllocation(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer in
-        while case let length = try inFD.read(into: buffer), length > 0 {
-          try outFD.writeAll(UnsafeRawBufferPointer(rebasing: buffer.prefix(length)))
+      try toTypedThrows(Errno.self) {
+        try withUnsafeTemporaryAllocation(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer in
+          while case let length = try inFD.read(into: buffer), length > 0 {
+            try outFD.writeAll(UnsafeRawBufferPointer(rebasing: buffer.prefix(length)))
+          }
         }
       }
     } catch {
       // delete failed dst
       try? SystemCall.unlink(dst)
+      throw error
     }
   }
 
   /// returns true if linked, false if copied
-  public static func linkOrCopyFile(src: borrowing some CString, dst: borrowing some CString) throws -> Bool {
+  public static func linkOrCopyFile(src: borrowing some CString, dst: borrowing some CString) throws(Errno) -> Bool {
     assert(try! SystemFileManager.fileStatus(src, \.fileType) == .regular)
     do {
       try SystemCall.createHardLink(dst, toDestination: src)
@@ -45,7 +48,7 @@ public enum RegularFileManager {
   }
 
   /// returns true if renamed, false if copied
-  public static func renameOrCopyFileAndDeleteSRC(src: borrowing some CString, dst: borrowing some CString, ignoreDeleleSRCError: Bool = true) throws -> Bool {
+  public static func renameOrCopyFileAndDeleteSRC(src: borrowing some CString, dst: borrowing some CString, ignoreDeleleSRCError: Bool = true) throws(Errno) -> Bool {
     assert(try! SystemFileManager.fileStatus(src, \.fileType) == .regular)
     do {
       try SystemCall.rename(src, toDestination: dst, flags: .exclusive)
