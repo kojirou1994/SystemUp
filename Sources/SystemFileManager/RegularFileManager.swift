@@ -1,18 +1,19 @@
 import SystemUp
+import CUtility
 
 public enum RegularFileManager {
   /// src must be regular file, dst must not exist, dst is deleted if failure
-  public static func slowCopyFile(src: FilePath, dst: FilePath, bufferSize: Int = 4096) throws {
-    let inFD = try FileDescriptor.open(src, .readOnly)
+  public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int = 4096) throws {
+    let inFD = try SystemCall.open(src, .readOnly)
     defer {
-      try? inFD.close()
+      try? SystemCall.close(inFD)
     }
 
     assert(try! SystemFileManager.fileStatus(inFD, \.fileType) == .regular)
 
-    let outFD = try FileDescriptor.open(dst, .writeOnly, options: [.create, .exclusiveCreate], permissions: .fileDefault)
+    let outFD = try SystemCall.open(dst, .writeOnly, options: [.create, .exclusiveCreate], permissions: .fileDefault)
     defer {
-      try? outFD.close()
+      try? SystemCall.close(outFD)
     }
 
     do {
@@ -28,7 +29,7 @@ public enum RegularFileManager {
   }
 
   /// returns true if linked, false if copied
-  public static func linkOrCopyFile(src: FilePath, dst: FilePath) throws -> Bool {
+  public static func linkOrCopyFile(src: borrowing some CString, dst: borrowing some CString) throws -> Bool {
     assert(try! SystemFileManager.fileStatus(src, \.fileType) == .regular)
     do {
       try SystemCall.createHardLink(dst, toDestination: src)
@@ -44,7 +45,7 @@ public enum RegularFileManager {
   }
 
   /// returns true if renamed, false if copied
-  public static func renameOrCopyFileAndDeleteSRC(src: FilePath, dst: FilePath, ignoreDeleleSRCError: Bool = true) throws -> Bool {
+  public static func renameOrCopyFileAndDeleteSRC(src: borrowing some CString, dst: borrowing some CString, ignoreDeleleSRCError: Bool = true) throws -> Bool {
     assert(try! SystemFileManager.fileStatus(src, \.fileType) == .regular)
     do {
       try SystemCall.rename(src, toDestination: dst, flags: .exclusive)
