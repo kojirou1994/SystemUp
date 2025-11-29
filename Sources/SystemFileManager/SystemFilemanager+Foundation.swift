@@ -1,10 +1,11 @@
 #if !$Embedded
 import Foundation
 import CUtility
+import SystemUp
 
-extension SystemFileManager {
+public extension SystemFileManager {
   @available(iOS 11.0, *)
-  public static func delete(_ path: borrowing some CString, trashIfAvailable: Bool, or removeMethod: (UnsafePointer<CChar>) throws -> Void = { try SystemFileManager.remove($0) }) throws {
+  static func delete(_ path: borrowing some CString, trashIfAvailable: Bool, or removeMethod: (UnsafePointer<CChar>) throws -> Void = { try SystemFileManager.remove($0) }) throws {
     try path.withUnsafeCString { path in
       #if os(macOS) || os(iOS)
       if trashIfAvailable {
@@ -15,6 +16,33 @@ extension SystemFileManager {
       #else
       try removeMethod(path)
       #endif
+    }
+  }
+
+  static func contents(ofFile path: borrowing some CString, mode: FullContentLoadMode = .length) throws -> Data {
+    try SystemCall.open(path, .readOnly)
+      .closeAfter { fd in
+        try contents(ofFileDescriptor: fd, mode: mode)
+      }
+  }
+
+  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> Data {
+    switch mode {
+    case .length:
+      let size = try length(fd: fd)
+      guard size > 0 else {
+        return .init()
+      }
+      let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
+      do {
+        let count = try fd.read(into: buffer)
+        return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
+      } catch {
+        buffer.deallocate()
+        throw error
+      }
+    case .stream(let bufferSize):
+      return try streamRead(fd: fd, bufferSize: bufferSize)
     }
   }
 }

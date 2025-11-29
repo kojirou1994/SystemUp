@@ -1,5 +1,4 @@
 import SystemUp
-import struct Foundation.Data
 import CUtility
 
 public struct SystemFileManager {}
@@ -164,12 +163,12 @@ extension SystemFileManager {
 // MARK: File Contents
 public extension SystemFileManager {
 
-  private static func length(fd: FileDescriptor) throws -> Int {
+  internal static func length(fd: FileDescriptor) throws -> Int {
     let status = try fileStatus(fd, \.size)
     return Int(status)
   }
 
-  private static func streamRead<T: RangeReplaceableCollection>(fd: FileDescriptor, bufferSize: Int) throws -> T where T.Element == UInt8 {
+  internal static func streamRead<T: RangeReplaceableCollection>(fd: FileDescriptor, bufferSize: Int) throws -> T where T.Element == UInt8 {
     precondition(bufferSize > 0)
     var dest = T()
     try withUnsafeTemporaryAllocation(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer in
@@ -185,27 +184,21 @@ public extension SystemFileManager {
     case stream(bufferSize: Int)
   }
 
-  static func contents(ofFile path: FilePath, mode: FullContentLoadMode = .length) throws -> [UInt8] {
-    let fd = try FileDescriptor.open(path, .readOnly)
-    return try fd.closeAfter {
-      try contents(ofFileDescriptor: fd, mode: mode)
-    }
+  static func contents(ofFile path: borrowing some CString, mode: FullContentLoadMode = .length) throws -> [UInt8] {
+    try SystemCall.open(path, .readOnly)
+      .closeAfter { fd in
+        try contents(ofFileDescriptor: fd, mode: mode)
+      }
   }
 
   @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
-  static func contents(ofFile path: FilePath, mode: FullContentLoadMode = .length) throws -> String {
-    let fd = try FileDescriptor.open(path, .readOnly)
-    return try fd.closeAfter {
-      try contents(ofFileDescriptor: fd, mode: mode)
-    }
+  static func contents(ofFile path: borrowing some CString, mode: FullContentLoadMode = .length) throws -> String {
+    try SystemCall.open(path, .readOnly)
+      .closeAfter { fd in
+        try contents(ofFileDescriptor: fd, mode: mode)
+      }
   }
 
-  static func contents(ofFile path: FilePath, mode: FullContentLoadMode = .length) throws -> Data {
-    let fd = try FileDescriptor.open(path, .readOnly)
-    return try fd.closeAfter {
-      try contents(ofFileDescriptor: fd, mode: mode)
-    }
-  }
 
   static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> [UInt8] {
     switch mode {
@@ -229,26 +222,6 @@ public extension SystemFileManager {
       }
     case .stream(let bufferSize):
       return try .init(decoding: streamRead(fd: fd, bufferSize: bufferSize) as [UInt8], as: UTF8.self)
-    }
-  }
-
-  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> Data {
-    switch mode {
-    case .length:
-      let size = try length(fd: fd)
-      guard size > 0 else {
-        return .init()
-      }
-      let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
-      do {
-        let count = try fd.read(into: buffer)
-        return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
-      } catch {
-        buffer.deallocate()
-        throw error
-      }
-    case .stream(let bufferSize):
-      return try streamRead(fd: fd, bufferSize: bufferSize)
     }
   }
 
