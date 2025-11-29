@@ -155,8 +155,8 @@ extension SystemFileManager {
     }
   }
 
-  public static func nullDeviceFD() throws -> FileDescriptor {
-    try .open("/dev/null", .readWrite)
+  public static func nullDeviceFD() throws(Errno) -> FileDescriptor {
+    try SystemCall.open("/dev/null", .readWrite)
   }
 
 }
