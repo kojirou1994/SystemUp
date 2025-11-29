@@ -6,28 +6,73 @@ public struct SystemFileManager {}
 
 extension SystemFileManager {
 
-  public static func createDirectoryIntermediately(_ path: FilePath, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
-    do throws(Errno) {
-      let fileType = try fileStatus(path, \.fileType)
-      if fileType == .directory {
-        // existed
-        return
-      } else {
-        throw Errno.fileExists
+  public static func createDirectoryIntermediately(_ path: borrowing some CString, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
+    // https://github.com/freebsd/freebsd-src/blob/main/bin/mkdir/mkdir.c
+    try path.withCopiedMutable { path throws(Errno) in
+      var statbuf: FileStatus = Memory.undefined()
+      var current = path
+      let sep = UInt8(ascii: "/")
+      if current.pointee == sep { /* Skip leading '/'. */
+        current += 1
       }
-    } catch {
-      switch error {
-      case .noSuchFileOrDirectory:
-        // create parent
-        var parent = path
-        if parent.removeLastComponent(), !parent.isEmpty {
-          try createDirectoryIntermediately(parent, relativeTo: base, permissions: permissions)
+      var first = true
+      var last = false
+      while !last {
+        defer {
+          current += 1
         }
-        try path.withUnsafeCString { path throws(Errno) in
+        if current.pointee == 0 {
+          last = true
+        } else if current.pointee != sep {
+          continue
+        }
+        current.pointee = 0 // set sep to 0
+        defer {
+//          if !last {
+          current.pointee = CChar(sep) // restore sep
+//          }
+        }
+        if !last, current.successor().pointee == 0 { // ignore trailing '/'
+          last = true
+        }
+        if first {
+          // umask skiped
+          first = false
+        }
+        if last {
+          // umask skiped
+        }
+
+        do throws(Errno) {
+          // try mkdir and check
           try SystemCall.createDirectory(path, relativeTo: base, permissions: permissions)
+          if true { // verbose
+            FileStream.write(string: path)
+          }
+        } catch {
+//          Errno.print()
+          switch error {
+          case .fileExists, .isDirectory:
+            do throws(Errno) {
+              try SystemCall.fileStatus(path, into: &statbuf)
+            } catch {
+              // can't stat file, it's fatal error
+              throw error
+            }
+            if statbuf.fileType != .directory {
+              if last {
+                // last comp exists but not dir
+                throw .fileExists
+              } else {
+                // parent comp exists but not dir
+                throw .notDirectory
+              }
+            }
+          default:
+            fatalError()
+          }
         }
-      default:
-        throw error
+
       }
     }
 
