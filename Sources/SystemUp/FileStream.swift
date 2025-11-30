@@ -405,6 +405,20 @@ public extension FileStream {
     }
     return result
   }
+
+  /// puts
+  /// writes the string, and a terminating newline character, to the stream stdout.
+  @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func write(line: borrowing some CString) -> Int32? {
+    let result = line.withUnsafeCString { string in
+      SystemLibc.puts(string)
+    }
+    if _slowPath(result == SystemLibc.EOF) {
+      return nil
+    }
+    return result
+  }
 }
 
 // MARK: lock
