@@ -21,12 +21,17 @@ public struct Directory: ~Copyable {
 
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
-  public static func open(_ path: borrowing some CString) throws(Errno) -> Self {
-    .init(try SyscallUtilities.unwrap {
-      path.withUnsafeCString { path in
-        SystemLibc.opendir(path)
-      }
-    }.get())
+  public static func open(_ path: borrowing some CString, relativeTo base: SystemCall.RelativeDirectory = .cwd) throws(Errno) -> Self {
+    switch base {
+    case .cwd:
+      try .init(SyscallUtilities.unwrap {
+        path.withUnsafeCString { path in
+          SystemLibc.opendir(path)
+        }
+      }.get())
+    case .directory(let directoryFD):
+      try .open(SystemCall.open(path, relativeTo: .directory(directoryFD), .readOnly, options: .directory))
+    }
   }
 
   @inlinable @inline(__always)
@@ -40,9 +45,8 @@ public struct Directory: ~Copyable {
   @inlinable @inline(__always)
   @_alwaysEmitIntoClient
   deinit {
-    assertNoFailure {
-      SyscallUtilities.voidOrErrno { SystemLibc.closedir(dir) }
-    }
+    let v = SystemLibc.closedir(dir)
+    assert(v == 0)
   }
 
   /// release Directory but keep stream opened, use with open(_ fd: FileDescriptor)
