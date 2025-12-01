@@ -29,6 +29,8 @@ public enum RegularFileManager {
       try? SystemCall.unlink(dst)
       throw error
     }
+
+    assert(try! SystemFileManager.fileStatus(inFD, \.size) == SystemFileManager.fileStatus(outFD, \.size))
   }
 
   /// returns true if linked, false if copied

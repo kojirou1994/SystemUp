@@ -5,7 +5,7 @@ public struct SystemFileManager {}
 
 extension SystemFileManager {
 
-  public static func createDirectoryIntermediately(_ path: borrowing some CString, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault) throws(Errno) {
+  public static func createDirectoryIntermediately(_ path: borrowing some CString, relativeTo base: SystemCall.RelativeDirectory = .cwd, permissions: FilePermissions = .directoryDefault, onDirectoryCreated: (UnsafePointer<CChar>) -> Void = { _ in }, onFailure: (UnsafePointer<CChar>) -> Void = { _ in }) throws(Errno) {
     // https://github.com/freebsd/freebsd-src/blob/main/bin/mkdir/mkdir.c
     try path.withCopiedMutable { path throws(Errno) in
       var statbuf: FileStatus = Memory.undefined()
@@ -45,11 +45,8 @@ extension SystemFileManager {
         do throws(Errno) {
           // try mkdir and check
           try SystemCall.createDirectory(path, relativeTo: base, permissions: permissions)
-          if true { // verbose
-            FileStream.write(string: path)
-          }
+          onDirectoryCreated(path) // eg. logging
         } catch {
-//          Errno.print()
           switch error {
           case .fileExists, .isDirectory:
             do throws(Errno) {
@@ -68,7 +65,9 @@ extension SystemFileManager {
               }
             }
           default:
-            fatalError()
+            // mkdir just failed
+            onFailure(path)
+            throw error
           }
         }
 
@@ -77,13 +76,16 @@ extension SystemFileManager {
 
   }
 
-  public static func remove(_ path: FilePath) throws(Errno) {
+  public static func remove(_ path: borrowing some CString) throws(Errno) {
     if try fileStatus(path, flags: .noFollow, \.fileType) == .directory {
+      #if canImport(Darwin)
+      try removeDirectoryUntilSuccess(path)
+      #else
       try removeDirectoryRecursive(path)
+      #endif
     } else {
       try SystemCall.unlink(path)
     }
-
   }
   
   /// remove empty directory
@@ -94,33 +96,49 @@ extension SystemFileManager {
   
   /// remove directory tree and prevente directoryNotEmpty Errno
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func removeDirectoryUntilSuccess(_ path: FilePath) throws(Errno) {
+  public static func removeDirectoryUntilSuccess(_ path: borrowing some CString) throws(Errno) {
     while true {
       do {
         try removeDirectoryRecursive(path)
         return
       } catch .directoryNotEmpty {
-
+        // happens on darwin sometimes
       } catch {
         throw error
       }
     }
   }
 
-  public static func removeDirectoryRecursive(_ path: FilePath) throws(Errno) {
-    var directory = try Directory.open(path)
+  public static func removeDirectoryRecursive(_ path: borrowing some CString) throws(Errno) {
 
-    while let entry = try directory.next() {
-      // remove each entry, return result
-      let entryName = entry.name
-      let childPath = path.appending(entryName)
-      switch entry.fileType {
-      case .directory: try removeDirectoryRecursive(childPath)
-      case .unknown: try remove(childPath)
-      default:
-        try SystemCall.unlink(childPath)
+    var sb: FileStatus = Memory.undefined()
+
+    func recursiveAll(directory: consuming Directory) throws(Errno) {
+      let dfd = directory.fd
+      while let entry = try directory.next() {
+        // remove each entry, return result
+        var isDir = false
+        switch entry.fileType {
+        case .directory: isDir = true
+        case .unknown:
+          try SystemCall.fileStatus(entry.nameCString, relativeTo: .directory(dfd), flags: .noFollow, into: &sb)
+          if sb.fileType == .directory {
+            isDir = true
+          }
+        default:
+          break
+        }
+        if isDir {
+          try recursiveAll(directory: .open(entry.nameCString, relativeTo: .directory(dfd)))
+        }
+//        if true {
+//          FileStream.write(line: entry.nameCString)
+//        }
+        try SystemCall.unlink(entry.nameCString, relativeTo: .directory(dfd), flags: isDir ? .removeDir : [])
       }
     }
+
+    try recursiveAll(directory: .open(path))
 
     try removeDirectory(path)
   }
