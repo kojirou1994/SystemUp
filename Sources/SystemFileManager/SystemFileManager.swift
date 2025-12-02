@@ -143,35 +143,6 @@ extension SystemFileManager {
     try removeDirectory(path)
   }
 
-  /// Performs a deep enumeration of the specified directory and returns the paths of all of the contained subdirectories.
-  /// - Parameter path: The path of the root directory.
-  /// - Returns: Relative paths of all of the contained subdirectories.
-  public static func subpathsOfDirectory(atPath path: FilePath) throws(Errno) -> [FilePath] {
-    var results = [FilePath]()
-    try _subpathsOfDirectory(atPath: path, basePath: FilePath(), into: &results)
-    return results
-  }
-
-  private static func _subpathsOfDirectory(atPath path: FilePath, basePath: FilePath, into results: inout [FilePath]) throws(Errno) {
-    var directory = try Directory.open(path)
-    let dfd = directory.fd
-    while let entry = try directory.next() {
-      let entryName = entry.name
-      let result = basePath.appending(entryName)
-      results.append(result)
-
-      let isDirectory: Bool = switch entry.fileType {
-      case .directory: true
-      case .unknown:
-        try fileStatus(entryName, relativeTo: .directory(dfd), flags: .noFollow, \.fileType) == .directory
-      default: false
-      }
-      if isDirectory {
-        try _subpathsOfDirectory(atPath: path.appending(entryName), basePath: basePath.appending(entryName), into: &results)
-      }
-    }
-  }
-
   public static func nullDeviceFD() throws(Errno) -> FileDescriptor {
     try SystemCall.open("/dev/null", .readWrite)
   }
