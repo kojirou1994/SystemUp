@@ -30,6 +30,8 @@ let package = Package(
         .product(name: "CUtility", package: "CUtility"),
       ],
       swiftSettings: [
+        .define("APPLE", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
+        .define("UNIX_BSD", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
         .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),
         .unsafeFlags(["-Xfrontend", "-disable-reflection-metadata"]),
         .enableExperimentalFeature("Extern"),
@@ -41,7 +43,13 @@ let package = Package(
       name: "SystemFileManager",
       dependencies: [
         "SystemUp",
-      ]),
+      ],
+      swiftSettings: [
+        .define("APPLE", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
+        .define("UNIX_BSD", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
+        .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),
+      ]
+    ),
     .target(
       name: "Command",
       dependencies: [

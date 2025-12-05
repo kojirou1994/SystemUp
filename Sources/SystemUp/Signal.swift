@@ -119,7 +119,7 @@ public extension Signal {
   @_alwaysEmitIntoClient
   static var abort: Signal { .init(rawValue: SystemLibc.SIGABRT) }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient
   static var emulatorTrap: Signal { .init(rawValue: SystemLibc.SIGEMT) }
   #endif
@@ -187,7 +187,7 @@ public extension Signal {
   @_alwaysEmitIntoClient
   static var windowSizeChange: Signal { .init(rawValue: SystemLibc.SIGWINCH) }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient
   static var info: Signal { .init(rawValue: SystemLibc.SIGINFO) }
   #endif

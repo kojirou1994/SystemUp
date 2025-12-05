@@ -1,7 +1,7 @@
 import SystemLibc
 import CUtility
 
-#if canImport(Darwin)
+#if APPLE
 
 @usableFromInline
 internal func copyfile_swift_callback(what: Int32, stage: Int32, state: copyfile_state_t?, src: UnsafePointer<CChar>?, dst: UnsafePointer<CChar>?, ctx: UnsafeMutableRawPointer?) -> Int32 {

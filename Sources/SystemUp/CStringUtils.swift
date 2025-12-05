@@ -112,7 +112,7 @@ public extension CStringUtils {
     }.map { .init($0) }
   }
 
-  #if canImport(Darwin) || os(FreeBSD)
+  #if UNIX_BSD
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func search(_ string: UnsafePointer<CChar>, substring: borrowing some CString, bytesLimit: Int) -> UnsafePointer<CChar>? {
     substring.withUnsafeCString { substring in

@@ -119,7 +119,7 @@ extension PosixMutex {
 
       public let rawValue: Int32
 
-      #if canImport(Darwin)
+      #if APPLE
       @_alwaysEmitIntoClient
       public static var firstFit: Self { .init(macroValue: PTHREAD_MUTEX_POLICY_FIRSTFIT_NP) }
       @_alwaysEmitIntoClient
@@ -233,7 +233,7 @@ public extension PosixMutex.Attributes {
     }
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   @available(macOS 10.13.4, iOS 11.3, watchOS 4.3, tvOS 11.3, *)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var policy: Policy {

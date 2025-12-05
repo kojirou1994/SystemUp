@@ -10,7 +10,7 @@ public struct FileSystemStatistics: BitwiseCopyable {
 @available(macOS 10.15, iOS 13.0, *)
 public extension FileSystemStatistics {
 
-  #if canImport(Darwin)
+  #if APPLE
   typealias BlockSize = UInt32
   typealias UpFSWord = UInt64
   #elseif os(Linux)
@@ -24,7 +24,7 @@ public extension FileSystemStatistics {
     rawValue.f_bsize
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// optimal transfer block size
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var ioSize: Int32 {
@@ -65,14 +65,14 @@ public extension FileSystemStatistics {
   /// file system id
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var id: (Int32, Int32) {
-    #if canImport(Darwin)
+    #if APPLE
     rawValue.f_fsid.val
     #else
     rawValue.f_fsid.__val
     #endif
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// user that mounted the filesystem
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var owner: UserID {
@@ -86,7 +86,7 @@ public extension FileSystemStatistics {
     rawValue.f_type
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// fs sub-type (flavor)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var subType: UInt32 {
@@ -106,7 +106,7 @@ public extension FileSystemStatistics {
     rawValue.f_flags
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// directory on which mounted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var mountedOnName: String {

@@ -37,7 +37,7 @@ public extension SystemCall {
     }.get()
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_extern(c, "environ_lock_np")
   static func _lockEnviron()
 

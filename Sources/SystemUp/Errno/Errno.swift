@@ -88,7 +88,7 @@ public extension Errno {
   }
 }
 
-#if canImport(Darwin)
+#if APPLE
 extension Errno: CaseIterable {
   public static var allCases: some Collection<Errno> {
     let n = 0..<SystemLibc.sys_nerr

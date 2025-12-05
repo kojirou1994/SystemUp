@@ -4,7 +4,7 @@ import CUtility
 
 public extension SystemCall {
 
-  #if canImport(Darwin)
+  #if APPLE
   @available(macOS 13.0, macCatalyst 16.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func readLink(_ fd: FileDescriptor, into buffer: UnsafeMutableBufferPointer<Int8>) throws(Errno) -> Int {

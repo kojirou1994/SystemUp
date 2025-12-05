@@ -5,7 +5,7 @@ public struct ResourceLimit {
   @usableFromInline
   internal var rawValue: rlimit
 
-  #if canImport(Darwin)
+  #if APPLE
   public typealias Limit = UInt64
   #else
   public typealias Limit = UInt

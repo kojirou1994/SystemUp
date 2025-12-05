@@ -75,7 +75,7 @@ public extension Memory {
     }.get()
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// it will free the passed pointer when the requested memory cannot be allocated
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func resizeOrFree(_ ptr: consuming UnsafeMutableRawPointer?, byteCount: Int) throws(Errno) -> UnsafeMutableRawPointer {

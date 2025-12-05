@@ -104,7 +104,7 @@ public struct SocketAddress: ~Copyable {
     self.rawAddress = rawAddress.assumingMemoryBound(to: sockaddr.self)
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// total length
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public var length: UInt8 {
@@ -126,7 +126,7 @@ public struct SocketAddress: ~Copyable {
     public init() {
       self.rawValue = .init()
       rawValue.sin_family = sa_family_t(AF_INET)
-#if canImport(Darwin)
+#if APPLE
       rawValue.sin_len = __uint8_t(MemoryLayout<sockaddr_in>.stride)
 #endif
     }
@@ -173,7 +173,7 @@ public struct SocketAddress: ~Copyable {
 
 public extension SocketAddress.IPV4 {
 
-  #if canImport(Darwin)
+  #if APPLE
   /// total length
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var length: UInt8 {
@@ -203,7 +203,7 @@ public extension SocketAddress.IPV4 {
 
 public extension SocketAddress.IPV6 {
 
-  #if canImport(Darwin)
+  #if APPLE
   /// total length
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var length: UInt8 {
@@ -241,7 +241,7 @@ public extension SocketAddress.IPV6 {
 
 public extension SocketAddress.Unix {
 
-  #if canImport(Darwin)
+  #if APPLE
   /// total length
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var length: UInt8 {
@@ -322,7 +322,7 @@ public extension SocketAddress {
     @_alwaysEmitIntoClient
     public static var numericFormService: Self { .init(macroValue: SystemLibc.NI_NUMERICSERV) }
 
-    #if canImport(Darwin) || os(FreeBSD)
+    #if UNIX_BSD
     @_alwaysEmitIntoClient
     public static var numericScope: Self { .init(macroValue: SystemLibc.NI_NUMERICSCOPE) }
     @_alwaysEmitIntoClient
@@ -338,7 +338,7 @@ public extension SocketAddress {
     public static var maxServiceLength: Int32 { NI_MAXSERV }
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getnameinfo(host: UnsafeMutableBufferPointer<CChar>, serv: UnsafeMutableBufferPointer<CChar>, flags: GetNameInfoFlags) throws(Errno) {
     try getnameinfo(length: UInt32(self.length), host: host, serv: serv, flags: flags)

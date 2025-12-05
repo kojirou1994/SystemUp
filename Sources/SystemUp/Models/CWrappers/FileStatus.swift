@@ -58,7 +58,7 @@ public extension FileStatus {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var lastAccessTime: Timespec {
-    #if canImport(Darwin)
+    #if APPLE
     .init(rawValue: rawValue.st_atimespec)
     #elseif os(Linux)
     .init(rawValue: rawValue.st_atim)
@@ -67,7 +67,7 @@ public extension FileStatus {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var lastModificationTime: Timespec {
-    #if canImport(Darwin)
+    #if APPLE
     .init(rawValue: rawValue.st_mtimespec)
     #elseif os(Linux)
     .init(rawValue: rawValue.st_mtim)
@@ -76,14 +76,14 @@ public extension FileStatus {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var lastStatusChangedTime: Timespec {
-    #if canImport(Darwin)
+    #if APPLE
     .init(rawValue: rawValue.st_ctimespec)
     #elseif os(Linux)
     .init(rawValue: rawValue.st_ctim)
     #endif
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var creationTime: Timespec {
     .init(rawValue: rawValue.st_birthtimespec)
@@ -107,14 +107,14 @@ public extension FileStatus {
     rawValue.st_blksize
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var flags: UInt32 {
     rawValue.st_flags
   }
   #endif
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var fileGenerationNumber: UInt32 {
     rawValue.st_gen
@@ -153,7 +153,7 @@ public extension FileStatus.FileType {
   @_alwaysEmitIntoClient
   static var socket: Self { .init(macroValue: S_IFSOCK) }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient
   static var wht: Self { .init(macroValue: S_IFWHT) }
   #endif
@@ -172,7 +172,7 @@ extension FileStatus.FileType: CustomStringConvertible {
     case .regular: return "regular"
     case .symbolicLink: return "symbolicLink"
     case .socket: return "socket"
-    #if canImport(Darwin)
+    #if APPLE
     case .wht: return "wht"
     #endif
     default: return unknownDescription

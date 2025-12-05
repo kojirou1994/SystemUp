@@ -39,7 +39,7 @@ extension PosixSpawn {
 
   public struct Attributes {
 
-    #if canImport(Darwin)
+    #if APPLE
     public typealias CType = posix_spawnattr_t?
     @_alwaysEmitIntoClient
     private var attributes: CType = nil
@@ -56,7 +56,7 @@ extension PosixSpawn {
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func reinitialize() throws(Errno) {
-      #if canImport(Darwin)
+      #if APPLE
       assert(attributes == nil, "destroy first")
       #endif
       try SyscallUtilities.errnoOrZeroOnReturn {
@@ -85,7 +85,7 @@ extension PosixSpawn {
   }
 
   public struct FileActions {
-    #if canImport(Darwin)
+    #if APPLE
     public typealias CType = posix_spawn_file_actions_t?
     @_alwaysEmitIntoClient
     private var fileActions: posix_spawn_file_actions_t?
@@ -151,7 +151,7 @@ extension PosixSpawn {
       }
     }
 
-    #if canImport(Darwin)
+    #if APPLE
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public mutating func markInheritance(fd: FileDescriptor) {
       assertNoFailure {
@@ -288,7 +288,7 @@ public extension PosixSpawn.Attributes {
 
 }
 
-#if canImport(Darwin)
+#if APPLE
 // MARK: Darwin-specific extensions below
 public extension PosixSpawn.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -436,7 +436,7 @@ public extension PosixSpawn.Attributes.Flags {
   @_alwaysEmitIntoClient
   static var setBlockedSignals: Self { .init(macroValue: POSIX_SPAWN_SETSIGMASK) }
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient
   static var setExec: Self { .init(macroValue: POSIX_SPAWN_SETEXEC) }
 
@@ -466,7 +466,7 @@ public extension PosixSpawn.Attributes {
 
     // Reset all signals to default behavior.
     var mostSignals: SignalSet = Memory.undefined()
-    #if canImport(Darwin)
+    #if APPLE
     mostSignals.fillAll()
     mostSignals.remove(.kill)
     mostSignals.remove(.stop)

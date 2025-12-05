@@ -78,7 +78,7 @@ public extension SystemCall {
     /// size is 2^(_PC_FILESIZEBITS - 1).
     @_alwaysEmitIntoClient
     public static var filesizeBits: Self { .init(rawValue: _PC_FILESIZEBITS) }
-    #if canImport(Darwin)
+    #if APPLE
     /// Returns the number of bits used to store maximum extended attribute size in bytes.  For example, if the maximum attribute size supported by a file system is
     /// 128K, the value returned will be 18.  However a value 18 can mean that the maximum attribute size can be anywhere from (256KB - 1) to 128KB.  As a special
     /// case, the resource fork can have much larger size, and some file system specific extended attributes can have smaller and preset size; for example, Finder

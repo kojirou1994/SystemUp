@@ -1,4 +1,4 @@
-#if canImport(Darwin)
+#if APPLE
 import MachO
 
 public extension SystemCall {

@@ -76,7 +76,7 @@ public extension SystemCall {
 
 public extension SystemCall {
 
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func createTemporaryFile(template: inout DynamicCString, relativeTo base: RelativeDirectory = .cwd, suffixLength: Int32, options: FileDescriptor.OpenOptions? = nil) throws(Errno) -> FileDescriptor {
     try SyscallUtilities.valueOrErrno {

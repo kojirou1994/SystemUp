@@ -1,4 +1,4 @@
-#if canImport(Darwin)
+#if UNIX_BSD
 import Darwin.C
 import CUtility
 

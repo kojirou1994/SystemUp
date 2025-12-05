@@ -26,7 +26,7 @@ public extension SystemCall {
     try SyscallUtilities.voidOrErrno { () -> Int32 in
       sourcePath.withUnsafeCString { sourcePath in
         destPath.withUnsafeCString { destPath in
-#if canImport(Darwin)
+#if APPLE
           renameatx_np(srcBase.toFD, sourcePath, dstBase.toFD, destPath, flags.rawValue)
 #elseif os(Linux)
           renameat2(srcBase.toFD, sourcePath, dstBase.toFD, destPath, flags.rawValue)
@@ -47,7 +47,7 @@ public extension SystemCall {
     /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_SWAP), it will cause the source and target to be atomically swapped.  Source and target need not be of the same type, i.e. it is possible to swap a file with a directory.  EINVAL is returned in case of bitwise-inclusive OR with RENAME_EXCL.
     @_alwaysEmitIntoClient
     public static var swap: Self {
-      #if canImport(Darwin)
+      #if APPLE
       return .init(macroValue: RENAME_SWAP)
       #else
       return .init(macroValue: 1 << 1)
@@ -61,7 +61,7 @@ public extension SystemCall {
     /// On file systems that support it (see getattrlist(2) VOL_CAP_INT_RENAME_EXCL), it will cause EEXIST to be returned if the destination already exists. EINVAL is returned in case of bitwise-inclusive OR with RENAME_SWAP.
     @_alwaysEmitIntoClient
     public static var exclusive: Self {
-      #if canImport(Darwin)
+      #if APPLE
       return .init(macroValue: RENAME_EXCL)
       #else
       return .init(macroValue: 1 << 0)
@@ -73,7 +73,7 @@ public extension SystemCall {
     public static var noReplace: Self { .exclusive }
 
     /// If any symbolic links are encountered during pathname resolution, an error is returned.
-    #if canImport(Darwin)
+    #if APPLE
     @_alwaysEmitIntoClient
     public static var noFollowAny: Self {
       .init(macroValue: RENAME_NOFOLLOW_ANY)

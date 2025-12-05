@@ -3,7 +3,7 @@ import CUtility
 
 public struct Directory: ~Copyable {
 
-  #if canImport(Darwin)
+  #if APPLE
   @usableFromInline
   typealias CDirectoryStream = UnsafeMutablePointer<SystemLibc.DIR>
   #else
@@ -151,7 +151,7 @@ extension Directory {
 
     @_alwaysEmitIntoClient
     public var seekOffset: CInterop.UpSeekOffset {
-      #if canImport(Darwin)
+      #if APPLE
       return entry.pointee.d_seekoff
       #else
       return entry.pointee.d_off
@@ -191,7 +191,7 @@ extension Directory {
 
     @_alwaysEmitIntoClient
     public var nameLength: Int {
-#if canImport(Darwin)
+#if APPLE
       Int(entry.pointee.d_namlen)
 #else
       nameCString.length

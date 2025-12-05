@@ -130,7 +130,7 @@ extension Fts {
 
     /// Like FTS_NOSTAT but if the file type is returned by readdir(3), the corresponding file information value is
     /// returned in fts_info instead of FTS_NSOK.
-    #if canImport(Darwin)
+    #if APPLE
     @_alwaysEmitIntoClient
     public static var noStatType: Self { .init(macroValue: FTS_NOSTAT_TYPE) }
     #endif
@@ -169,7 +169,7 @@ extension Fts {
       .init(FTS_ROOTLEVEL)
     }
 
-    #if canImport(Darwin)
+    #if APPLE
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public static var max: Int16 {
       .init(FTS_MAXLEVEL)

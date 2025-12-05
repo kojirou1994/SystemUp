@@ -164,7 +164,7 @@ public extension SystemCall {
     }
     public let rawValue: Int32
     
-    #if canImport(Darwin)
+    #if APPLE
     /// Provides the path to a user's folder. The directory will be created if it does not already exist.
     @_alwaysEmitIntoClient
     public static var darwinUserDirectory: Self { .init(macroValue: SystemLibc._CS_DARWIN_USER_DIR) }

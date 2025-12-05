@@ -1,7 +1,7 @@
 import SystemLibc
 import CUtility
 
-#if canImport(Darwin)
+#if APPLE
 
 @usableFromInline
 internal func removefile_swift_callback(state: removefile_state_t!, path: UnsafePointer<CChar>!, ctx: UnsafeMutableRawPointer!) -> Int32 {

@@ -14,7 +14,7 @@ public struct ResourceUsage: Sendable {
   }
 }
 
-#if canImport(Darwin)
+#if APPLE
 extension ResourceUsage: BitwiseCopyable {}
 #endif
 

@@ -1,4 +1,4 @@
-#if canImport(Darwin)
+#if APPLE
 import SystemLibc
 import CUtility
 

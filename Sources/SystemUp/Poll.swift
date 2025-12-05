@@ -91,7 +91,7 @@ extension SystemCall {
   }
 }
 
-#if canImport(Darwin) || os(FreeBSD)
+#if UNIX_BSD
 public extension SystemCall.PollFD.Events {
   /// file may have been extended
   @_alwaysEmitIntoClient

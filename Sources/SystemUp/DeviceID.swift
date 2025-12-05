@@ -26,7 +26,7 @@ public extension DeviceID {
     swift_minor(rawValue)
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// The devname() function uses a static buffer, which will be overwritten on subsequent calls.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getName(of type: FileStatus.FileType) -> StaticCString? {

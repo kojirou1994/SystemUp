@@ -160,7 +160,7 @@ public extension FileControl {
 
 }
 
-#if canImport(Darwin)
+#if APPLE
 public extension FileControl.Command {
   @_alwaysEmitIntoClient
   static var getPath: Self { .init(macroValue: F_GETPATH) }

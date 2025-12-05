@@ -78,7 +78,7 @@ extension SystemFileManager {
 
   public static func remove(_ path: borrowing some CString) throws(Errno) {
     if try fileStatus(path, flags: .noFollow, { $0.fileType }) == .directory {
-      #if canImport(Darwin)
+      #if APPLE
       try removeDirectoryUntilSuccess(path)
       #else
       try removeDirectoryRecursive(path)

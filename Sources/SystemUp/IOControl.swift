@@ -47,7 +47,7 @@ public extension IOControl.Request {
   static var setOrClearAsyncIO: Self { .init(rawValue: swift_FIOASYNC()) }
 }
 
-#if canImport(Darwin)
+#if APPLE
 public extension IOControl.Request {
   @_alwaysEmitIntoClient
   static var setOwner: Self { .init(rawValue: swift_FIOSETOWN()) }

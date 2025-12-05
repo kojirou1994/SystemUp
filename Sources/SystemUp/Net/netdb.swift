@@ -29,7 +29,7 @@ public struct Flags: RawRepresentable, Hashable {
   public static var passive: Self { .init(rawValue: SystemLibc.AI_PASSIVE) }
   @_alwaysEmitIntoClient
   public static var v4Mapped: Self { .init(rawValue: SystemLibc.AI_V4MAPPED) }
-  #if canImport(Darwin)
+  #if APPLE
   @_alwaysEmitIntoClient
   public static var v4MappedCRF: Self { .init(rawValue: SystemLibc.AI_V4MAPPED_CFG) }
   @_alwaysEmitIntoClient

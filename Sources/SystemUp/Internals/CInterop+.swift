@@ -8,7 +8,7 @@ public extension CInterop {
   typealias UpInodeNumber = ino_t
 //  #endif
 
-  #if canImport(Darwin)
+  #if APPLE
   typealias UpSeekOffset = UInt64
   #elseif os(Linux)
   typealias UpSeekOffset = off_t

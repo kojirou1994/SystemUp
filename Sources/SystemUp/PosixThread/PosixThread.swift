@@ -80,7 +80,7 @@ public extension PosixThread {
     pthread_testcancel()
   }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// yield control of the current thread
   @available(*, noasync)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -114,7 +114,7 @@ public extension PosixThread {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func create(data: UnsafeMutableRawPointer? = nil, attributes: UnsafePointer<pthread_attr_t>?, _ body: @convention(c) (_ data: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer?) throws(Errno) -> ThreadID {
-    #if canImport(Darwin)
+    #if APPLE
     let body = unsafeBitCast(body, to: (@convention(c) (UnsafeMutableRawPointer) -> UnsafeMutableRawPointer?).self)
     var thread: pthread_t?
     #elseif os(Linux)
@@ -125,7 +125,7 @@ public extension PosixThread {
       pthread_create(&thread, attributes, body, data)
     }.get()
 
-    #if canImport(Darwin)
+    #if APPLE
     return .init(rawValue: thread.unsafelyUnwrapped)
     #else
     return .init(rawValue: thread)

@@ -16,7 +16,7 @@ public extension SignalAction {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   init(blockedSignals: SignalSet = Memory.zeroed(), flags: Flags = [], simple handler: SignalHandler) {
     precondition(!flags.contains(.siginfo), "is using simple handler, siginfo must not be set!")
-    #if canImport(Darwin)
+    #if APPLE
     let sigAction = sigaction(__sigaction_u: .init(__sa_handler: handler.body), sa_mask: blockedSignals.rawValue, sa_flags: flags.rawValue)
     #elseif os(Linux)
     let sigAction = sigaction(__sigaction_handler: .init(sa_handler: handler.body), sa_mask: blockedSignals.rawValue, sa_flags: flags.rawValue, sa_restorer: nil)
@@ -27,7 +27,7 @@ public extension SignalAction {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   init(blockedSignals: SignalSet = Memory.zeroed(), flags: Flags = [], complex handler: @convention(c) (_ signal: Int32, _ siginfo: UnsafeMutablePointer<siginfo_t>?, _ uap: UnsafeMutableRawPointer?) -> Void) {
     let realFlags = flags.union(.siginfo).rawValue
-    #if canImport(Darwin)
+    #if APPLE
     let sigAction = sigaction(__sigaction_u: .init(__sa_sigaction: handler), sa_mask: blockedSignals.rawValue, sa_flags: realFlags)
     #elseif os(Linux)
     let sigAction = sigaction(__sigaction_handler: .init(sa_sigaction: handler), sa_mask: blockedSignals.rawValue, sa_flags: realFlags, sa_restorer: nil)
