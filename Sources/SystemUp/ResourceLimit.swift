@@ -51,7 +51,7 @@ public extension ResourceLimit {
   static func set(_ limit: Self, for resource: Resource) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: limit) { limit in
-        setrlimit(resource.rawValue, UnsafeRawPointer(limit)?.assumingMemoryBound(to: rlimit.self))
+        setrlimit(resource.rawValue, UnsafeRawPointer(limit)!.assumingMemoryBound(to: rlimit.self))
       }
     }.get()
   }
