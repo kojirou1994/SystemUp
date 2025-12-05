@@ -11,7 +11,6 @@ let package = Package(
     .library(name: "Command", targets: ["Command"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
     .package(url: "https://github.com/kojirou1994/CUtility.git", branch: "main"),
     .package(url: "https://github.com/kojirou1994/LittleC.git", branch: "main"),
   ],

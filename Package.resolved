@@ -1,5 +1,5 @@
 {
-  "originHash" : "b0c61febcc564b9591b4b5258013607e81b75031790b61ef7344e33c4dee815d",
+  "originHash" : "ebf9eacba0ee6e89346ffd659c21b151f95fcf5f2625b733abb54a9ae5438bfe",
   "pins" : [
     {
       "identity" : "cutility",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
         "branch" : "main",
-        "revision" : "10e39654ca4f10ccd9e901f81b0eaeb08b2057d1"
+        "revision" : "3b3e146f566602b3739d290967c4623bb883bba5"
       }
     },
     {
@@ -16,16 +16,7 @@
       "location" : "https://github.com/kojirou1994/LittleC.git",
       "state" : {
         "branch" : "main",
-        "revision" : "b67ea5747ae0e007b683d08970aaa90407a60258"
-      }
-    },
-    {
-      "identity" : "swift-system",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-system.git",
-      "state" : {
-        "revision" : "395a77f0aa927f0ff73941d7ac35f2b46d47c9db",
-        "version" : "1.6.3"
+        "revision" : "2fe3dda4746067c15c797657aa7de2b7cb91de0f"
       }
     }
   ],
