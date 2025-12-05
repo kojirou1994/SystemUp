@@ -137,3 +137,47 @@ extension FileDescriptor {
   }
 }
 
+// MARK: System APIs
+public extension FileDescriptor {
+  /// retryOnInterrupt
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func read(into buffer: UnsafeMutableRawBufferPointer) throws(Errno) -> Int {
+    try SyscallUtilities.retryWhileInterrupted { () throws(Errno) in
+      try SystemCall.read(self, into: buffer)
+    }
+  }
+
+  /// retryOnInterrupt
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func write(_ buffer: UnsafeRawBufferPointer) throws(Errno) -> Int {
+    try SyscallUtilities.retryWhileInterrupted { () throws(Errno) in
+      try SystemCall.write(self, buffer: buffer)
+    }
+  }
+
+  @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func writeAll(_ buffer: UnsafeRawBufferPointer) throws(Errno) -> Int  {
+    var written = 0
+    while written < buffer.count {
+      let numBytes = try write(UnsafeRawBufferPointer(rebasing: buffer.dropFirst(written)))
+      written += numBytes
+    }
+    assert(written == buffer.count)
+    return buffer.count
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func closeAfter<R, E: Error>(_ body: (Self) throws(E) -> R) throws(E) -> R {
+    defer {
+      try? close()
+    }
+    return try body(self)
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  func close() throws(Errno) {
+    try SystemCall.close(self)
+  }
+}
+
