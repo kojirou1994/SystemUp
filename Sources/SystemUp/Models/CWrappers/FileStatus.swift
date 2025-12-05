@@ -60,7 +60,7 @@ public extension FileStatus {
   var lastAccessTime: Timespec {
     #if canImport(Darwin)
     .init(rawValue: rawValue.st_atimespec)
-    #elseif canImport(Glibc)
+    #elseif os(Linux)
     .init(rawValue: rawValue.st_atim)
     #endif
   }
@@ -69,7 +69,7 @@ public extension FileStatus {
   var lastModificationTime: Timespec {
     #if canImport(Darwin)
     .init(rawValue: rawValue.st_mtimespec)
-    #elseif canImport(Glibc)
+    #elseif os(Linux)
     .init(rawValue: rawValue.st_mtim)
     #endif
   }
@@ -78,7 +78,7 @@ public extension FileStatus {
   var lastStatusChangedTime: Timespec {
     #if canImport(Darwin)
     .init(rawValue: rawValue.st_ctimespec)
-    #elseif canImport(Glibc)
+    #elseif os(Linux)
     .init(rawValue: rawValue.st_ctim)
     #endif
   }
