@@ -28,7 +28,7 @@ public extension SystemCall {
   static func nanosleep(rqtp: Timespec, rmtp: UnsafeMutablePointer<Timespec>?) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: rqtp.rawValue) { rqtp in
-        SystemLibc.nanosleep(rqtp, rmtp?.pointer(to: \.rawValue))
+        SystemLibc.nanosleep(rqtp, UnsafeMutableRawPointer(rmtp)?.assumingMemoryBound(to: timespec.self))
       }
     }.get()
   }

@@ -51,7 +51,7 @@ public extension ResourceLimit {
   static func set(_ limit: Self, for resource: Resource) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: limit) { limit in
-        setrlimit(resource.rawValue, limit.pointer(to: \.rawValue)!)
+        setrlimit(resource.rawValue, UnsafeRawPointer(limit)?.assumingMemoryBound(to: rlimit.self))
       }
     }.get()
   }
@@ -60,7 +60,7 @@ public extension ResourceLimit {
   static func get(to limit: inout Self, for resource: Resource) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       withUnsafeMutablePointer(to: &limit) { limit in
-        getrlimit(resource.rawValue, limit.pointer(to: \.rawValue)!)
+        getrlimit(resource.rawValue, &limit.pointee.rawValue)
       }
     }.get()
   }
@@ -69,7 +69,7 @@ public extension ResourceLimit {
   static subscript(resource: Resource) -> Self {
     get {
       var result: Self = Memory.undefined()
-      try! assertNoThrow {
+      try! assertNoThrow { () throws(Errno) in
         try get(to: &result, for: resource)
       }
       return result
@@ -108,6 +108,6 @@ extension ResourceLimit: CustomStringConvertible {
       return limit.description
     }
 
-    return "\(String(describing: Self.self))(soft: \(limitDescription(soft)), hard: \(limitDescription(hard)))"
+    return "ResourceLimit(soft: \(limitDescription(soft)), hard: \(limitDescription(hard)))"
   }
 }

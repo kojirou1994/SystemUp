@@ -12,13 +12,11 @@ public struct Fts: ~Copyable {
 
   @_alwaysEmitIntoClient
   public static func open(path: borrowing some CString, options: OpenOptions) throws(Errno) -> Self {
-    try toTypedThrows(Errno.self) {
-      try withUnsafeTemporaryAllocation(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array in
-        try path.withUnsafeCString { path in
-          array[0] = .init(mutating: path)
-          array[1] = nil
-          return try ftsOpen(array.baseAddress.unsafelyUnwrapped, options)
-        }
+    try withUnsafeTemporaryAllocationTyped(of: UnsafeMutablePointer<Int8>?.self, capacity: 2) { array throws(Errno) in
+      try path.withUnsafeCString { path throws(Errno) in
+        array[0] = .init(mutating: path)
+        array[1] = nil
+        return try ftsOpen(array.baseAddress.unsafelyUnwrapped, options)
       }
     }
   }
@@ -48,9 +46,10 @@ public struct Fts: ~Copyable {
   }
 
   @_alwaysEmitIntoClient
+  @_lifetime(borrow self)
   private func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws(Errno) -> Fts.Entry? {
     if let ptr = ptr {
-      return .init(ptr)
+      return _overrideLifetime(.init(ptr), borrowing: self)
     }
     if let errno = Errno.systemCurrentValid {
       throw errno
@@ -59,11 +58,13 @@ public struct Fts: ~Copyable {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
+  @_lifetime(borrow self)
   public func read() throws(Errno) -> Fts.Entry? {
     try entryOrErrno(fts_read(handle))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
+  @_lifetime(borrow self)
   public func children(options: ChildrenOptions = []) throws(Errno) -> Fts.Entry? {
     try entryOrErrno(fts_children(handle, options.rawValue))
   }
@@ -176,39 +177,65 @@ extension Fts {
     #endif
   }
 
-  public struct Entry: Equatable {
-    @usableFromInline
+  public struct Entry: ~Escapable {
+    @_alwaysEmitIntoClient
     internal init(_ rawAddress: UnsafeMutablePointer<FTSENT>) {
       self.rawAddress = rawAddress
+    }
+
+    public struct Identifier: Equatable {
+      @usableFromInline
+      internal let rawAddress: UnsafeMutablePointer<FTSENT>
+      @_alwaysEmitIntoClient
+      internal init(_ rawAddress: UnsafeMutablePointer<FTSENT>) {
+        self.rawAddress = rawAddress
+      }
     }
 
     @usableFromInline
     internal let rawAddress: UnsafeMutablePointer<FTSENT>
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public var dentifier: Identifier {
+      .init(rawAddress)
+    }
+
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var info: Info {
       .init(rawValue: rawAddress.pointee.fts_info)
     }
-    
+
     /// A path for accessing the file from the current directory.
-//    @_alwaysEmitIntoClient
-//    public var pathToCurrentDirectory: FilePath {
-//      .init(platformString: rawAddress.pointee.fts_accpath)
-//    }
+    public var pathToCurrentDirectory: ReferenceCString {
+      @_lifetime(borrow self)
+      @_transparent
+      borrowing get {
+        _overrideLifetime(.init(cString: rawAddress.pointee.fts_accpath), borrowing: self)
+      }
+    }
     
     /// The path for the file relative to the root of the traversal.  This path contains the path specified to fts_open() as a prefix.
-//    @_alwaysEmitIntoClient
-//    public var path: FilePath {
-//      .init(platformString: rawAddress.pointee.fts_path)
-//    }
+    public var path: ReferenceCString {
+      @_lifetime(borrow self)
+      @_transparent
+      borrowing get {
+        _overrideLifetime(.init(cString: rawAddress.pointee.fts_path), borrowing: self)
+      }
+    }
+
+    public var nameCString: ReferenceCString {
+      @_lifetime(borrow self)
+      @_transparent
+      borrowing get {
+        return _overrideLifetime(ReferenceCString(cString: swift_ftsent_getname(rawAddress)), borrowing: self)
+      }
+    }
 
     @_alwaysEmitIntoClient
     public var name: String {
-      #if compiler(<5.7)
-      .init(cString: &ptr.pointee.fts_name)
-      #else
-      .init(cString: rawAddress.pointer(to: \.fts_name).unsafelyUnwrapped)
-      #endif
+      nameCString.withUnsafeCString { cString in
+        String(decoding: UnsafeRawBufferPointer(start: cString, count: Int(nameLength)), as: UTF8.self)
+      }
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -253,20 +280,36 @@ extension Fts {
       }
     }
 
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
+
     public var parentDirectory: Self {
-      .init(rawAddress.pointee.fts_parent)
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
+      @_lifetime(borrow self)
+      get {
+        .init(rawAddress.pointee.fts_parent)
+      }
     }
 
     /// next file in directory
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var nextFile: Self? {
-      rawAddress.pointee.fts_link.map { .init($0) }
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
+      @_lifetime(borrow self)
+      get {
+        guard let p = rawAddress.pointee.fts_link else {
+          return nil
+        }
+        return _overrideLifetime(.init(p), borrowing: self)
+      }
     }
 
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
     public var cycleNode: Self? {
-      rawAddress.pointee.fts_cycle.map { .init($0) }
+      @_alwaysEmitIntoClient @inlinable @inline(__always)
+      @_lifetime(borrow self)
+      get {
+        guard let p = rawAddress.pointee.fts_cycle else {
+          return nil
+        }
+        return _overrideLifetime(.init(p), borrowing: self)
+      }
     }
 
     /// fd for symlink or chdir
@@ -406,12 +449,6 @@ extension Fts {
 
   }
 
-}
-
-extension Fts.Entry: CustomStringConvertible {
-  public var description: String {
-    "\(String(describing: Self.self))(ptr: \(rawAddress), name: \(name), level: \(level))"
-  }
 }
 
 extension Fts.Info: CustomStringConvertible {

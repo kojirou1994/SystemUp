@@ -159,6 +159,7 @@ public extension FileStatus.FileType {
   #endif
 }
 
+#if !$Embedded
 extension FileStatus.FileType: CustomStringConvertible {
 
   @inline(never)
@@ -179,3 +180,4 @@ extension FileStatus.FileType: CustomStringConvertible {
   }
 
 }
+#endif

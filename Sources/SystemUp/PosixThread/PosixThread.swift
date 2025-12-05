@@ -62,7 +62,7 @@ public extension PosixThread {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(cancelState: CancelState, oldValue: UnsafeMutablePointer<CancelState>? = nil) {
     PosixThread.call {
-      pthread_setcancelstate(cancelState.rawValue, oldValue?.pointer(to: \.rawValue))
+      pthread_setcancelstate(cancelState.rawValue, UnsafeMutableRawPointer(oldValue)?.assumingMemoryBound(to: Int32.self))
     }
   }
 
@@ -70,7 +70,7 @@ public extension PosixThread {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func set(cancelType: CancelType, oldValue: UnsafeMutablePointer<CancelType>? = nil) {
     PosixThread.call {
-      pthread_setcanceltype(cancelType.rawValue, oldValue?.pointer(to: \.rawValue))
+      pthread_setcanceltype(cancelType.rawValue, UnsafeMutableRawPointer(oldValue)?.assumingMemoryBound(to: Int32.self))
     }
   }
 
@@ -132,12 +132,24 @@ public extension PosixThread {
     #endif
   }
 
+  final class ThreadMain {
+    @usableFromInline
+    let block: @Sendable () -> Void
+    @_alwaysEmitIntoClient
+    init(_ block: @Sendable @escaping () -> Void) {
+      self.block = block
+    }
+    @usableFromInline
+    func run() {
+      self.block()
+    }
+  }
+
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   internal static func create(attributes: UnsafePointer<pthread_attr_t>?, _ block: @escaping @Sendable () -> Void) throws(Errno) -> ThreadID {
-    try create(data: Unmanaged.passRetained(block as AnyObject).toOpaque(), attributes: attributes) { context in
-      let block = Unmanaged<AnyObject>.fromOpaque(context.unsafelyUnwrapped)
-      (block.takeUnretainedValue() as! (@Sendable () -> Void))()
-      block.release()
+    try create(data: Unmanaged.passRetained(ThreadMain(block)).toOpaque(), attributes: attributes) { context in
+      let main = Unmanaged<ThreadMain>.fromOpaque(context.unsafelyUnwrapped).takeRetainedValue()
+      main.run()
       return nil
     }
   }

@@ -8,7 +8,7 @@ public extension WaitPID {
   static func wait(_ target: TargetID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
                    rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> ProcessID {
     try SyscallUtilities.valueOrErrno {
-      wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, rusage?.pointer(to: \.rawValue))
+      wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, UnsafeMutableRawPointer(rusage)?.assumingMemoryBound(to: SystemLibc.rusage.self))
     }.map(ProcessID.init).get()
   }
 }

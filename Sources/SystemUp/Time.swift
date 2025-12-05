@@ -274,14 +274,12 @@ public struct TimeFields: ~Copyable {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func withTemporaryTM<R: ~Copyable, E: Error>(_ body: (inout Self) throws(E) -> R) throws(E) -> R {
-    try toTypedThrows(E.self) {
-      try withUnsafeTemporaryAllocation(of: tm.self, capacity: 1) { buff in
-        var v = Self(buff.baseAddress.unsafelyUnwrapped)
-        defer {
-          assert(v.rawAddress == buff.baseAddress, "Should never happen!")
-        }
-        return try body(&v)
+    try withUnsafeTemporaryAllocationTyped(of: tm.self, capacity: 1) { buff throws(E) in
+      var v = Self(buff.baseAddress.unsafelyUnwrapped)
+      defer {
+        assert(v.rawAddress == buff.baseAddress, "Should never happen!")
       }
+      return try body(&v)
     }
   }
 
@@ -335,7 +333,7 @@ public enum TimeOfDay {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func get(t: UnsafeMutablePointer<Timeval>?, tz: UnsafeMutablePointer<Timezone>?) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      SystemLibc.gettimeofday(unsafeBitCast(t?.pointer(to: \.rawValue), to: UnsafeMutablePointer<timeval>.self), tz?.pointer(to: \.rawValue))
+      SystemLibc.gettimeofday(UnsafeMutableRawPointer(t)?.assumingMemoryBound(to: timeval.self), UnsafeMutableRawPointer(tz)?.assumingMemoryBound(to: timezone.self))
     }.get()
   }
 

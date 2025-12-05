@@ -13,7 +13,7 @@ public struct Signal: RawRepresentable, Hashable, Sendable {
 public extension Signal {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func set(handler: SignalHandler, for signals: any Sequence<Self>) throws(Errno) {
+  static func set(handler: SignalHandler, for signals: some Sequence<Self>) throws(Errno) {
     for signal in signals {
       _ = try signal.set(handler: handler)
     }
@@ -40,7 +40,7 @@ public extension Signal {
   func set(action: SignalAction, oldAction: UnsafeMutablePointer<SignalAction>?) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       withUnsafePointer(to: action.rawValue) { action in
-        sigaction(rawValue, action, oldAction?.pointer(to: \.rawValue))
+        sigaction(rawValue, action, UnsafeMutableRawPointer(oldAction)?.assumingMemoryBound(to: sigaction.self))
       }
     }.get()
   }

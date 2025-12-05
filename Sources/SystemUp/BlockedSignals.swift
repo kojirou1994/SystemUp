@@ -52,11 +52,11 @@ public enum BlockedSignals {
         switch self {
         case .singleThreaded:
           SyscallUtilities.voidOrErrno {
-            sigprocmask(method.rawValue, sigset, oldOutput?.pointer(to: \.rawValue))
+            sigprocmask(method.rawValue, sigset, UnsafeMutableRawPointer(oldOutput)?.assumingMemoryBound(to: sigset_t.self))
           }
         case .multiThreaded:
           SyscallUtilities.errnoOrZeroOnReturn {
-            pthread_sigmask(method.rawValue, sigset, oldOutput?.pointer(to: \.rawValue))
+            pthread_sigmask(method.rawValue, sigset, UnsafeMutableRawPointer(oldOutput)?.assumingMemoryBound(to: sigset_t.self))
           }
         }
       }

@@ -1,6 +1,6 @@
 import SystemLibc
 
-public struct FileDescriptor: RawRepresentable, Hashable {
+public struct FileDescriptor: RawRepresentable, Hashable, Sendable {
   public let rawValue: CInt
   @_alwaysEmitIntoClient
   public init(rawValue: CInt) { self.rawValue = rawValue }
@@ -18,7 +18,7 @@ public extension FileDescriptor {
 }
 
 extension FileDescriptor {
-  public struct AccessMode: RawRepresentable, Sendable, Hashable, Codable {
+  public struct AccessMode: RawRepresentable, Sendable {
     @_alwaysEmitIntoClient
     public var rawValue: CInt
     @_alwaysEmitIntoClient

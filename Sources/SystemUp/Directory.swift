@@ -202,7 +202,7 @@ extension Directory {
       @_lifetime(borrow self)
       @_transparent
       borrowing get {
-        _overrideLifetime(.init(cString: UnsafeRawPointer(entry.pointer(to: \.d_name)!).assumingMemoryBound(to: CChar.self)), borrowing: self)
+        _overrideLifetime(.init(cString: swift_dirent_getname(entry)), borrowing: self)
       }
     }
 
@@ -254,6 +254,7 @@ extension Directory.DirectoryType {
 
 }
 
+#if !$Embedded
 extension Directory.DirectoryType: CustomStringConvertible {
 
   @inline(never)
@@ -273,3 +274,4 @@ extension Directory.DirectoryType: CustomStringConvertible {
   }
 
 }
+#endif

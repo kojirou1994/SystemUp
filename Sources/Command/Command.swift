@@ -26,7 +26,6 @@ public struct Command: Sendable {
     case null
     case makePipe
     case fd(FileDescriptor)
-    case path(FilePath, mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions)
   }
 
   public var stdin: ChildIO?
@@ -125,9 +124,9 @@ extension Command {
   /// - Parameter body: customize FileActions, default setup will be disabled
   /// - Returns: child process
   public func spawn(
-    _ body: ((inout PosixSpawn.FileActions) throws -> Void)? = nil,
-    attributesHandler: (inout PosixSpawn.Attributes) throws -> Void = { $0.resetSignals() },
-  ) throws -> ChildProcess {
+    _ body: ((inout PosixSpawn.FileActions) throws(Errno) -> Void)? = nil,
+    attributesHandler: (inout PosixSpawn.Attributes) throws(Errno) -> Void = { $0.resetSignals() },
+  ) throws(Errno) -> ChildProcess {
     let env: CStringArray
     switch self.environment {
     case .null:
@@ -136,7 +135,15 @@ extension Command {
       env = PosixEnvironment.global.envCArray
     case .custom(var custom, mergeGlobal: let mergeGlobal):
       if mergeGlobal {
+        #if !$Embedded
         custom.environment.merge(PosixEnvironment.global.environment) { current, _ in current }
+        #else
+        for kv in PosixEnvironment.global.environment {
+          if custom.environment[kv.key] == nil {
+            custom.environment[kv.key] = kv.value
+          }
+        }
+        #endif
       }
       env = custom.envCArray
     }
@@ -152,19 +159,17 @@ extension Command {
 
     var pipes = ChildPipes(safeMode: keepPipeFD)
 
-    func setupFD(method: ChildIO?, dst: FileDescriptor, write: Bool, _ keyPath: WritableKeyPath<ChildPipes, ChildPipes.Pipe?>) throws {
+    func setupFD(method: ChildIO?, dst: FileDescriptor, write: Bool, _ pipeOut: UnsafeMutablePointer<ChildPipes.Pipe?>?) throws(Errno) {
       switch (method ?? defaultIO) {
       case .inherit:
         fileActions.dup2(fd: dst, newFD: dst)
-      case let .path(path, mode: mode, options: options):
-        fileActions.open(path, mode, options: options, permissions: .fileDefault, fd: dst)
       case .null:
         fileActions.open("/dev/null", write ? .writeOnly : .readOnly, fd: dst)
       case .makePipe:
-        let (reader, writer) = try FileDescriptor.pipe()
+        let (reader, writer) = try SystemCall.pipe()
         let (local, remote) = write ? (reader, writer) : (writer, reader)
         fileActions.dup2(fd: remote, newFD: dst)
-        pipes[keyPath: keyPath] = .init(local: local, remote: remote)
+        pipeOut?.pointee = .init(local: local, remote: remote)
       case .fd(let fileDescriptor):
         fileActions.dup2(fd: fileDescriptor, newFD: dst)
       }
@@ -173,15 +178,15 @@ extension Command {
     if let body = body {
       try body(&fileActions)
     } else {
-      try setupFD(method: self.stdin, dst: .standardInput, write: false, \.stdin)
-      try setupFD(method: self.stdout, dst: .standardOutput, write: true, \.stdout)
-      try setupFD(method: self.stderr, dst: .standardError, write: true, \.stderr)
+      try setupFD(method: self.stdin, dst: .standardInput, write: false, &pipes.stdin)
+      try setupFD(method: self.stdout, dst: .standardOutput, write: true, &pipes.stdout)
+      try setupFD(method: self.stderr, dst: .standardError, write: true, &pipes.stderr)
     }
 
-    var restoreCWD: FilePath?
+    var restoreCWD: UnsafeMutablePointer<CChar>?
     if let cwd = self.cwd {
-      func backupCWD() throws {
-        restoreCWD = try SystemCall.getWorkingDirectory()
+      func backupCWD() throws(Errno) {
+        restoreCWD = try SystemCall.getWorkingDirectory().take()
         try SystemCall.changeWorkingDirectory(cwd)
       }
       #if os(macOS)
@@ -198,7 +203,8 @@ extension Command {
     }
     defer {
       if let restoreCWD {
-        try! restoreCWD.withUnsafeCString(SystemCall.changeWorkingDirectory)
+        try! SystemCall.changeWorkingDirectory(restoreCWD)
+        Memory.free(restoreCWD)
       }
     }
 
@@ -226,12 +232,12 @@ extension Command {
     }
   }
 
-  public func output() throws -> Output {
+  public func output() throws(Errno) -> Output {
     var child = try spawn()
     return try child.waitOutput()
   }
 
-  public func status() throws -> WaitPID.ExitStatus {
+  public func status() throws(Errno) -> WaitPID.ExitStatus {
     var child = try spawn()
     return try child.wait()
   }
@@ -263,7 +269,7 @@ extension Command {
 
     /// stdout and stderr will be closed after wait call
     /// - Returns: process exit status
-    public mutating func wait() throws -> WaitPID.ExitStatus {
+    public mutating func wait() throws(Errno) -> WaitPID.ExitStatus {
 #if DEBUG
       assert(running, "process already exited")
 #endif
@@ -280,11 +286,11 @@ extension Command {
       return status
     }
 
-    public mutating func waitOutput() throws -> Output {
+    public mutating func waitOutput() throws(Errno) -> Output {
       var stdout: [UInt8] = []
       var stderr: [UInt8] = []
 
-      try withUnsafeTemporaryAllocation(byteCount: 4096, alignment: MemoryLayout<Int>.alignment) { buffer in
+      try withUnsafeTemporaryAllocationTyped(byteCount: 4096, alignment: MemoryLayout<Int>.alignment) { buffer throws(Errno) in
         switch (self.stdout, self.stderr) {
         case (let out?, let err?):
           try Command.collectOutput(p1: out, v1: &stdout, p2: err, v2: &stderr, buffer: buffer)
@@ -326,7 +332,7 @@ extension Command {
 
 }
 
-private func readAllBlocked(fd: FileDescriptor, dst: inout [UInt8], buffer: UnsafeMutableRawBufferPointer) throws {
+private func readAllBlocked(fd: FileDescriptor, dst: inout [UInt8], buffer: UnsafeMutableRawBufferPointer) throws(Errno) {
     while case let count = try fd.read(into: buffer),
           count > 0 {
       dst.append(contentsOf: UnsafeRawBufferPointer(rebasing: buffer.prefix(count)))
@@ -335,7 +341,7 @@ private func readAllBlocked(fd: FileDescriptor, dst: inout [UInt8], buffer: Unsa
 
 extension Command {
 
-  public static func collectOutput(p1: FileDescriptor, v1: inout [UInt8], p2: FileDescriptor, v2: inout [UInt8], buffer: UnsafeMutableRawBufferPointer) throws {
+  public static func collectOutput(p1: FileDescriptor, v1: inout [UInt8], p2: FileDescriptor, v2: inout [UInt8], buffer: UnsafeMutableRawBufferPointer) throws(Errno) {
     // Set both pipes into nonblocking mode as we're gonna be reading from both
     // in the `select` loop below, and we wouldn't want one to block the other!
     try Command.set(fd: p1, nonBlocking: true)
@@ -349,7 +355,7 @@ extension Command {
 //    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 4096, alignment: MemoryLayout<Int>.alignment)
 
     /// return true if EOF, false if no data can read
-    func readAllNonBlock(fd: FileDescriptor, dst: inout [UInt8]) throws -> Bool {
+    func readAllNonBlock(fd: FileDescriptor, dst: inout [UInt8]) throws(Errno) -> Bool {
       do {
         while true {
           let count = try fd.read(into: buffer)
@@ -359,7 +365,7 @@ extension Command {
             return true
           }
         }
-      } catch let err as Errno {
+      } catch let err {
         if err == .wouldBlock || err == .resourceTemporarilyUnavailable {
           return false
         } else {
@@ -370,16 +376,16 @@ extension Command {
 
     while true {
       // wait for either pipe to become readable using `poll`
-      _ = try fds.withUnsafeMutableBufferPointer {
-        try SystemCall.poll(fds: $0, timeout: .indefinite)
+      _ = try fds.withUnsafeMutableBufferPointer { fds throws(Errno) in
+        try SystemCall.poll(fds: fds, timeout: .indefinite)
       }
-      if try !fds[0].returnedEvents.isEmpty && readAllNonBlock(fd: p1, dst: &v1) {
+      if !fds[0].returnedEvents.isEmpty, try readAllNonBlock(fd: p1, dst: &v1) {
         try Command.set(fd: p2, nonBlocking: false)
         try readAllBlocked(fd: p2, dst: &v2, buffer: buffer)
         return
       }
 
-      if try !fds[1].returnedEvents.isEmpty && readAllNonBlock(fd: p2, dst: &v2) {
+      if !fds[1].returnedEvents.isEmpty, try readAllNonBlock(fd: p2, dst: &v2) {
         try Command.set(fd: p1, nonBlocking: false)
         try readAllBlocked(fd: p1, dst: &v1, buffer: buffer)
         return

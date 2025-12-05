@@ -77,7 +77,7 @@ extension SystemFileManager {
   }
 
   public static func remove(_ path: borrowing some CString) throws(Errno) {
-    if try fileStatus(path, flags: .noFollow, \.fileType) == .directory {
+    if try fileStatus(path, flags: .noFollow, { $0.fileType }) == .directory {
       #if canImport(Darwin)
       try removeDirectoryUntilSuccess(path)
       #else
@@ -89,13 +89,11 @@ extension SystemFileManager {
   }
   
   /// remove empty directory
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func removeDirectory(_ path: borrowing some CString) throws(Errno) {
     try SystemCall.unlink(path, flags: .removeDir)
   }
   
   /// remove directory tree and prevente directoryNotEmpty Errno
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func removeDirectoryUntilSuccess(_ path: borrowing some CString) throws(Errno) {
     while true {
       do {
@@ -109,14 +107,16 @@ extension SystemFileManager {
     }
   }
 
-  public static func removeDirectoryRecursive(_ path: borrowing some CString) throws(Errno) {
-
+  internal struct RecursiveRemove {
     var sb: FileStatus = Memory.undefined()
 
-    func recursiveAll(directory: consuming Directory) throws(Errno) {
+    mutating func recursiveAll(_ path: borrowing some CString, relativeTo base: SystemCall.RelativeDirectory) throws(Errno) {
+      var directory = try Directory.open(path, relativeTo: base)
       let dfd = directory.fd
       while let entry = try directory.next() {
         // remove each entry, return result
+        assert(entry.name != ".")
+        assert(entry.name != "..")
         var isDir = false
         switch entry.fileType {
         case .directory: isDir = true
@@ -128,17 +128,21 @@ extension SystemFileManager {
         default:
           break
         }
+
         if isDir {
-          try recursiveAll(directory: .open(entry.nameCString, relativeTo: .directory(dfd)))
+          try recursiveAll(entry.nameCString, relativeTo: .directory(dfd))
         }
-//        if true {
-//          FileStream.write(line: entry.nameCString)
-//        }
+
         try SystemCall.unlink(entry.nameCString, relativeTo: .directory(dfd), flags: isDir ? .removeDir : [])
       }
     }
+  }
 
-    try recursiveAll(directory: .open(path))
+  public static func removeDirectoryRecursive(_ path: borrowing some CString) throws(Errno) {
+
+    var worker = RecursiveRemove()
+
+    try worker.recursiveAll(path, relativeTo: .cwd)
 
     try removeDirectory(path)
   }
@@ -152,15 +156,15 @@ extension SystemFileManager {
 // MARK: File Contents
 public extension SystemFileManager {
 
-  internal static func length(fd: FileDescriptor) throws -> Int {
-    let status = try fileStatus(fd, \.size)
+  internal static func length(fd: FileDescriptor) throws(Errno) -> Int {
+    let status = try fileStatus(fd) { $0.size }
     return Int(status)
   }
 
-  internal static func streamRead<T: RangeReplaceableCollection>(fd: FileDescriptor, bufferSize: Int) throws -> T where T.Element == UInt8 {
+  internal static func streamRead<T: RangeReplaceableCollection>(fd: FileDescriptor, bufferSize: Int) throws(Errno) -> T where T.Element == UInt8 {
     precondition(bufferSize > 0)
     var dest = T()
-    try withUnsafeTemporaryAllocation(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer in
+    try withUnsafeTemporaryAllocationTyped(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer throws(Errno) in
       while case let readSize = try fd.read(into: buffer), readSize > 0 {
         dest.append(contentsOf: UnsafeMutableRawBufferPointer(rebasing: buffer.prefix(readSize)))
       }
@@ -173,40 +177,40 @@ public extension SystemFileManager {
     case stream(bufferSize: Int)
   }
 
-  static func contents(ofFile path: borrowing some CString, mode: FullContentLoadMode = .length) throws -> [UInt8] {
+  static func contents(ofFile path: borrowing some CString, mode: FullContentLoadMode = .length) throws(Errno) -> [UInt8] {
     try SystemCall.open(path, .readOnly)
-      .closeAfter { fd in
+      .closeAfter { fd throws(Errno) in
         try contents(ofFileDescriptor: fd, mode: mode)
       }
   }
 
   @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
-  static func contents(ofFile path: borrowing some CString, mode: FullContentLoadMode = .length) throws -> String {
+  static func contents(ofFile path: borrowing some CString, mode: FullContentLoadMode = .length) throws(Errno) -> String {
     try SystemCall.open(path, .readOnly)
-      .closeAfter { fd in
+      .closeAfter { fd throws(Errno) in
         try contents(ofFileDescriptor: fd, mode: mode)
       }
   }
 
 
-  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> [UInt8] {
+  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws(Errno) -> [UInt8] {
     switch mode {
     case .length:
       let size = try length(fd: fd)
-      return try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
+      return try .init(ContiguousArray.create(unsafeUninitializedCapacity: size) { buffer, initializedCount throws(Errno) in
         initializedCount = try fd.read(into: .init(buffer))
-      }
+      })
     case .stream(let bufferSize):
       return try streamRead(fd: fd, bufferSize: bufferSize)
     }
   }
 
   @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
-  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws -> String {
+  static func contents(ofFileDescriptor fd: FileDescriptor, mode: FullContentLoadMode = .length) throws(Errno) -> String {
     switch mode {
     case .length:
       let size = try length(fd: fd)
-      return try .init(unsafeUninitializedCapacity: size) { buffer in
+      return try .create(unsafeUninitializedCapacity: size) { buffer throws(Errno) in
         try fd.read(into: UnsafeMutableRawBufferPointer(buffer))
       }
     case .stream(let bufferSize):
@@ -219,14 +223,14 @@ public extension SystemFileManager {
 // MARK: Getting and Setting Attributes
 public extension SystemFileManager {
 
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  @inlinable
   static func fileStatus<R>(_ fd: FileDescriptor, _ property: (FileStatus) -> R = { $0 }) throws(Errno) -> R {
     var buf: FileStatus = Memory.undefined()
     try SystemCall.fileStatus(fd, into: &buf)
     return property(buf)
   }
 
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  @inlinable
   static func fileStatus<R>(_ path: borrowing some CString, relativeTo base: SystemCall.RelativeDirectory = .cwd, flags: SystemCall.AtFlags = [], _ property: (FileStatus) -> R = { $0 }) throws(Errno) -> R {
     var buf: FileStatus = Memory.undefined()
     try path.withUnsafeCString { path throws(Errno) in

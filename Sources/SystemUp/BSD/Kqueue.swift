@@ -16,7 +16,7 @@ public struct Kqueue: ~Copyable {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   deinit {
-    try? assertNoThrow {
+    try? assertNoThrow { () throws(Errno) in
       try SyscallUtilities.retryWhileInterrupted { () throws(Errno) in
         try SystemCall.close(.init(rawValue: rawValue))
       }

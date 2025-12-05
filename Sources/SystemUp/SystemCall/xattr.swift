@@ -1,25 +1,26 @@
 import SystemLibc
 import CUtility
-import protocol Foundation.ContiguousBytes
 
 public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func listXattrNames(_ path: UnsafePointer<CChar>, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+  static func listXattrNames(_ path: borrowing some CString, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
     let buffer = mode.toC
-    return SyscallUtilities.valueOrErrno { () -> Int in
-      #if canImport(Darwin)
-      return listxattr(path, buffer.baseAddress, buffer.count, options.rawValue)
-      #elseif os(Linux)
-      if options.contains(.noFollow) {
-        return llistxattr(path, buffer.baseAddress, buffer.count)
-      } else {
-        return listxattr(path, buffer.baseAddress, buffer.count)
+    return path.withUnsafeCString { path in
+      SyscallUtilities.valueOrErrno { () -> Int in
+#if canImport(Darwin)
+        return listxattr(path, buffer.baseAddress, buffer.count, options.rawValue)
+#elseif os(Linux)
+        if options.contains(.noFollow) {
+          return llistxattr(path, buffer.baseAddress, buffer.count)
+        } else {
+          return listxattr(path, buffer.baseAddress, buffer.count)
+        }
+#endif
       }
-      #endif
     }
   }
 
@@ -36,36 +37,42 @@ public extension SystemCall {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+  static func getXattr(_ path: borrowing some CString, attributeName: borrowing some CString, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
     let buffer = mode.toC
-    return SyscallUtilities.valueOrErrno { () -> Int in
-      #if canImport(Darwin)
-      return getxattr(path, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
-      #elseif os(Linux)
-      if options.contains(.noFollow) {
-        return lgetxattr(path, attributeName, buffer.baseAddress!, buffer.count)
-      } else {
-        return getxattr(path, attributeName, buffer.baseAddress!, buffer.count)
+    return path.withUnsafeCString { path in
+      attributeName.withUnsafeCString { attributeName in
+        SyscallUtilities.valueOrErrno { () -> Int in
+#if canImport(Darwin)
+          return getxattr(path, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
+#elseif os(Linux)
+          if options.contains(.noFollow) {
+            return lgetxattr(path, attributeName, buffer.baseAddress!, buffer.count)
+          } else {
+            return getxattr(path, attributeName, buffer.baseAddress!, buffer.count)
+          }
+#endif
+        }
       }
-      #endif
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func getXattr(_ fd: FileDescriptor, attributeName: UnsafePointer<CChar>, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
+  static func getXattr(_ fd: FileDescriptor, attributeName: borrowing some CString, position: UInt32 = 0, options: Xattr.Options, mode: SyscallUtilities.PreAllocateCallMode) -> Result<Int, Errno> {
     #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
     let buffer = mode.toC
-    return SyscallUtilities.valueOrErrno { () -> Int in
-      #if canImport(Darwin)
-      fgetxattr(fd.rawValue, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
-      #elseif os(Linux)
-      fgetxattr(fd.rawValue, attributeName, buffer.baseAddress!, buffer.count)
-      #endif
+    return attributeName.withUnsafeCString { attributeName in
+      SyscallUtilities.valueOrErrno { () -> Int in
+#if canImport(Darwin)
+        fgetxattr(fd.rawValue, attributeName, buffer.baseAddress!, buffer.count, position, options.rawValue)
+#elseif os(Linux)
+        fgetxattr(fd.rawValue, attributeName, buffer.baseAddress!, buffer.count)
+#endif
+      }
     }
   }
 
@@ -76,78 +83,89 @@ public extension SystemCall {
   ///   - path: file path
   ///   - options: noFollow, create and replace are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func setXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, value: some ContiguousBytes, options: Xattr.Options) -> Result<Void, Errno> {
+  static func setXattr(_ path: borrowing some CString, attributeName: borrowing some CString, value buffer: UnsafeRawBufferPointer, options: Xattr.Options) -> Result<Void, Errno> {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
-    return value.withUnsafeBytes { buffer in
-      SyscallUtilities.voidOrErrno { () -> Int32 in
-        #if canImport(Darwin)
-        return setxattr(path, attributeName, buffer.baseAddress, buffer.count, 0, options.rawValue)
-        #elseif os(Linux)
-        if options.contains(.noFollow) {
-          return lsetxattr(path, attributeName, buffer.baseAddress, buffer.count, options.rawValue)
-        } else {
-          return setxattr(path, attributeName, buffer.baseAddress, buffer.count, options.rawValue)
+    return path.withUnsafeCString { path in
+      attributeName.withUnsafeCString { attributeName in
+        SyscallUtilities.voidOrErrno { () -> Int32 in
+#if canImport(Darwin)
+          return setxattr(path, attributeName, buffer.baseAddress, buffer.count, 0, options.rawValue)
+#elseif os(Linux)
+          if options.contains(.noFollow) {
+            return lsetxattr(path, attributeName, buffer.baseAddress, buffer.count, options.rawValue)
+          } else {
+            return setxattr(path, attributeName, buffer.baseAddress, buffer.count, options.rawValue)
+          }
+#endif
         }
-        #endif
       }
     }
   }
 
   #if canImport(Darwin)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func setXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, value: some ContiguousBytes, position: UInt32, options: Xattr.Options) -> Result<Void, Errno> {
+  static func setXattr(_ path: borrowing some CString, attributeName: borrowing some CString, value buffer: UnsafeRawBufferPointer, position: UInt32, options: Xattr.Options) -> Result<Void, Errno> {
     assert(options.isSubset(of: [.noFollow, .create, .replace]))
-    return value.withUnsafeBytes { buffer in
-      SyscallUtilities.voidOrErrno { () -> Int32 in
-        setxattr(path, attributeName, buffer.baseAddress, buffer.count, position, options.rawValue)
+    return path.withUnsafeCString { path in
+      attributeName.withUnsafeCString { attributeName in
+        SyscallUtilities.voidOrErrno { () -> Int32 in
+          setxattr(path, attributeName, buffer.baseAddress, buffer.count, position, options.rawValue)
+        }
       }
     }
   }
   #endif
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeXattr(_ path: UnsafePointer<CChar>, attributeName: UnsafePointer<CChar>, options: Xattr.Options) -> Result<Void, Errno> {
+  static func removeXattr(_ path: borrowing some CString, attributeName: borrowing some CString, options: Xattr.Options) -> Result<Void, Errno> {
     #if canImport(Darwin)
     assert(options.isSubset(of: [.noFollow, .showCompression]))
     #endif
-    return SyscallUtilities.voidOrErrno { () -> Int32 in
-      #if canImport(Darwin)
-      return removexattr(path, attributeName, options.rawValue)
-      #elseif os(Linux)
-      if options.contains(.noFollow) {
-        return lremovexattr(path, attributeName)
-      } else {
-        return removexattr(path, attributeName)
+    return path.withUnsafeCString { path in
+      attributeName.withUnsafeCString { attributeName in
+        SyscallUtilities.voidOrErrno { () -> Int32 in
+#if canImport(Darwin)
+          return removexattr(path, attributeName, options.rawValue)
+#elseif os(Linux)
+          if options.contains(.noFollow) {
+            return lremovexattr(path, attributeName)
+          } else {
+            return removexattr(path, attributeName)
+          }
+#endif
+        }
       }
-      #endif
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func removeXattr(_ fd: FileDescriptor, attributeName: UnsafePointer<CChar>, options: Xattr.Options) -> Result<Void, Errno> {
+  static func removeXattr(_ fd: FileDescriptor, attributeName: borrowing some CString, options: Xattr.Options) -> Result<Void, Errno> {
     SyscallUtilities.voidOrErrno { () -> Int32 in
-      #if canImport(Darwin)
-      fremovexattr(fd.rawValue, attributeName, options.rawValue)
-      #elseif os(Linux)
-      fremovexattr(fd.rawValue, attributeName)
-      #endif
+      attributeName.withUnsafeCString { attributeName in
+#if canImport(Darwin)
+        fremovexattr(fd.rawValue, attributeName, options.rawValue)
+#elseif os(Linux)
+        fremovexattr(fd.rawValue, attributeName)
+#endif
+      }
     }
   }
 }
 
 extension Xattr {
   @usableFromInline
-  internal static func forEachKeyCString<E: Error>(_ keys: XattrType, _ body: (String, UnsafePointer<CChar>) throws(E) -> Void) throws(E) {
-    try toTypedThrows(E.self) {
-      try keys.withUnsafeBytes { buffer in
+  internal static func iterateKeys<E: Error>(_ keys: XattrType, _ body: (_ key: ReferenceCString, _ length: Int) throws(E) -> Void) throws(E) {
+    var result: Result<Void, E>!
+    keys.withUnsafeBytes { buffer in
+      result = .init(catching: { () throws(E) in
         guard var currentStart = buffer.baseAddress, !buffer.isEmpty else {
           return
         }
         let endAddress = currentStart.advanced(by: buffer.count-1)
         while case let length = strlen(currentStart.assumingMemoryBound(to: CChar.self)),
               currentStart + length <= endAddress {
-          let key = String(decoding: UnsafeRawBufferPointer(start: currentStart, count: length), as: UTF8.self)
-          try body(key, .init(OpaquePointer(currentStart)))
+          let key = ReferenceCString(cString: currentStart.assumingMemoryBound(to: CChar.self))
+          try body(key, length)
           currentStart = currentStart + length
           if currentStart == endAddress {
             break
@@ -156,14 +174,15 @@ extension Xattr {
           }
         }
         assert(currentStart == endAddress, "has non null-terminated string, just ignored!!")
-      }
+      })
     }
+    try result.get()
   }
 }
 
 public enum Xattr {
 
-  public typealias XattrType = [UInt8]
+  public typealias XattrType = ContiguousArray<UInt8>
 
   ///
   /// - Parameters:
@@ -171,11 +190,12 @@ public enum Xattr {
   ///   - options: noFollow and showCompression are accepted
   /// - Returns: dictionary
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func listAll(path: UnsafePointer<Int8>, options: Options) throws(Errno) -> [String : XattrType] {
-    var result = [String : XattrType]()
+  public static func listAll(path: borrowing some CString, options: Options) throws(Errno) -> [XattrType : XattrType] {
+    var result = [XattrType : XattrType]()
 
-    try forEachKeyCString(list(path, options: options)) { key, keyCString throws(Errno) in
-      result[key] = try get(path: path, key: keyCString, position: 0, options: options)
+    try iterateKeys(list(path, options: options)) { key, length throws(Errno) in
+      let hashKey = key.withUnsafeCString { XattrType(UnsafeRawBufferPointer(start: $0, count: length)) }
+      result[hashKey] = try get(path: path, key: key, position: 0, options: options)
     }
 
     return result
@@ -186,9 +206,12 @@ public enum Xattr {
   ///   - path: file path
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func allKeys(path: UnsafePointer<Int8>, options: Options) throws(Errno) -> [String] {
-    var keys = [String]()
-    try forEachKeyCString(list(path, options: options))  { key, _ in keys.append(key) }
+  public static func allKeys(path: borrowing some CString, options: Options) throws(Errno) -> [XattrType] {
+    var keys = [XattrType]()
+    try iterateKeys(list(path, options: options))  { key, length in
+      let hashKey = key.withUnsafeCString { XattrType(UnsafeRawBufferPointer(start: $0, count: length)) }
+      keys.append(hashKey)
+    }
     return keys
   }
 
@@ -198,7 +221,7 @@ public enum Xattr {
   ///   - key: specific key
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func getValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws(Errno) -> XattrType {
+  public static func getValue(path: borrowing some CString, for key: borrowing some CString, options: Options) throws(Errno) -> XattrType {
     try get(path: path, key: key, position: 0, options: options)
   }
 
@@ -207,8 +230,8 @@ public enum Xattr {
   ///   - path: file path
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func removeAll(path: UnsafePointer<Int8>, options: Options) throws(Errno) {
-    try forEachKeyCString(list(path, options: options)) { _, key throws(Errno) in
+  public static func removeAll(path: borrowing some CString, options: Options) throws(Errno) {
+    try iterateKeys(list(path, options: options)) { key, _ throws(Errno) in
       try SystemCall.removeXattr(path, attributeName: key, options: options).get()
     }
   }
@@ -219,37 +242,33 @@ public enum Xattr {
   ///   - key: xattr key
   ///   - options: noFollow and showCompression are accepted
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public static func removeValue(path: UnsafePointer<Int8>, for key: UnsafePointer<Int8>, options: Options) throws(Errno) {
+  public static func removeValue(path: borrowing some CString, for key: borrowing some CString, options: Options) throws(Errno) {
     try SystemCall.removeXattr(path, attributeName: key, options: options).get()
   }
 
   @usableFromInline
-  internal static func list(_ path: UnsafePointer<Int8>, options: Options) throws(Errno) -> XattrType {
+  internal static func list(_ path: borrowing some CString, options: Options) throws(Errno) -> XattrType {
     let size = try SystemCall.listXattrNames(path, options: options, mode: .getSize).get()
     guard size > 0 else {
       return XattrType()
     }
-    return try toTypedThrows(Errno.self) {
-      try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-        let newSize = try SystemCall.listXattrNames(path, options: options, mode: .getValue(.init(buffer))).get()
-        assert(newSize <= size)
-        initializedCount = newSize
-      }
+    return try XattrType.create(unsafeUninitializedCapacity: size) { buffer, initializedCount throws(Errno) in
+      let newSize = try SystemCall.listXattrNames(path, options: options, mode: .getValue(.init(buffer))).get()
+      assert(newSize <= size)
+      initializedCount = newSize
     }
   }
 
   @usableFromInline
-  internal static func get(path: UnsafePointer<Int8>, key: UnsafePointer<Int8>, position: UInt32, options: Options) throws(Errno) -> XattrType {
+  internal static func get(path: borrowing some CString, key: borrowing some CString, position: UInt32, options: Options) throws(Errno) -> XattrType {
     let size = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getSize).get()
     guard size > 0 else {
       return XattrType()
     }
-    return try toTypedThrows(Errno.self) {
-      try .init(unsafeUninitializedCapacity: size) { buffer, initializedCount in
-        let newSize = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getValue(.init(buffer))).get()
-        assert(newSize <= size)
-        initializedCount = newSize
-      }
+    return try XattrType.create(unsafeUninitializedCapacity: size) { buffer, initializedCount throws(Errno) in
+      let newSize = try SystemCall.getXattr(path, attributeName: key, position: position, options: options, mode: .getValue(.init(buffer))).get()
+      assert(newSize <= size)
+      initializedCount = newSize
     }
   }
 

@@ -71,13 +71,11 @@ extension DynamicCString {
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
   public static func withTemporaryBorrowed<R: ~Copyable, E: Error>(bytes: borrowing some ContiguousUTF8Bytes & ~Copyable & ~Escapable, _ body: (borrowing DynamicCString) throws(E) -> R) throws(E) -> R {
-    try toTypedThrows(E.self) {
-      try bytes.withContiguousUTF8Bytes { buff in
-        try withUnsafeTemporaryAllocation(of: UInt8.self, capacity: buff.count+1) { strBuff in
-          let result = strBuff.initialize(from: buff)
-          strBuff[result.index] = 0
-          return try withTemporaryBorrowed(cString: UnsafeRawPointer(strBuff.baseAddress.unsafelyUnwrapped).assumingMemoryBound(to: CChar.self), body)
-        }
+    try bytes.withContiguousUTF8Bytes { buff throws(E) in
+      try withUnsafeTemporaryAllocationTyped(of: UInt8.self, capacity: buff.count+1) { strBuff throws(E) in
+        let result = strBuff.initialize(from: buff)
+        strBuff[result.index] = 0
+        return try withTemporaryBorrowed(cString: UnsafeRawPointer(strBuff.baseAddress.unsafelyUnwrapped).assumingMemoryBound(to: CChar.self), body)
       }
     }
   }

@@ -1,3 +1,4 @@
+#if !$Embedded
 import CUtility
 import SystemLibc
 
@@ -106,3 +107,4 @@ extension UnsafeMutableRawPointer: @retroactive CVarArg {
     OpaquePointer(self)._cVarArgEncoding
   }
 }
+#endif

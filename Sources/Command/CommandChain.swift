@@ -51,13 +51,13 @@ public struct CommandChain: Sendable {
     }
   }
 
-  public func launch() throws -> ChainedProcesses {
+  public func launch() throws(Errno) -> ChainedProcesses {
     precondition(items.count > 1, "no need to pipe")
     let first = items[0]
     let last = items[items.count-1]
     let mid = items.dropFirst().dropLast()
 
-    func addNonLast(_ item: PipeItem, stdin: Command.ChildIO) throws -> (Command.ChildProcess, stdoutRead: FileDescriptor) {
+    func addNonLast(_ item: PipeItem, stdin: Command.ChildIO) throws(Errno) -> (Command.ChildProcess, stdoutRead: FileDescriptor) {
       var command = item.command
       command.stdin = stdin
       command.stdout = .makePipe

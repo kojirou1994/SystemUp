@@ -17,10 +17,8 @@ public extension Proc {
   @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   @_alwaysEmitIntoClient
   static func name(pid: ProcessID) throws(Errno) -> String {
-    try toTypedThrows(Errno.self) {
-      try .init(unsafeUninitializedCapacity: Int(MAXPATHLEN)) { buffer in
-        Int(try name(pid: pid, into: .init(buffer)).get())
-      }
+    try String.create(unsafeUninitializedCapacity: Int(MAXPATHLEN)) { buffer throws(Errno) in
+      Int(try name(pid: pid, into: .init(buffer)).get())
     }
   }
 

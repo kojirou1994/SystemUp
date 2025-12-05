@@ -379,6 +379,27 @@ public extension PosixSpawn.Attributes {
   }
 }
 
+#if $Embedded
+public extension PosixSpawn.Attributes.QualityOfService {
+  @_alwaysEmitIntoClient
+  static var userInteractive: Self { 0x21 }
+
+  @_alwaysEmitIntoClient
+  static var userInitiated: Self { 0x19 }
+
+  @_alwaysEmitIntoClient
+  static var utility: Self { 0x11 }
+
+  @_alwaysEmitIntoClient
+  static var background: Self { 0x09 }
+
+  @_alwaysEmitIntoClient
+  static var `default`: Self { 0x15 }
+
+  @_alwaysEmitIntoClient
+  static var unspecified: Self { 0x00 }
+}
+#else
 public extension PosixSpawn.Attributes.QualityOfService {
   @_alwaysEmitIntoClient
   static var userInteractive: Self { QOS_CLASS_USER_INTERACTIVE }
@@ -393,11 +414,12 @@ public extension PosixSpawn.Attributes.QualityOfService {
   static var background: Self { QOS_CLASS_BACKGROUND }
 
   @_alwaysEmitIntoClient
-  static var `default`: Self { QOS_CLASS_USER_INTERACTIVE }
+  static var `default`: Self { QOS_CLASS_DEFAULT }
 
   @_alwaysEmitIntoClient
   static var unspecified: Self { QOS_CLASS_UNSPECIFIED }
 }
+#endif
 #endif // Darwin end
 
 public extension PosixSpawn.Attributes.Flags {

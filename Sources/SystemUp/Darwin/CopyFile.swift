@@ -412,6 +412,7 @@ extension SystemCall.CopyFile.Stage: CustomStringConvertible {
   }
 }
 
+#if !$Embedded
 extension SystemCall.CopyFile.What: CustomStringConvertible {
   public var description: String {
     switch self {
@@ -425,6 +426,7 @@ extension SystemCall.CopyFile.What: CustomStringConvertible {
     }
   }
 }
+#endif
 
 public extension SystemCall.CopyFile.State {
 

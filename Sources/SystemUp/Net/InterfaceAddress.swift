@@ -144,12 +144,10 @@ public struct SocketAddress: ~Copyable {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public static func withTempGenericBuf<R: ~Copyable, E: Error>(_ body: (inout SocketAddress, _ length: UInt32) throws(E) -> R) throws(E) -> R {
-    try toTypedThrows(E.self) {
-      try withUnsafeTemporaryAllocation(of: sockaddr_storage.self, capacity: 1) { buf in
-        var addr = SocketAddress(buf.baseAddress!)
-        let length = socklen_t(MemoryLayout<sockaddr_storage>.size)
-        return try body(&addr, length)
-      }
+    try withUnsafeTemporaryAllocationTyped(of: sockaddr_storage.self, capacity: 1) { buf throws(E) in
+      var addr = SocketAddress(buf.baseAddress!)
+      let length = socklen_t(MemoryLayout<sockaddr_storage>.size)
+      return try body(&addr, length)
     }
   }
 
@@ -445,11 +443,9 @@ public extension InternetAddress {
   @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   var string: String {
     .init(unsafeUninitializedCapacity: stringLength) { buffer in
-//      try! assertNoThrow {
-        try! buffer.withMemoryRebound(to: CChar.self) { buffer in
-          try InetConvertion.NetworkByteOrder.convert(self, to: buffer)
-        }
-//      }
+      try! buffer.withMemoryRebound(to: CChar.self) { buffer throws(Errno) in
+        try InetConvertion.NetworkByteOrder.convert(self, to: buffer)
+      }
 
       return strlen(buffer.baseAddress!)
     }
@@ -465,11 +461,9 @@ public extension InternetAddress6 {
   @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
   var string: String {
     .init(unsafeUninitializedCapacity: stringLength) { buffer in
-//      try! assertNoThrow {
-        try! buffer.withMemoryRebound(to: CChar.self) { buffer in
-          try InetConvertion.NetworkByteOrder.convert(self, to: buffer)
-        }
-//      }
+      try! buffer.withMemoryRebound(to: CChar.self) { buffer throws(Errno) in
+        try InetConvertion.NetworkByteOrder.convert(self, to: buffer)
+      }
 
       return strlen(buffer.baseAddress!)
     }
@@ -541,7 +535,7 @@ public extension InetConvertion.NetworkByteOrder {
   }
 
   static func string2Address(_ v: UnsafePointer<CChar>, dst: UnsafeMutablePointer<InternetAddress>) -> Bool {
-    switch inet_aton(v, dst.pointer(to: \.rawValue)!) {
+    switch inet_aton(v, &dst.pointee.rawValue) {
     case 1: return true
     case 0: return false
     default:
@@ -551,18 +545,14 @@ public extension InetConvertion.NetworkByteOrder {
   }
 
   static func convert(_ address: InternetAddress, to dst: UnsafeMutableBufferPointer<CChar>) throws(Errno) {
-    try toTypedThrows(Errno.self) {
-      try withUnsafeBytes(of: address) { address in
-        try convertGeneric(family: .inet, address: address.baseAddress.unsafelyUnwrapped, to: dst)
-      }
+    try withUnsafeBytes(of: address) { address throws(Errno) in
+      try convertGeneric(family: .inet, address: address.baseAddress.unsafelyUnwrapped, to: dst)
     }
   }
 
   static func convert(_ address: InternetAddress6, to dst: UnsafeMutableBufferPointer<CChar>) throws(Errno) {
-    try toTypedThrows(Errno.self) {
-      try withUnsafeBytes(of: address) { address in
-        try convertGeneric(family: .inet6, address: address.baseAddress.unsafelyUnwrapped, to: dst)
-      }
+    try withUnsafeBytes(of: address) { address throws(Errno) in
+      try convertGeneric(family: .inet6, address: address.baseAddress.unsafelyUnwrapped, to: dst)
     }
   }
 

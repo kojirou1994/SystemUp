@@ -17,11 +17,9 @@ public enum RegularFileManager {
     }
 
     do {
-      try toTypedThrows(Errno.self) {
-        try withUnsafeTemporaryAllocation(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer in
-          while case let length = try inFD.read(into: buffer), length > 0 {
-            try outFD.writeAll(UnsafeRawBufferPointer(rebasing: buffer.prefix(length)))
-          }
+      try withUnsafeTemporaryAllocationTyped(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer throws(Errno) in
+        while case let length = try inFD.read(into: buffer), length > 0 {
+          try outFD.writeAll(UnsafeRawBufferPointer(rebasing: buffer.prefix(length)))
         }
       }
     } catch {
