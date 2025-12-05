@@ -1,12 +1,11 @@
-#if canImport(CSystemUp)
-#if canImport(Darwin)
+#if SWIFT_LIBC // use official libc modules
+#if APPLE
 @_exported import Darwin.C
 #elseif canImport(Glibc)
 @_exported import Glibc
 #elseif canImport(Musl)
 @_exported import Musl
 #endif
-@_exported import CSystemUp
 #else
 @_exported import LittleC
 #endif

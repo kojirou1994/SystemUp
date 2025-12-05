@@ -1,5 +1,0 @@
-module CSystemUp {
-  header "CSystemUp.h"
-  header "CSystemUpLinux.h"
-  export *
-}
