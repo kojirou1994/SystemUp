@@ -16,8 +16,6 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "CSystemUp"),
-    .target(
       name: "SystemLibc",
       dependencies: [
         .product(name: "LittleC", package: "LittleC"),
