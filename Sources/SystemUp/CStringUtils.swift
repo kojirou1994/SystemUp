@@ -146,6 +146,22 @@ public extension DynamicCString {
 
 }
 
+extension CStringConvertible where Self: ~Copyable, Self: ~Escapable {
+  @_alwaysEmitIntoClient
+  @inlinable @inline(__always)
+  package borrowing func withCopiedMutable<R: ~Copyable, E: Error>(_ body: (UnsafeMutablePointer<CChar>) throws(E) -> R) throws(E) -> R {
+    try self.withUnsafeCString { string throws(E) in
+      let length = CStringUtils.length(of: string) + 1
+
+      return try withUnsafeTemporaryAllocationTyped(of: CChar.self, capacity: length) { strBuff throws(E) in
+        _ = strBuff.initialize(from: UnsafeBufferPointer<CChar>(start: string, count: length))
+        return try body(strBuff.baseAddress!)
+      }
+    }
+  }
+}
+
+
 // TODO
 /*
 
