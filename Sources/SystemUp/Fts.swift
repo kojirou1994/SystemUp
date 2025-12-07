@@ -196,7 +196,7 @@ extension Fts {
     internal let rawAddress: UnsafeMutablePointer<FTSENT>
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public var dentifier: Identifier {
+    public var identifier: Identifier {
       .init(rawAddress)
     }
 
