@@ -46,10 +46,9 @@ public struct Fts: ~Copyable {
   }
 
   @_alwaysEmitIntoClient
-  @_lifetime(borrow self)
   private func entryOrErrno(_ ptr: UnsafeMutablePointer<FTSENT>?) throws(Errno) -> Fts.Entry? {
     if let ptr = ptr {
-      return _overrideLifetime(.init(ptr), borrowing: self)
+      return .init(ptr)
     }
     if let errno = Errno.systemCurrentValid {
       throw errno
@@ -58,13 +57,11 @@ public struct Fts: ~Copyable {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  @_lifetime(borrow self)
   public func read() throws(Errno) -> Fts.Entry? {
     try entryOrErrno(fts_read(handle))
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  @_lifetime(borrow self)
   public func children(options: ChildrenOptions = []) throws(Errno) -> Fts.Entry? {
     try entryOrErrno(fts_children(handle, options.rawValue))
   }
@@ -177,7 +174,7 @@ extension Fts {
     #endif
   }
 
-  public struct Entry: ~Escapable {
+  public struct Entry {
     @_alwaysEmitIntoClient
     internal init(_ rawAddress: UnsafeMutablePointer<FTSENT>) {
       self.rawAddress = rawAddress
@@ -283,7 +280,6 @@ extension Fts {
 
     public var parentDirectory: Self {
       @_alwaysEmitIntoClient @inlinable @inline(__always)
-      @_lifetime(borrow self)
       get {
         .init(rawAddress.pointee.fts_parent)
       }
@@ -292,23 +288,21 @@ extension Fts {
     /// next file in directory
     public var nextFile: Self? {
       @_alwaysEmitIntoClient @inlinable @inline(__always)
-      @_lifetime(borrow self)
       get {
         guard let p = rawAddress.pointee.fts_link else {
           return nil
         }
-        return _overrideLifetime(.init(p), borrowing: self)
+        return .init(p)
       }
     }
 
     public var cycleNode: Self? {
       @_alwaysEmitIntoClient @inlinable @inline(__always)
-      @_lifetime(borrow self)
       get {
         guard let p = rawAddress.pointee.fts_cycle else {
           return nil
         }
-        return _overrideLifetime(.init(p), borrowing: self)
+        return .init(p)
       }
     }
 

@@ -184,7 +184,6 @@ public extension SystemCall.RemoveFile.State {
 
   var ftsEntry: Fts.Entry {
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    @_lifetime(borrow self)
     get throws(Errno) {
       let v: UnsafeMutablePointer<FTSENT> = try safeInitialize { ptr throws(Errno) in
         try get(property: .ftsent, to: &ptr)

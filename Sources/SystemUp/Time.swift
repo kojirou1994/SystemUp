@@ -133,7 +133,7 @@ public extension Timeval {
     _modify { yield &rawValue.tv_sec }
   }
 
-#if canImport(Darwin)
+#if APPLE
   typealias USeconds = __darwin_suseconds_t
 #elseif os(Linux)
   typealias USeconds = __suseconds_t
@@ -191,7 +191,7 @@ public extension PosixClock {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var monotonicRaw: Self { .init(rawValue: CLOCK_MONOTONIC_RAW) }
 
-  #if canImport(Darwin)
+  #if APPLE
   /// like CLOCK_MONOTONIC_RAW, but reads a value cached by the system at context switch.  This can be read faster, but at a loss of
   /// accuracy as it may return values that are milliseconds old.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
