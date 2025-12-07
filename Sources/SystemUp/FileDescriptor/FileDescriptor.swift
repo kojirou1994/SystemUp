@@ -105,36 +105,6 @@ extension FileDescriptor {
 
 #endif
   }
-
-  public struct SeekOrigin: RawRepresentable, Sendable, Hashable {
-    @_alwaysEmitIntoClient
-    public var rawValue: CInt
-    @_alwaysEmitIntoClient
-    public init(rawValue: CInt) { self.rawValue = rawValue }
-
-    @_alwaysEmitIntoClient
-    public static var start: SeekOrigin { SeekOrigin(rawValue: SEEK_SET) }
-
-    @_alwaysEmitIntoClient
-    public static var current: SeekOrigin { SeekOrigin(rawValue: SEEK_CUR) }
-
-    @_alwaysEmitIntoClient
-    public static var end: SeekOrigin { SeekOrigin(rawValue: SEEK_END) }
-
-
-// TODO: These are available on some versions of Linux with appropriate
-// macro defines.
-#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-
-    @_alwaysEmitIntoClient
-    public static var nextHole: SeekOrigin { SeekOrigin(rawValue: _SEEK_HOLE) }
-
-
-    @_alwaysEmitIntoClient
-    public static var nextData: SeekOrigin { SeekOrigin(rawValue: _SEEK_DATA) }
-#endif
-
-  }
 }
 
 // MARK: System APIs

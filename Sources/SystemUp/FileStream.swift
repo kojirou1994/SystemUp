@@ -162,7 +162,7 @@ public extension FileStream {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  func seek(toOffset offset: Int, from origin: FileDescriptor.SeekOrigin) throws(Errno) {
+  func seek(toOffset offset: Int, from origin: SystemCall.SeekOrigin) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
       SystemLibc.fseek(rawValue, offset, origin.rawValue)
     }.get()
