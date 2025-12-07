@@ -6,9 +6,9 @@ public extension SystemCall {
   /// reposition read/write file offset
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func seek(_ fd: FileDescriptor, offset: Int64, from whence: SeekOrigin) throws(Errno) -> Int64 {
-    try SyscallUtilities.valueOrErrno {
-      SystemLibc.lseek(fd.rawValue, offset, whence.rawValue)
-    }.get()
+    try Int64(SyscallUtilities.valueOrErrno {
+      SystemLibc.lseek(fd.rawValue, numericCast(offset), whence.rawValue)
+    }.get())
   }
 
   struct SeekOrigin: RawRepresentable, Sendable {
