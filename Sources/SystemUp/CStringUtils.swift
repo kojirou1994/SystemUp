@@ -102,14 +102,14 @@ public extension CStringUtils {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func search(_ string: UnsafePointer<CChar>, substring: borrowing some CString, caseSensitive: Bool = true) -> UnsafePointer<CChar>? {
+  static func search(_ string: UnsafePointer<CChar>, substring: borrowing some CString, caseSensitive: Bool = true) -> UnsafeMutablePointer<CChar>? {
     substring.withUnsafeCString { substring in
       if caseSensitive {
         SystemLibc.strstr(string, substring)
       } else {
         SystemLibc.strcasestr(string, substring)
       }
-    }.map { .init($0) }
+    }
   }
 
   #if UNIX_BSD
