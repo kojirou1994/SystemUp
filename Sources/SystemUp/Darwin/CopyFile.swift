@@ -565,7 +565,7 @@ public extension SystemCall.CopyFile.State {
 
 #endif // Darwin platform
 
-#if os(Linux)
+#if false && os(Linux)
 public extension SystemCall {
   /// Copy a range of data from one file to another
   /// - Parameters:
