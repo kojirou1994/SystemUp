@@ -7,7 +7,7 @@
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
         "branch" : "main",
-        "revision" : "6d16d3c7468bb74aca2591b382032c7817d836d7"
+        "revision" : "2ea745fc20554438b72f010b95b2ff2694f897eb"
       }
     },
     {
@@ -16,7 +16,7 @@
       "location" : "https://github.com/kojirou1994/LittleC.git",
       "state" : {
         "branch" : "main",
-        "revision" : "861444dfe0bec375ae5395d97b4437fe419f9777"
+        "revision" : "45cef54e0065d12c41de64935fe9222f0f438750"
       }
     }
   ],

@@ -33,14 +33,13 @@ public extension SystemFileManager {
       guard size > 0 else {
         return .init()
       }
-      let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: size, alignment: MemoryLayout<UInt8>.alignment)
-      do {
-        let count = try fd.read(into: buffer)
-        return .init(bytesNoCopy: buffer.baseAddress!, count: count, deallocator: .free)
-      } catch {
-        buffer.deallocate()
-        throw error
+      var data = Data(count: size)
+      let realsize = try data.withUnsafeMutableBytes { buffer throws(Errno) in
+        try fd.read(into: buffer)
       }
+      assert(realsize == size, "size changed?")
+      data.removeLast(realsize - size)
+      return data
     case .stream(let bufferSize):
       return try streamRead(fd: fd, bufferSize: bufferSize)
     }

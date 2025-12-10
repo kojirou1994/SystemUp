@@ -69,7 +69,7 @@ public extension Errno {
   func copyErrorMessage(to buf: UnsafeMutableBufferPointer<CChar>) throws(Errno) {
     assert(!buf.isEmpty)
     try SyscallUtilities.errnoOrZeroOnReturn {
-      SystemLibc.strerror_r(rawValue, buf.baseAddress.unsafelyUnwrapped, buf.count)
+      SystemLibc.swift_strerror_r(rawValue, buf.baseAddress.unsafelyUnwrapped, buf.count)
     }.get()
   }
 
