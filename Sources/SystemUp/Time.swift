@@ -95,11 +95,17 @@ public extension TimeT {
 }
 
 // TODO: @_rawLayout(...)
-public struct Timespec: RawRepresentable, Sendable, BitwiseCopyable {
+public struct Timespec: RawRepresentable, Sendable, BitwiseCopyable, Equatable {
   public var rawValue: timespec
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(rawValue: timespec) {
     self.rawValue = rawValue
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.rawValue.tv_sec == rhs.rawValue.tv_sec
+    && lhs.rawValue.tv_nsec == rhs.rawValue.tv_nsec
   }
 }
 
