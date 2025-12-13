@@ -17,7 +17,7 @@ public extension Proc.BSDInfo {
   }
 
   @_alwaysEmitIntoClient
-  var status: UInt32 { info.pbi_flags }
+  var status: UInt32 { info.pbi_status }
 
   @_alwaysEmitIntoClient
   var xstatus: UInt32 { info.pbi_xstatus }
