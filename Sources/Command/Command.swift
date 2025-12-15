@@ -237,9 +237,9 @@ extension Command {
     return try child.waitOutput()
   }
 
-  public func status() throws(Errno) -> WaitPID.ExitStatus {
+  public func status(rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> WaitPID.ExitStatus {
     var child = try spawn()
-    return try child.wait()
+    return try child.wait(rusage: rusage)
   }
 
   public struct ChildProcess {
@@ -269,13 +269,13 @@ extension Command {
 
     /// stdout and stderr will be closed after wait call
     /// - Returns: process exit status
-    public mutating func wait() throws(Errno) -> WaitPID.ExitStatus {
+    public mutating func wait(rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> WaitPID.ExitStatus {
 #if DEBUG
       assert(running, "process already exited")
 #endif
       var status: WaitPID.ExitStatus = Memory.undefined()
       _ = try SyscallUtilities.retryWhileInterrupted { () throws(Errno) in
-        try WaitPID.wait(.processID(pid), status: &status)
+        try WaitPID.wait(.processID(pid), status: &status, rusage: rusage)
       }
 
       pipes.closeLocal()
