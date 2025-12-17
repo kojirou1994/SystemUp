@@ -55,7 +55,7 @@ let package = Package(
       ]),
     .testTarget(
       name: "SystemExtensionTests",
-      dependencies: ["SystemUp"]),
+      dependencies: ["SystemUp", "SystemFileManager"]),
   ]
 )
 
