@@ -96,8 +96,6 @@ public func withTempUnsafeCStringArray<R: ~Copyable, E: Error>(_ args: some Coll
 
       cStrings[cStrings.count-1] = nil
 
-      precondition(cStrings.last == nil)
-
       return try body(cStrings.baseAddress.unsafelyUnwrapped)
     }
   }
