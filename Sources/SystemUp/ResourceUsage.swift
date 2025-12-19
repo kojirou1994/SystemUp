@@ -49,9 +49,15 @@ public extension ResourceUsage {
     .init(rawValue: rawValue.ru_stime)
   }
 
+  /// the maximum resident set size utilized (in bytes).
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var maxResidentSetSize: Int {
-    rawValue.ru_maxrss
+    #if APPLE
+    let ratio = 1
+    #else
+    let ratio = 1024
+    #endif
+    return rawValue.ru_maxrss * ratio
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
