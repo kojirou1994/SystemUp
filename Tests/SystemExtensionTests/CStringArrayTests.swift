@@ -27,5 +27,10 @@ final class CStringArrayTests: XCTestCase {
     withTempUnsafeCStringArray(swiftArray) { start in
       XCTAssertEqual(NullTerminatedArray(start).map { String(cString: $0.pointee) }, swiftArray)
     }
+
+    let emptyArray = [String]()
+    withTempUnsafeCStringArray(emptyArray) { start in
+      XCTAssertEqual(NullTerminatedArray(start).map { String(cString: $0.pointee) }, emptyArray)
+    }
   }
 }

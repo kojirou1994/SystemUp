@@ -63,34 +63,43 @@ public extension CStringArray {
 
 }
 
+import SwiftFix
+
 @_alwaysEmitIntoClient
 public func withTempUnsafeCStringArray<R: ~Copyable, E: Error>(_ args: some Collection<some ContiguousUTF8Bytes>, _ body: (_ argv: UnsafePointer<UnsafeMutablePointer<CChar>?>) throws(E) -> R) throws(E) -> R {
 
-  var argsOffsets = [0]
-  argsOffsets.reserveCapacity(args.count)
-  var currentOffset = 0
-  for arg in args {
-    currentOffset += arg.withContiguousUTF8Bytes(\.count) + 1
-    argsOffsets.append(currentOffset)
+  if _slowPath(args.isEmpty) {
+    var finish: UnsafeMutablePointer<CChar>? = nil
+    return try body(&finish)
   }
 
-  let argsBufferSize = currentOffset
-  var argsBuffer = [UInt8]()
-  argsBuffer.reserveCapacity(argsBufferSize)
-  for arg in args {
-    arg.withContiguousUTF8Bytes { argsBuffer.append(contentsOf: $0) }
-    argsBuffer.append(0)
+  let bufferSize = args.reduce(into: args.count) { $0 += $1.withContiguousUTF8Bytes { $0.count } }
+
+  return try withUnsafeTemporaryAllocationTyped(of: UInt8.self, capacity: bufferSize) { argsBuffer throws(E) in
+
+    try withUnsafeTemporaryAllocationTyped(of: UnsafeMutablePointer<CChar>?.self, capacity: args.count+1) { cStrings throws(E) in
+      var current = argsBuffer.baseAddress.unsafelyUnwrapped
+
+      for (offset, arg) in args.enumerated() {
+        cStrings[offset] = UnsafeMutableRawPointer(current).assumingMemoryBound(to: CChar.self)
+        arg.withContiguousUTF8Bytes { utf8Bytes in
+          if let baseAddress = utf8Bytes.baseAddress {
+            current.initialize(from: baseAddress.assumingMemoryBound(to: UInt8.self), count: utf8Bytes.count)
+            current += utf8Bytes.count
+          }
+        }
+        current.pointee = 0
+        current += 1
+      }
+
+      precondition(current == argsBuffer.baseAddress.unsafelyUnwrapped.advanced(by: argsBuffer.count), "argsBuffer not fullly initialized")
+
+      cStrings[cStrings.count-1] = nil
+
+      precondition(cStrings.last == nil)
+
+      return try body(cStrings.baseAddress.unsafelyUnwrapped)
+    }
   }
 
-  var result: R!
-
-  try argsBuffer.withUnsafeMutableBufferPointer { argsBuffer throws(E) in
-    let ptr = UnsafeMutableRawPointer(argsBuffer.baseAddress!)
-      .assumingMemoryBound(to: CChar.self)
-    var cStrings: [UnsafeMutablePointer<CChar>?] = argsOffsets.map { ptr + $0 }
-    cStrings[cStrings.count - 1] = nil
-    result = try body(cStrings)
-  }
-
-  return result
 }
