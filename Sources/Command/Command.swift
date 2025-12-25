@@ -232,9 +232,9 @@ extension Command {
     }
   }
 
-  public func output() throws(Errno) -> Output {
+  public func output(rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> Output {
     var child = try spawn()
-    return try child.waitOutput()
+    return try child.waitOutput(rusage: rusage)
   }
 
   public func status(rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> WaitPID.ExitStatus {
@@ -286,7 +286,7 @@ extension Command {
       return status
     }
 
-    public mutating func waitOutput() throws(Errno) -> Output {
+    public mutating func waitOutput(rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> Output {
       var stdout: [UInt8] = []
       var stderr: [UInt8] = []
 
@@ -302,7 +302,7 @@ extension Command {
         }
       }
 
-      return try .init(status: wait(), output: stdout, error: stderr)
+      return try .init(status: wait(rusage: rusage), output: stdout, error: stderr)
     }
 
   }
