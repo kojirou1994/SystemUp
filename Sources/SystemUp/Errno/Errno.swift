@@ -10,17 +10,13 @@ public struct Errno: RawRepresentable, Error, Hashable {
 }
 
 
-//extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
-//
-//  @inline(never)
-//  public var description: String {
-//    guard let ptr = system_strerror(self.rawValue) else { return "unknown error" }
-//    return String(cString: ptr)
-//  }
-//
-//  /// The corresponding C function is `strerror(3)`.
-//  public var debugDescription: String { self.description }
-//}
+extension Errno: CustomStringConvertible {
+  @inline(never)
+  public var description: String {
+    guard let ptr = errorMessage else { return "unknown error" }
+    return String(cString: ptr.cString)
+  }
+}
 
 
 //extension Errno {
