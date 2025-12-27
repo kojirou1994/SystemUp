@@ -1,5 +1,5 @@
 {
-  "originHash" : "74d43fa24d9757e0ffcac61524e0e139294e6ce4b3548a8bf8b5842e7689f2fb",
+  "originHash" : "a0d372cef8b0997032bb7285786b45a2f3eb8f9cbac19ec8b7e31083193a573d",
   "pins" : [
     {
       "identity" : "cutility",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/kojirou1994/CUtility.git",
       "state" : {
         "branch" : "main",
-        "revision" : "2ea745fc20554438b72f010b95b2ff2694f897eb"
+        "revision" : "396a59883eeba52444c3b55063029443b465b3ac"
       }
     },
     {
