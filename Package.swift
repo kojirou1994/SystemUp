@@ -7,12 +7,14 @@ let package = Package(
   platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13), .watchOS(.v6), .macCatalyst(.v13)],
   products: [
     .library(name: "SystemUp", targets: ["SystemUp"]),
+    .library(name: "SystemPath", targets: ["SystemPath"]),
     .library(name: "SystemFileManager", targets: ["SystemFileManager"]),
     .library(name: "Command", targets: ["Command"]),
   ],
   dependencies: [
     .package(url: "https://github.com/kojirou1994/CUtility.git", branch: "main"),
     .package(url: "https://github.com/kojirou1994/LittleC.git", branch: "main"),
+    .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
   ],
   targets: [
     .target(
@@ -36,6 +38,16 @@ let package = Package(
         .enableExperimentalFeature("LifetimeDependence"),
         .enableExperimentalFeature("Lifetimes"),
       ]
+    ),
+    .target(
+      name: "SystemPath",
+      dependencies: [
+        .product(name: "SystemPackage", package: "swift-system", condition: .when(platforms: [.linux])),
+        .product(name: "CUtilityDarwin", package: "CUtility", condition: .when(platforms: [.macOS, .iOS, .tvOS, .watchOS])),
+      ],
+      swiftSettings: [
+        .define("APPLE", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
+      ],
     ),
     .target(
       name: "SystemFileManager",
