@@ -119,3 +119,32 @@ public extension Memory {
     buf = try .init(start: resized(buf.baseAddress, byteCount: byteCount), count: byteCount)
   }
 }
+
+// MARK: string.h
+public extension Memory {
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func compare(_ s1: UnsafeRawPointer, _ s2: UnsafeRawPointer, byteCount: Int) -> Bool {
+    SystemLibc.memcmp(s1, s2, byteCount) == 0
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func fill(_ memory: UnsafeMutableRawBufferPointer, value: UInt8) {
+    SystemLibc.memset(memory.baseAddress, numericCast(value), memory.count)
+  }
+
+  @discardableResult
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func copy(src: UnsafeRawBufferPointer, dst: UnsafeMutableRawPointer, overlapping: Bool = false) -> UnsafeMutableRawPointer {
+    if overlapping {
+      SystemLibc.memmove(dst, src.baseAddress, src.count)
+    } else {
+      SystemLibc.memcpy(dst, src.baseAddress, src.count)
+    }
+  }
+
+  @_alwaysEmitIntoClient @inlinable @inline(__always)
+  static func search(_ s: UnsafeRawBufferPointer, value: UInt8) -> UnsafeRawPointer? {
+    .init(SystemLibc.memchr(s.baseAddress, numericCast(value), s.count))
+  }
+
+}

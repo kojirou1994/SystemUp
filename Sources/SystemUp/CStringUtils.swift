@@ -165,14 +165,6 @@ extension CStringConvertible where Self: ~Copyable, Self: ~Escapable {
 // TODO
 /*
 
- public func memchr(_ __s: UnsafeRawPointer!, _ __c: Int32, _ __n: Int) -> UnsafeMutableRawPointer!
-
- public func memcpy(_ __dst: UnsafeMutableRawPointer!, _ __src: UnsafeRawPointer!, _ __n: Int) -> UnsafeMutableRawPointer!
-
- public func memmove(_ __dst: UnsafeMutableRawPointer!, _ __src: UnsafeRawPointer!, _ __len: Int) -> UnsafeMutableRawPointer!
-
- public func memset(_ __b: UnsafeMutableRawPointer!, _ __c: Int32, _ __len: Int) -> UnsafeMutableRawPointer!
-
  public func strtok(_ __str: UnsafeMutablePointer<CChar>!, _ __sep: UnsafePointer<CChar>!) -> UnsafeMutablePointer<CChar>!
 
  public func strxfrm(_ __s1: UnsafeMutablePointer<CChar>!, _ __s2: UnsafePointer<CChar>!, _ __n: Int) -> Int
