@@ -128,23 +128,23 @@ public extension Memory {
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func fill(_ memory: UnsafeMutableRawBufferPointer, value: UInt8) {
-    SystemLibc.memset(memory.baseAddress, numericCast(value), memory.count)
+  static func fill(_ memory: UnsafeMutableRawPointer, count: Int, value: UInt8) {
+    SystemLibc.memset(memory, numericCast(value), count)
   }
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func copy(src: UnsafeRawBufferPointer, dst: UnsafeMutableRawPointer, overlapping: Bool = false) -> UnsafeMutableRawPointer {
     if overlapping {
-      SystemLibc.memmove(dst, src.baseAddress, src.count)
+      SystemLibc.memmove(dst, src.baseAddress!, src.count)
     } else {
-      SystemLibc.memcpy(dst, src.baseAddress, src.count)
+      SystemLibc.memcpy(dst, src.baseAddress!, src.count)
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func search(_ s: UnsafeRawBufferPointer, value: UInt8) -> UnsafeRawPointer? {
-    .init(SystemLibc.memchr(s.baseAddress, numericCast(value), s.count))
+    .init(SystemLibc.memchr(s.baseAddress!, numericCast(value), s.count))
   }
 
 }
