@@ -396,6 +396,10 @@ extension SystemCall {
 
       @_alwaysEmitIntoClient
       public static var verbose: Self { .init(macroValue: COPYFILE_VERBOSE) }
+
+      // https://github.com/apple-oss-distributions/copyfile/blob/c6053d8cd4df319344c7eaaf8b19c464c0016db1/copyfile.c#L381
+      @_alwaysEmitIntoClient
+      public static var debug: Self { .init(rawValue: 1<<31) }
     }
   }
 }
