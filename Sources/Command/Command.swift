@@ -290,7 +290,7 @@ extension Command {
       var stdout: [UInt8] = []
       var stderr: [UInt8] = []
 
-      try withUnsafeTemporaryAllocationTyped(byteCount: 4096, alignment: MemoryLayout<Int>.alignment) { buffer throws(Errno) in
+      try withUnsafeTemporaryAllocationTyped(byteCount: 4096 * 4, alignment: MemoryLayout<Int>.alignment) { buffer throws(Errno) in
         switch (self.stdout, self.stderr) {
         case (let out?, let err?):
           try Command.collectOutput(p1: out, v1: &stdout, p2: err, v2: &stderr, buffer: buffer)

@@ -3,7 +3,7 @@ import CUtility
 
 public enum RegularFileManager {
   /// src must be regular file, dst must not exist, dst is deleted if failure
-  public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int = 4096) throws(Errno) {
+  public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int = 4096 * 4) throws(Errno) {
     let inFD = try SystemCall.open(src, .readOnly)
     defer {
       try? SystemCall.close(inFD)
