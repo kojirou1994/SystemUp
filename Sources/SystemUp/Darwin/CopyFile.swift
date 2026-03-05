@@ -569,7 +569,7 @@ public extension SystemCall.CopyFile.State {
 
 #endif // Darwin platform
 
-#if os(Linux)
+#if os(Linux) || os(FreeBSD)
 public extension SystemCall {
   /// Copy a range of data from one file to another
   /// - Parameters:
@@ -583,14 +583,23 @@ public extension SystemCall {
   static func copyFileRange(
     inputFD: FileDescriptor, inputOffset: UnsafeMutablePointer<Int>? = nil,
     outputFD: FileDescriptor, outputOffset: UnsafeMutablePointer<Int>? = nil,
-    length: Int) throws(Errno) -> Int {
+    length: Int, options: CopyFileRangeOptions = []) throws(Errno) -> Int {
     try SyscallUtilities.valueOrErrno {
-      /*
-       The flags argument is provided to allow for future extensions and
-       currently must be set to 0.
-       */
-      SystemLibc.copy_file_range(inputFD.rawValue, inputOffset, outputFD.rawValue, outputOffset, length, 0)
+      SystemLibc.copy_file_range(inputFD.rawValue, inputOffset, outputFD.rawValue, outputOffset, length, options.rawValue)
     }.get()
+  }
+
+  public struct CopyFileRangeOptions: OptionSet, MacroRawRepresentable {
+
+    public init(rawValue: UInt32) {
+      self.rawValue = rawValue
+    }
+
+    public let rawValue: UInt32
+    #if os(FreeBSD)
+    @_alwaysEmitIntoClient
+    public static var clone: Self { .init(macroValue: COPY_FILE_RANGE_CLONE) }
+    #endif
   }
 }
 #endif
