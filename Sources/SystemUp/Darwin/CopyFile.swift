@@ -589,7 +589,7 @@ public extension SystemCall {
     }.get()
   }
 
-  public struct CopyFileRangeOptions: OptionSet, MacroRawRepresentable {
+  struct CopyFileRangeOptions: OptionSet, MacroRawRepresentable {
 
     public init(rawValue: UInt32) {
       self.rawValue = rawValue
