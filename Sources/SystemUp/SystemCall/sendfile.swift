@@ -14,8 +14,8 @@ public extension SystemCall {
 
   #if os(Linux)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func sendfile(from src: FileDescriptor, to dst: FileDescriptor, offset: UnsafeMutablePointer<Int>?, count: Int) throws(Errno) {
-    try SyscallUtilities.voidOrErrno {
+  static func sendfile(from src: FileDescriptor, to dst: FileDescriptor, offset: UnsafeMutablePointer<Int>?, count: Int) throws(Errno) -> Int {
+    try SyscallUtilities.valueOrErrno {
       SystemLibc.sendfile(dst.rawValue, src.rawValue, offset, count)
     }.get()
   }
