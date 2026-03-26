@@ -326,10 +326,32 @@ public extension FileControl {
 #if os(Linux)
 public extension FileControl {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  static func _linuxFileAllocate(_ fd: FileDescriptor, mode: Int32, offset: Int, length: Int) throws(Errno) {
+  static func fallocate(_ fd: FileDescriptor, mode: FallocateMode = .default, offset: Int, length: Int) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
-      SystemLibc.fallocate(fd.rawValue, mode, offset, length)
+      SystemLibc.fallocate(fd.rawValue, mode.rawValue, offset, length)
     }.get()
+  }
+
+  struct FallocateMode: OptionSet {
+    public var rawValue: Int32
+    @_alwaysEmitIntoClient @inlinable @inline(__always)
+    public init(rawValue: Int32) {
+      self.rawValue = rawValue
+    }
+    @_alwaysEmitIntoClient
+    public static var `default`: Self { .init(rawValue: 0) }
+    @_alwaysEmitIntoClient
+    public static var keepSize: Self { .init(rawValue: FALLOC_FL_KEEP_SIZE) }
+    @_alwaysEmitIntoClient
+    public static var unshareRange: Self { .init(rawValue: FALLOC_FL_UNSHARE_RANGE) }
+    @_alwaysEmitIntoClient
+    public static var punchHole: Self { .init(rawValue: FALLOC_FL_PUNCH_HOLE) }
+    @_alwaysEmitIntoClient
+    public static var collapseRange: Self { .init(rawValue: FALLOC_FL_COLLAPSE_RANGE) }
+    @_alwaysEmitIntoClient
+    public static var zeroRange: Self { .init(rawValue: FALLOC_FL_ZERO_RANGE) }
+    @_alwaysEmitIntoClient
+    public static var insertRange: Self { .init(rawValue: FALLOC_FL_INSERT_RANGE) }
   }
 }
 #endif
