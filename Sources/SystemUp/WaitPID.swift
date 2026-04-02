@@ -8,19 +8,24 @@ public extension WaitPID {
   static func wait(_ target: TargetID, status: UnsafeMutablePointer<ExitStatus>? = nil, options: Options = [],
                    rusage: UnsafeMutablePointer<ResourceUsage>? = nil) throws(Errno) -> ProcessID {
     try SyscallUtilities.valueOrErrno {
-      wait4(target.rawValue, .init(OpaquePointer(status)), options.rawValue, UnsafeMutableRawPointer(rusage)?.assumingMemoryBound(to: SystemLibc.rusage.self))
+      SystemLibc.wait4(
+        target.rawValue,
+        UnsafeMutableRawPointer(status)?.assumingMemoryBound(to: Int32.self),
+        options.rawValue,
+        UnsafeMutableRawPointer(rusage)?.assumingMemoryBound(to: SystemLibc.rusage.self),
+      )
     }.map(ProcessID.init).get()
   }
 }
 
 extension WaitPID {
 
-  public struct WaitResult: Sendable {
+  public struct WaitResult: Sendable, BitwiseCopyable {
     public let pid: ProcessID
     public let status: ExitStatus
   }
 
-  public struct TargetID: Sendable {
+  public struct TargetID: Sendable, BitwiseCopyable {
     @usableFromInline
     internal let rawValue: Int32
     @usableFromInline

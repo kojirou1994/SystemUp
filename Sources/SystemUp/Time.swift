@@ -94,7 +94,6 @@ public extension TimeT {
   }
 }
 
-// TODO: @_rawLayout(...)
 public struct Timespec: RawRepresentable, Sendable, BitwiseCopyable, Equatable {
   public var rawValue: timespec
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -123,7 +122,6 @@ public extension Timespec {
   }
 }
 
-// TODO: @_rawLayout(...)
 public struct Timeval: RawRepresentable, Sendable, BitwiseCopyable, Equatable {
   public var rawValue: timeval
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -158,7 +156,6 @@ public extension Timeval {
   }
 }
 
-// TODO: @_rawLayout(...)
 public struct Timezone: RawRepresentable, Sendable, BitwiseCopyable {
   public var rawValue: timezone
   @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -258,8 +255,6 @@ public extension PosixClock {
     }.get()
   }
 }
-
-// TODO: @_rawLayout(...)
 
 public struct ManagedTimeFields: ~Copyable {
   public let fields: TimeFields

@@ -9,6 +9,8 @@ public struct UserID: RawRepresentable, Sendable, BitwiseCopyable {
 }
 
 public extension UserID {
+  /// the real user ID of the calling process.
+  /// The real user ID is that of the user who has invoked the program.
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var process: Self {
     get {
@@ -22,7 +24,8 @@ public extension UserID {
       }
     }
   }
-
+  
+  /// the effective user ID gives the process additional permissions during execution of “set-user-ID” mode processes
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static var effective: Self {
     get {
