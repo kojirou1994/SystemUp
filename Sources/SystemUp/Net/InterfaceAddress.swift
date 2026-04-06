@@ -44,13 +44,11 @@ public struct InterfaceAddress: ~Copyable {
   internal let ptr: UnsafeMutablePointer<ifaddrs>
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public var name: String {
-    .init(cString: ptr.pointee.ifa_name)
-  }
-
-  @_alwaysEmitIntoClient @inlinable @inline(__always)
-  public func withNameCString<R: ~Copyable, E: Error>(_ body: (borrowing DynamicCString) throws(E) -> R) throws(E) -> R {
-    try DynamicCString.withTemporaryBorrowed(cString: ptr.pointee.ifa_name, body)
+  public var name: ReferenceCString {
+    @_lifetime(borrow self)
+    get {
+      .init(cString: ptr.pointee.ifa_name)
+    }
   }
 
 /*

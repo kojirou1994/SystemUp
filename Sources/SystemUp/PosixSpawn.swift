@@ -18,7 +18,7 @@ public extension PosixSpawn {
   @inlinable
   static func spawn(_ path: UnsafePointer<CChar>, fileActions: FileActions? = nil, attributes: Attributes? = nil, argv: UnsafePointer<UnsafeMutablePointer<CChar>?>, envp: UnsafePointer<UnsafeMutablePointer<CChar>?>? = nil, searchPATH: Bool) -> Result<ProcessID, Errno> {
 
-    var pid: pid_t = 0
+    var pid: pid_t = Memory.undefined()
     assert(argv[0] != nil, "At least argv[0] must be present in the array")
 
     return SyscallUtilities.errnoOrZeroOnReturn {
