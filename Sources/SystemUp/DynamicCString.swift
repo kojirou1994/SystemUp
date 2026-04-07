@@ -1,5 +1,6 @@
 import CUtility
 
+@frozen
 public struct DynamicCString: ~Copyable, @unchecked Sendable {
 
   @_alwaysEmitIntoClient

@@ -1,31 +1,32 @@
 import SystemLibc
 import CUtility
+import SwiftExperimental
 
+@_staticExclusiveOnly
 public struct PosixMutex: ~Copyable, @unchecked Sendable {
 
   @usableFromInline
-  internal let rawAddress: UnsafeMutablePointer<pthread_mutex_t> = .allocate(capacity: 1)
+  internal let value: StableAddress<pthread_mutex_t> = .undefined
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init(attributes: borrowing Attributes) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_mutex_init(rawAddress, attributes.rawAddress)
+      pthread_mutex_init(value._address, attributes.value._address)
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   public init() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_mutex_init(rawAddress, nil)
+      pthread_mutex_init(value._address, nil)
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   deinit {
     PosixThread.call {
-      pthread_mutex_destroy(rawAddress)
+      pthread_mutex_destroy(value._address)
     }
-    rawAddress.deallocate()
   }
 
 }
@@ -36,7 +37,7 @@ public extension PosixMutex {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func lock() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_mutex_lock(rawAddress)
+      pthread_mutex_lock(value._address)
     }.get()
   }
 
@@ -44,52 +45,35 @@ public extension PosixMutex {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func unlock() throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_mutex_unlock(rawAddress)
+      pthread_mutex_unlock(value._address)
     }.get()
   }
 
   @available(*, noasync)
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func tryLock() -> Bool {
-    pthread_mutex_trylock(rawAddress) == 0
+    pthread_mutex_trylock(value._address) == 0
   }
 }
 
 extension PosixMutex {
-  public struct Attributes: ~Copyable, @unchecked Sendable {
+  @_staticExclusiveOnly
+  public struct Attributes: ~Copyable {
 
     @usableFromInline
-    internal var rawAddress: UnsafeMutablePointer<pthread_mutexattr_t> = .allocate(capacity: 1)
+    internal var value: StableAddress<pthread_mutexattr_t> = .undefined
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws(Errno) {
-      try initialize()
-    }
-
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    deinit {
-      destroy()
-      rawAddress.deallocate()
-    }
-
-    /// destroy and initialize
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public func reset() throws(Errno) {
-      destroy()
-      try initialize()
-    }
-
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    internal func initialize() throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_mutexattr_init(rawAddress)
+        pthread_mutexattr_init(value._address)
       }.get()
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    internal func destroy() {
+    deinit {
       PosixThread.call {
-        pthread_mutexattr_destroy(rawAddress)
+        pthread_mutexattr_destroy(value._address)
       }
     }
 
@@ -164,13 +148,13 @@ public extension PosixMutex {
   var prioceiling: Int32 {
     get {
       PosixThread.get {
-        pthread_mutex_getprioceiling(rawAddress, $0)
+        pthread_mutex_getprioceiling(value._address, $0)
       }
     }
-    set {
+    nonmutating set {
       var value: Int32 = 0
       PosixThread.call {
-        pthread_mutex_setprioceiling(rawAddress, newValue, &value)
+        pthread_mutex_setprioceiling(self.value._address, newValue, &value)
       }
     }
   }
@@ -181,12 +165,12 @@ public extension PosixMutex.Attributes {
   var prioceiling: Int32 {
     get {
       PosixThread.get {
-        pthread_mutexattr_getprioceiling(rawAddress, $0)
+        pthread_mutexattr_getprioceiling(value._address, $0)
       }
     }
-    set {
+    nonmutating set {
       PosixThread.call {
-        pthread_mutexattr_setprioceiling(rawAddress, newValue)
+        pthread_mutexattr_setprioceiling(value._address, newValue)
       }
     }
   }
@@ -195,12 +179,12 @@ public extension PosixMutex.Attributes {
   var `protocol`: Int32 {
     get {
       PosixThread.get {
-        pthread_mutexattr_getprotocol(rawAddress, $0)
+        pthread_mutexattr_getprotocol(value._address, $0)
       }
     }
-    set {
+    nonmutating set {
       PosixThread.call {
-        pthread_mutexattr_setprotocol(rawAddress, newValue)
+        pthread_mutexattr_setprotocol(value._address, newValue)
       }
     }
   }
@@ -209,12 +193,12 @@ public extension PosixMutex.Attributes {
   var processShared: PosixMutex.ProcessShared {
     get {
       PosixThread.get {
-        pthread_mutexattr_getpshared(rawAddress, $0)
+        pthread_mutexattr_getpshared(value._address, $0)
       }
     }
-    set {
+    nonmutating set {
       PosixThread.call {
-        pthread_mutexattr_setpshared(rawAddress, newValue.rawValue)
+        pthread_mutexattr_setpshared(value._address, newValue.rawValue)
       }
     }
   }
@@ -223,12 +207,12 @@ public extension PosixMutex.Attributes {
   var type: MutexType {
     get {
       PosixThread.get {
-        pthread_mutexattr_gettype(rawAddress, $0)
+        pthread_mutexattr_gettype(value._address, $0)
       }
     }
-    set {
+    nonmutating set {
       PosixThread.call {
-        pthread_mutexattr_settype(rawAddress, newValue.rawValue)
+        pthread_mutexattr_settype(value._address, newValue.rawValue)
       }
     }
   }
@@ -239,12 +223,12 @@ public extension PosixMutex.Attributes {
   var policy: Policy {
     get {
       PosixThread.get {
-        pthread_mutexattr_getpolicy_np(rawAddress, $0)
+        pthread_mutexattr_getpolicy_np(value._address, $0)
       }
     }
-    set {
+    nonmutating set {
       PosixThread.call {
-        pthread_mutexattr_setpolicy_np(rawAddress, newValue.rawValue)
+        pthread_mutexattr_setpolicy_np(value._address, newValue.rawValue)
       }
     }
   }

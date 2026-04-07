@@ -1,5 +1,6 @@
 import SystemLibc
 import CUtility
+import SwiftExperimental
 
 public enum PosixThread { }
 
@@ -161,13 +162,13 @@ public extension PosixThread {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func create(attributes: borrowing Attributes, _ block: @escaping @Sendable () -> Void) throws(Errno) -> ThreadID {
-    try create(attributes: attributes.rawAddress, block)
+    try create(attributes: attributes.value._address, block)
   }
 
   @discardableResult
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func detach(_ block: @escaping @Sendable () -> Void) throws(Errno) -> ThreadID {
-    var attr = try Attributes()
+    let attr = try Attributes()
     attr.scope = .system
     attr.detachState = .detached
     return try create(attributes: attr, block)
@@ -182,41 +183,23 @@ extension PosixThread.ThreadID {
 }
 
 extension PosixThread {
-  public struct Attributes: ~Copyable, @unchecked Sendable {
+  @_staticExclusiveOnly
+  public struct Attributes: ~Copyable {
 
     @usableFromInline
-    internal let rawAddress: UnsafeMutablePointer<pthread_attr_t>
+    internal let value: StableAddress<pthread_attr_t> = .undefined
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() throws(Errno) {
-      rawAddress = .allocate(capacity: 1)
-      try initialize()
-    }
-
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    deinit {
-      destroy()
-      rawAddress.deallocate()
-    }
-
-    /// destroy and initialize
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public func reset() throws(Errno) {
-      destroy()
-      try initialize()
-    }
-
-    @_alwaysEmitIntoClient @inlinable @inline(__always)
-    internal func initialize() throws(Errno) {
       try SyscallUtilities.errnoOrZeroOnReturn {
-        pthread_attr_init(rawAddress)
+        pthread_attr_init(value._address)
       }.get()
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    internal func destroy() {
+    deinit {
       PosixThread.call {
-        pthread_attr_destroy(rawAddress)
+        pthread_attr_destroy(value._address)
       }
     }
 
@@ -330,32 +313,32 @@ public extension PosixThread.Attributes {
       var start: UnsafeMutableRawPointer?
       var count: Int = 0
       PosixThread.call {
-        pthread_attr_getstack(rawAddress, &start, &count)
+        pthread_attr_getstack(value._address, &start, &count)
       }
       return .init(start: start, count: count)
     }
-    set {
-      PosixThread.call { pthread_attr_setstack(rawAddress, newValue.baseAddress.unsafelyUnwrapped, newValue.count) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setstack(value._address, newValue.baseAddress.unsafelyUnwrapped, newValue.count) }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var stackSize: Int {
     get {
-      PosixThread.get { pthread_attr_getstacksize(rawAddress, $0) }
+      PosixThread.get { pthread_attr_getstacksize(value._address, $0) }
     }
-    set {
-      PosixThread.call { pthread_attr_setstacksize(rawAddress, newValue) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setstacksize(value._address, newValue) }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var guardSize: Int {
     get {
-      PosixThread.get { pthread_attr_getguardsize(rawAddress, $0) }
+      PosixThread.get { pthread_attr_getguardsize(value._address, $0) }
     }
-    set {
-      PosixThread.call { pthread_attr_setguardsize(rawAddress, newValue) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setguardsize(value._address, newValue) }
     }
   }
 
@@ -363,10 +346,10 @@ public extension PosixThread.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var stackAddress: UnsafeMutableRawPointer {
     get {
-      PosixThread.get { pthread_attr_getstackaddr(rawAddress, $0) }
+      PosixThread.get { pthread_attr_getstackaddr(value._address, $0) }
     }
-    set {
-      PosixThread.call { pthread_attr_setstackaddr(rawAddress, newValue) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setstackaddr(value._address, newValue) }
     }
   }
   #endif
@@ -374,36 +357,32 @@ public extension PosixThread.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var detachState: DetachState {
     get {
-      PosixThread.get { pthread_attr_getdetachstate(rawAddress, $0) }
+      PosixThread.get { pthread_attr_getdetachstate(value._address, $0) }
     }
-    set {
-      PosixThread.call { pthread_attr_setdetachstate(rawAddress, newValue.rawValue) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setdetachstate(value._address, newValue.rawValue) }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var inheritsched: Inheritsched {
     get {
-      PosixThread.get { pthread_attr_getinheritsched(rawAddress, $0) }
+      PosixThread.get { pthread_attr_getinheritsched(value._address, $0) }
     }
-    set {
-      PosixThread.call { pthread_attr_setinheritsched(rawAddress, newValue.rawValue) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setinheritsched(value._address, newValue.rawValue) }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var schedParam: SchedParam {
     get {
-      var value: sched_param = .init()
-      PosixThread.call {
-        pthread_attr_getschedparam(rawAddress, &value)
-      }
-      return .init(rawValue: value)
+      PosixThread.get { pthread_attr_getschedparam(self.value._address, $0) }
     }
-    set {
+    nonmutating set {
       PosixThread.call {
         withUnsafePointer(to: newValue.rawValue) { param in
-          pthread_attr_setschedparam(rawAddress, param)
+          pthread_attr_setschedparam(value._address, param)
         }
       }
     }
@@ -412,20 +391,20 @@ public extension PosixThread.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var schedPolicy: SchedulingPolicy {
     get {
-      PosixThread.get { pthread_attr_getschedpolicy(rawAddress, $0) }
+      PosixThread.get { pthread_attr_getschedpolicy(value._address, $0) }
     }
-    set {
-      PosixThread.call { pthread_attr_setschedpolicy(rawAddress, newValue.rawValue) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setschedpolicy(value._address, newValue.rawValue) }
     }
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   var scope: Scope {
     get {
-      PosixThread.get { pthread_attr_getscope(rawAddress, $0) }
+      PosixThread.get { pthread_attr_getscope(value._address, $0) }
     }
-    set {
-      PosixThread.call { pthread_attr_setscope(rawAddress, newValue.rawValue) }
+    nonmutating set {
+      PosixThread.call { pthread_attr_setscope(value._address, newValue.rawValue) }
     }
   }
 }
@@ -504,14 +483,14 @@ public extension PosixThread.Attributes {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   func getQualityOfService(to qos: UnsafeMutablePointer<PosixSpawn.Attributes.QualityOfService>?, relativePriority: UnsafeMutablePointer<Int32>? = nil) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_attr_get_qos_class_np(rawAddress, qos, relativePriority)
+      pthread_attr_get_qos_class_np(value._address, qos, relativePriority)
     }.get()
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
-  mutating func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) throws(Errno) {
+  func set(qualityOfService qos: PosixSpawn.Attributes.QualityOfService, relativePriority: Int32) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
-      pthread_attr_set_qos_class_np(rawAddress, qos, relativePriority)
+      pthread_attr_set_qos_class_np(value._address, qos, relativePriority)
     }.get()
   }
 }

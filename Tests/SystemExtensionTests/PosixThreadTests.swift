@@ -23,7 +23,7 @@ final class PosixThreadTests: XCTestCase {
     let thread = try PosixThread.create {
       condition = true
     }
-    _ = try thread.join().get()
+    _ = try thread.join()
     XCTAssertTrue(condition)
   }
 
@@ -32,9 +32,9 @@ final class PosixThreadTests: XCTestCase {
     nonisolated(unsafe) var value = 0
     let sum = 1_000_000
     DispatchQueue.concurrentPerform(iterations: sum) { _ in
-      mutex.lock()
+      try! mutex.lock()
       value += 1
-      mutex.unlock()
+      try! mutex.unlock()
     }
     XCTAssertEqual(value, sum)
 
@@ -44,15 +44,15 @@ final class PosixThreadTests: XCTestCase {
     for _ in 1...10 {
       let tid = try PosixThread.create {
         for _ in 1...(sum/10) {
-          mutex.lock()
+          try! mutex.lock()
           value += 1
-          mutex.unlock()
+          try! mutex.unlock()
         }
       }
 
       threads.append(tid)
     }
-    threads.forEach { $0.join() }
+    threads.forEach { _ = try! $0.join() }
     XCTAssertEqual(value, sum)
   }
 }

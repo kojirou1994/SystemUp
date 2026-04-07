@@ -1,8 +1,7 @@
 import XCTest
-import SystemPackage
 import SystemUp
 import Foundation
-import CSystemUp
+import CUtility
 
 final class SystemExtensionTests: XCTestCase {
 

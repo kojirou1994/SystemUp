@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
   name: "SystemUp",
-  platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13), .watchOS(.v6), .macCatalyst(.v13)],
+  platforms: [.macOS(.v11), .iOS(.v14), .tvOS(.v14), .watchOS(.v7), .macCatalyst(.v14)],
   products: [
     .library(name: "SystemUp", targets: ["SystemUp"]),
     .library(name: "SystemPath", targets: ["SystemPath"]),
@@ -12,7 +12,7 @@ let package = Package(
     .library(name: "Command", targets: ["Command"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/kojirou1994/CUtility.git", branch: "main"),
+    .package(url: "https://github.com/kojirou1994/CUtility.git", from: "0.8.3"),
     .package(url: "https://github.com/kojirou1994/LittleC.git", branch: "main"),
     .package(url: "https://github.com/apple/swift-system.git", from: "1.0.0"),
   ],
@@ -28,6 +28,7 @@ let package = Package(
         "SystemLibc",
         .product(name: "SyscallValue", package: "CUtility"),
         .product(name: "CUtility", package: "CUtility"),
+        .product(name: "SwiftExperimental", package: "CUtility"),
       ],
       swiftSettings: [
         .define("APPLE", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
@@ -37,6 +38,7 @@ let package = Package(
         .enableExperimentalFeature("Extern"),
         .enableExperimentalFeature("LifetimeDependence"),
         .enableExperimentalFeature("Lifetimes"),
+        .enableExperimentalFeature("StaticExclusiveOnly"),
       ]
     ),
     .target(
@@ -64,6 +66,7 @@ let package = Package(
       name: "Command",
       dependencies: [
         "SystemUp",
+        "SystemPath",
       ]),
     .testTarget(
       name: "SystemExtensionTests",

@@ -94,14 +94,6 @@ public func assertNoThrow<R, E: Error>(file: StaticString = #file, line: UInt = 
 }
 
 @inlinable @inline(__always)
-internal func withOptionalUnsafePointer<T, R, Result>(to v: T?, _ body: (UnsafePointer<R>?) throws -> Result) rethrows -> Result {
-  if let v = v {
-    return try withCastedUnsafePointer(to: v, body)
-  }
-  return try body(nil)
-}
-
-@inlinable @inline(__always)
 internal func withCastedUnsafePointer<T, R, Result>(to v: T, _ body: (UnsafePointer<R>) throws -> Result) rethrows -> Result {
   assert(MemoryLayout<T>.size == MemoryLayout<R>.size)
   return try withUnsafePointer(to: v) { try body(UnsafeRawPointer($0).assumingMemoryBound(to: R.self)) }

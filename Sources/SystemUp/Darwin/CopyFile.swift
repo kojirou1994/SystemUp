@@ -196,6 +196,7 @@ extension SystemCall {
       public static var copyXattr: Self { .init(rawValue: COPYFILE_COPY_XATTR) }
     }
 
+    @frozen
     public struct State: ~Copyable {
 
       @usableFromInline

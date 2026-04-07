@@ -98,6 +98,7 @@ extension SystemCall {
     public typealias NativeCallback = (borrowing State, borrowing DynamicCString) -> CallbackReturn
 
     // State object to pass in callback information
+    @frozen
     public struct State: ~Copyable {
 
       @usableFromInline

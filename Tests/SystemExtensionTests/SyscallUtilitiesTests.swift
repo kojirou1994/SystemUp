@@ -1,6 +1,5 @@
 import XCTest
 import SystemUp
-import SystemPackage
 
 final class SyscallUtilitiesTests: XCTestCase {
 

@@ -1,6 +1,7 @@
 import SystemUp
 import CUtility
 import SystemLibc
+import SystemPath
 
 public struct Command: Sendable {
 
@@ -26,6 +27,7 @@ public struct Command: Sendable {
     case null
     case makePipe
     case fd(FileDescriptor)
+    case path(FilePath, mode: FileDescriptor.AccessMode, options: FileDescriptor.OpenOptions)
   }
 
   public var stdin: ChildIO?
@@ -124,8 +126,8 @@ extension Command {
   /// - Parameter body: customize FileActions, default setup will be disabled
   /// - Returns: child process
   public func spawn(
-    _ body: ((inout PosixSpawn.FileActions) throws(Errno) -> Void)? = nil,
-    attributesHandler: (inout PosixSpawn.Attributes) throws(Errno) -> Void = { $0.resetSignals() },
+    _ body: ((borrowing PosixSpawn.FileActions) throws(Errno) -> Void)? = nil,
+    attributesHandler: (borrowing PosixSpawn.Attributes) throws(Errno) -> Void = { $0.resetSignals() },
   ) throws(Errno) -> ChildProcess {
     let env: CStringArray
     switch self.environment {
@@ -148,39 +150,17 @@ extension Command {
       env = custom.envCArray
     }
 
-    var attrs = try PosixSpawn.Attributes()
-    defer {
-      attrs.destroy()
-    }
-    var fileActions = try PosixSpawn.FileActions()
-    defer {
-      fileActions.destroy()
-    }
+    let attrs = try PosixSpawn.Attributes()
+    let fileActions = try PosixSpawn.FileActions()
 
     var pipes = ChildPipes(safeMode: keepPipeFD)
 
-    func setupFD(method: ChildIO?, dst: FileDescriptor, write: Bool, _ pipeOut: UnsafeMutablePointer<ChildPipes.Pipe?>?) throws(Errno) {
-      switch (method ?? defaultIO) {
-      case .inherit:
-        fileActions.dup2(fd: dst, newFD: dst)
-      case .null:
-        fileActions.open("/dev/null", write ? .writeOnly : .readOnly, fd: dst)
-      case .makePipe:
-        let (reader, writer) = try SystemCall.pipe()
-        let (local, remote) = write ? (reader, writer) : (writer, reader)
-        fileActions.dup2(fd: remote, newFD: dst)
-        pipeOut?.pointee = .init(local: local, remote: remote)
-      case .fd(let fileDescriptor):
-        fileActions.dup2(fd: fileDescriptor, newFD: dst)
-      }
-    }
-
     if let body = body {
-      try body(&fileActions)
+      try body(fileActions)
     } else {
-      try setupFD(method: self.stdin, dst: .standardInput, write: false, &pipes.stdin)
-      try setupFD(method: self.stdout, dst: .standardOutput, write: true, &pipes.stdout)
-      try setupFD(method: self.stderr, dst: .standardError, write: true, &pipes.stderr)
+      try fileActions.setupFD(method: self.stdin ?? defaultIO, dst: .standardInput, write: false, &pipes.stdin)
+      try fileActions.setupFD(method: self.stdout ?? defaultIO, dst: .standardOutput, write: true, &pipes.stdout)
+      try fileActions.setupFD(method: self.stderr ?? defaultIO, dst: .standardError, write: true, &pipes.stderr)
     }
 
     var restoreCWD: UnsafeMutablePointer<CChar>?
@@ -213,14 +193,14 @@ extension Command {
     #elseif os(Linux)
     fileActions.close(fromMinFD: .init(rawValue: 3))
     #endif
-    try attributesHandler(&attrs)
+    try attributesHandler(attrs)
 
     var args = CStringArray()
     args.append(try! .copy(bytes: arg0))
     args.append(contentsOf: arguments)
 
     do {
-      let pid = try PosixSpawn.spawn(executable, fileActions: fileActions, attributes: attrs, arguments: args, environment: env, searchPATH: searchPATH).get()
+      let pid = try PosixSpawn.spawn(executable, fileActions: fileActions, attributes: attrs, arguments: args, environment: env, searchPATH: searchPATH)
       pipes.closeRemote()
       return .init(pid: pid, pipes: pipes)
     } catch {
@@ -406,6 +386,26 @@ extension Command {
     }
     if previous != new {
       try FileControl.set(fd, statusFlags: new)
+    }
+  }
+}
+
+extension PosixSpawn.FileActions {
+  func setupFD(method: Command.ChildIO, dst: FileDescriptor, write: Bool, _ pipeOut: UnsafeMutablePointer<Command.ChildPipes.Pipe?>?) throws(Errno) {
+    switch method {
+    case .inherit:
+      self.dup2(fd: dst, newFD: dst)
+    case let .path(path, mode: mode, options: options):
+      self.open(path, mode, options: options, permissions: .fileDefault, fd: dst)
+    case .null:
+      self.open("/dev/null", write ? .writeOnly : .readOnly, fd: dst)
+    case .makePipe:
+      let (reader, writer) = try SystemCall.pipe()
+      let (local, remote) = write ? (reader, writer) : (writer, reader)
+      self.dup2(fd: remote, newFD: dst)
+      pipeOut?.pointee = .init(local: local, remote: remote)
+    case .fd(let fileDescriptor):
+      self.dup2(fd: fileDescriptor, newFD: dst)
     }
   }
 }

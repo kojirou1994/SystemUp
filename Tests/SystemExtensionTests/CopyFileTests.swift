@@ -1,17 +1,18 @@
 #if canImport(Darwin)
 import XCTest
-import SystemPackage
 import SystemUp
+import CUtility
 
 final class CopyFileTests: XCTestCase {
   func testCopyFileFlags() {
-    XCTAssertEqual([CopyFlags.noFollowDestination, .noFollowSource] as CopyFlags, CopyFlags.noFollow)
+    XCTAssertEqual([SystemCall.CopyFile.Flags.noFollowDestination, .noFollowSource] as SystemCall.CopyFile.Flags, SystemCall.CopyFile.Flags.noFollow)
 
-    XCTAssertEqual([CopyFlags.stat, .acl] as CopyFlags, CopyFlags.security)
+    XCTAssertEqual([SystemCall.CopyFile.Flags.stat, .acl] as SystemCall.CopyFile.Flags, SystemCall.CopyFile.Flags.security)
 
-    XCTAssertEqual([CopyFlags.security, .xattr] as CopyFlags, CopyFlags.metadata)
+    XCTAssertEqual([SystemCall.CopyFile.Flags.security, .xattr] as SystemCall.CopyFile.Flags, SystemCall.CopyFile.Flags.metadata)
 
-    XCTAssertEqual([CopyFlags.metadata, .data] as CopyFlags, CopyFlags.all)
+    XCTAssertEqual([SystemCall.CopyFile.Flags.metadata, .data] as SystemCall.CopyFile.Flags, SystemCall.CopyFile.Flags.all)
+  }
   }
 }
 #endif

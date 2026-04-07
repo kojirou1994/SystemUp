@@ -21,5 +21,8 @@ final class LayoutTests: XCTestCase {
     check(SocketAddressInfo.self, r: addrinfo.self)
     check(SystemCall.PollFD.self, r: pollfd.self)
     check(StaticCString.self, r: UnsafePointer<CChar>.self)
+    check(ResourceUsage.self, r: rusage.self)
+    check(WaitPID.ExitStatus.self, r: Int32.self)
+    check(PosixThread.Attributes.SchedParam.self, r: sched_param.self)
   }
 }

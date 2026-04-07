@@ -1,6 +1,5 @@
 import XCTest
 import SystemUp
-import SystemPackage
 
 final class ErrnoTests: XCTestCase {
   func testErrno() {
@@ -13,13 +12,11 @@ final class ErrnoTests: XCTestCase {
   func testCopyMessage() throws {
     try withUnsafeTemporaryAllocation(of: CChar.self, capacity: 4096) { buf in
       for err in (0..<10).map(Errno.init) {
-        XCTAssertNoThrow(try err.copyErrorMessage(to: buf).get())
+        XCTAssertNoThrow(try err.copyErrorMessage(to: buf))
       }
 
-      switch Errno(rawValue: .max).copyErrorMessage(to: buf) {
-      case .success: XCTFail()
-      case .failure(let err):
-        XCTAssertEqual(err, .invalidArgument)
+      XCTAssertThrowsError(try Errno(rawValue: .max).copyErrorMessage(to: buf)) { err in
+        XCTAssertEqual(err as! Errno, .invalidArgument)
       }
 
     }

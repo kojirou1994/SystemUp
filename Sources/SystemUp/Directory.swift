@@ -1,6 +1,7 @@
 import SystemLibc
 import CUtility
 
+@frozen
 public struct Directory: ~Copyable {
 
   #if APPLE
