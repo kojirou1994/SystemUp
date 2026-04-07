@@ -185,7 +185,7 @@ extension PosixSpawn {
 
     #if os(Linux)
     @_alwaysEmitIntoClient @inlinable @inline(__always)
-    public mutating func close(fromMinFD fd: FileDescriptor) {
+    public func close(fromMinFD fd: FileDescriptor) {
       assertNoFailure {
         SyscallUtilities.errnoOrZeroOnReturn {
           posix_spawn_file_actions_addclosefrom_np(value._address, fd.rawValue)
