@@ -1,5 +1,5 @@
-#if canImport(Glibc)
-import CUtility
+#if os(Linux)
+import SystemLibc
 
 public enum GNULibc {
 }
@@ -7,12 +7,12 @@ public enum GNULibc {
 public extension GNULibc {
   @_alwaysEmitIntoClient
   static var version: StaticCString {
-    .init(cString: gnu_get_libc_version())
+    .init(cString: SystemLibc.gnu_get_libc_version())
   }
 
   @_alwaysEmitIntoClient
   static var release: StaticCString {
-    .init(cString: gnu_get_libc_release())
+    .init(cString: SystemLibc.gnu_get_libc_release())
   }
 }
 #endif
