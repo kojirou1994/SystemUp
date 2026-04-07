@@ -13,6 +13,6 @@ final class CopyFileTests: XCTestCase {
 
     XCTAssertEqual([SystemCall.CopyFile.Flags.metadata, .data] as SystemCall.CopyFile.Flags, SystemCall.CopyFile.Flags.all)
   }
-  }
+
 }
 #endif
