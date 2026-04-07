@@ -1,5 +1,6 @@
 #if os(Linux)
 import SystemLibc
+import CUtility
 
 public enum GNULibc {
 }
