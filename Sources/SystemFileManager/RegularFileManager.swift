@@ -9,11 +9,29 @@ public enum RegularFileManager {
       try? SystemCall.close(inFD)
     }
 
-    assert(try! SystemFileManager.fileStatus(inFD, \.fileType) == .regular)
+    var instat: FileStatus = Memory.undefined()
+    try SystemCall.fileStatus(inFD, into: &instat)
+    assert(instat.fileType == .regular)
+
+    let inSize = instat.size
 
     let outFD = try SystemCall.open(dst, .writeOnly, options: [.create, .exclusiveCreate], permissions: .fileDefault)
     defer {
       try? SystemCall.close(outFD)
+    }
+
+    // preallocate and ignore error
+    do {
+      #if APPLE
+      var opt = FileControl.PreAllocateOptions()
+      opt.flags = []
+      opt.positionMode = .endOfFile
+      opt.offset = 0
+      opt.length = inSize
+      try? FileControl.preAllocate(outFD, options: &opt)
+      #elseif os(Linux)
+      try? SystemCall.fallocate(outFD, offset: 0, length: inSize)
+      #endif
     }
 
     do {
