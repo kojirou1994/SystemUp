@@ -3,7 +3,7 @@ import CUtility
 
 public enum RegularFileManager {
   /// src must be regular file, dst must not exist, dst is deleted if failure
-  public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int = 4096 * 4) throws(Errno) {
+  public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int? = nil) throws(Errno) {
     let inFD = try SystemCall.open(src, .readOnly)
     defer {
       try? SystemCall.close(inFD)
@@ -35,7 +35,8 @@ public enum RegularFileManager {
     }
 
     do {
-      try withUnsafeTemporaryAllocationTyped(byteCount: bufferSize, alignment: MemoryLayout<UInt>.alignment) { buffer throws(Errno) in
+      let bsize = bufferSize ?? BlockSizes(src: inFD, srcStat: instat, dst: outFD).cb_src_bsize
+      try withUnsafeTemporaryAllocationTyped(byteCount: bsize, alignment: MemoryLayout<UInt>.alignment) { buffer throws(Errno) in
         while case let length = try inFD.read(into: buffer), length > 0 {
           try outFD.writeAll(UnsafeRawBufferPointer(rebasing: buffer.prefix(length)))
         }
