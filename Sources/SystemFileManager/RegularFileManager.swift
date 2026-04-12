@@ -38,12 +38,8 @@ public enum RegularFileManager {
       try SystemCall.createHardLink(dst, toDestination: src)
       return true
     } catch {
-      switch error {
-      case .improperLink:
-        try slowCopyFile(src: src, dst: dst)
-        return false
-      default: throw error
-      }
+      try slowCopyFile(src: src, dst: dst)
+      return false
     }
   }
 
@@ -54,19 +50,15 @@ public enum RegularFileManager {
       try SystemCall.rename(src, toDestination: dst, flags: .exclusive)
       return true
     } catch {
-      switch error {
-      case .improperLink:
-        try slowCopyFile(src: src, dst: dst)
-        do {
-          try SystemCall.unlink(src)
-        } catch {
-          if !ignoreDeleleSRCError {
-            throw error
-          }
+      try slowCopyFile(src: src, dst: dst)
+      do {
+        try SystemCall.unlink(src)
+      } catch {
+        if !ignoreDeleleSRCError {
+          throw error
         }
-        return false
-      default: throw error
       }
+      return false
     }
   }
 }
