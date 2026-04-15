@@ -1,4 +1,3 @@
-#if APPLE
 import SystemLibc
 import CUtility
 
@@ -64,19 +63,23 @@ public extension SystemCall {
     public static var file: Self { .init(rawValue: MAP_FILE) }
     @_alwaysEmitIntoClient
     public static var fixed: Self { .init(rawValue: MAP_FIXED) }
+    #if APPLE
     /// Notify the kernel that the region may contain semaphores and that special handling may be necessary.
     @_alwaysEmitIntoClient
     public static var hasSemaphore: Self { .init(rawValue: MAP_HASSEMAPHORE) }
+    #endif
     /// Modifications are private (copy-on-write).
     @_alwaysEmitIntoClient
     public static var `private`: Self { .init(rawValue: MAP_PRIVATE) }
     /// Modifications are shared.
     @_alwaysEmitIntoClient
     public static var shared: Self { .init(rawValue: MAP_SHARED) }
+    #if APPLE
     @_alwaysEmitIntoClient
     public static var noCache: Self { .init(rawValue: MAP_NOCACHE) }
     @_alwaysEmitIntoClient
     public static var hit: Self { .init(rawValue: MAP_JIT) }
+    #endif
     @_alwaysEmitIntoClient
     public static var `32bit`: Self { .init(rawValue: MAP_32BIT) }
   }
@@ -100,4 +103,3 @@ public extension SystemCall {
     public static var invalidate: Self { .init(rawValue: MS_INVALIDATE) }
   }
 }
-#endif

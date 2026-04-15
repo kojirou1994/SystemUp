@@ -34,7 +34,6 @@ let package = Package(
         .define("APPLE", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
         .define("UNIX_BSD", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
         .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),
-        .unsafeFlags(["-Xfrontend", "-disable-reflection-metadata"]),
         .enableExperimentalFeature("Extern"),
         .enableExperimentalFeature("LifetimeDependence"),
         .enableExperimentalFeature("Lifetimes"),
@@ -59,7 +58,6 @@ let package = Package(
       swiftSettings: [
         .define("APPLE", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
         .define("UNIX_BSD", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .macCatalyst])),
-        .unsafeFlags(["-Xfrontend", "-disable-stack-protector"]),
       ]
     ),
     .target(
