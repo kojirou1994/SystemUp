@@ -239,7 +239,7 @@ public extension FileControl {
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
     public init() {
-      rawValue = .init()
+      rawValue = Memory.zeroed()
     }
 
     @_alwaysEmitIntoClient @inlinable @inline(__always)
@@ -313,7 +313,7 @@ public extension FileControl {
 #endif
 
 #if os(Linux)
-public extension FileControl {
+public extension SystemCall {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func posixFileAllocate(_ fd: FileDescriptor, offset: Int, length: Int) throws(Errno) {
     try SyscallUtilities.errnoOrZeroOnReturn {
@@ -324,7 +324,7 @@ public extension FileControl {
 #endif
 
 #if os(Linux)
-public extension FileControl {
+public extension SystemCall {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func fallocate(_ fd: FileDescriptor, mode: FallocateMode = .default, offset: Int, length: Int) throws(Errno) {
     try SyscallUtilities.voidOrErrno {
