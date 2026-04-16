@@ -28,10 +28,12 @@ public extension SystemCall {
     public static var dontNeed: Self { .init(rawValue: MADV_DONTNEED) }
     @_alwaysEmitIntoClient
     public static var free: Self { .init(rawValue: MADV_FREE) }
+    #if APPLE
     @_alwaysEmitIntoClient
     public static var zeroWiredPages: Self { .init(rawValue: MADV_ZERO_WIRED_PAGES) }
     @_alwaysEmitIntoClient
     public static var zero: Self { .init(rawValue: MADV_ZERO) }
+    #endif
   }
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
