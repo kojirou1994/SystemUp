@@ -2,6 +2,22 @@ import SystemUp
 import CUtility
 
 public enum RegularFileManager {
+
+  public static func preallocate(_ fd: FileDescriptor, offset: CInterop.UpSize = 0, length: CInterop.UpSize) throws(Errno) {
+    #if APPLE
+    var opt = FileControl.PreAllocateOptions()
+    opt.flags = [.all, .persist]
+    opt.positionMode = .endOfFile
+    opt.offset = offset
+    opt.length = length
+    try FileControl.preAllocate(fd, options: &opt)
+    #elseif os(Linux)
+    try SystemCall.fallocate(fd, offset: offset, length: length)
+    #else
+    #error("TODO")
+    #endif
+  }
+
   /// src must be regular file, dst must not exist, dst is deleted if failure
   public static func slowCopyFile(src: borrowing some CString, dst: borrowing some CString, bufferSize: Int? = nil) throws(Errno) {
     let inFD = try SystemCall.open(src, .readOnly)
