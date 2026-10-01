@@ -43,6 +43,7 @@ let package = Package(
     .target(
       name: "SystemPath",
       dependencies: [
+        .product(name: "CStringInterop", package: "CUtility"),
         .product(name: "SystemPackage", package: "swift-system", condition: .when(platforms: [.linux])),
         .product(name: "CUtilityDarwin", package: "CUtility", condition: .when(platforms: [.macOS, .iOS, .tvOS, .watchOS])),
       ],
