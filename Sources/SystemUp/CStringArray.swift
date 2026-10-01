@@ -2,8 +2,8 @@ import CStringInterop
 
 public struct CStringArray: ~Copyable, @unchecked Sendable {
 
-  @_alwaysEmitIntoClient
-  private(set) var cArray: [UnsafeMutablePointer<CChar>?]
+  @usableFromInline
+  internal var cArray: [UnsafeMutablePointer<CChar>?]
 
   @_alwaysEmitIntoClient
   @inlinable @inline(__always)
