@@ -62,7 +62,7 @@ public extension SystemCall {
       var value: UnsafeRawPointer?
       try! state.set(property: .confirmCallback, nil)
       try! state.set(property: .confirmContext, &value)
-      #if Xcode
+      #if Xcode && os(macOS)
       try! state.get(property: .confirmCallback, &value)
       precondition(value == nil)
       try! state.get(property: .confirmContext, &value)

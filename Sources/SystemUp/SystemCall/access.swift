@@ -5,7 +5,7 @@ public extension SystemCall {
 
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func check(accessibility: Accessibility, for path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = []) -> Bool {
-    #if Xcode
+    #if Xcode && os(macOS)
     assert(flags.isSubset(of: [.noFollow, .noFollowAny, .effectiveAccess]))
     #endif
     return path.withUnsafeCString { path in

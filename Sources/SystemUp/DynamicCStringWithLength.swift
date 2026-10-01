@@ -10,9 +10,9 @@ public struct DynamicCStringWithLength: ~Copyable, @unchecked Sendable {
       if fixTerminationNull {
         cString.cString[forceLength] = 0
       }
-      self.length = forceLength
+      self._length = forceLength
     } else {
-      self.length = cString.length
+      self._length = cString.length
     }
     self.cString = cString
   }
@@ -21,13 +21,18 @@ public struct DynamicCStringWithLength: ~Copyable, @unchecked Sendable {
   public var cString: DynamicCString {
     didSet {
       // update length
-      length = cString.length
+      _length = cString.length
     }
   }
 
   /// cached length, auto-updated when cString changed
+  @usableFromInline
+  internal var _length: Int
+
   @_alwaysEmitIntoClient
-  public private(set) var length: Int
+  public var length: Int {
+    _length
+  }
 }
 
 extension DynamicCStringWithLength {

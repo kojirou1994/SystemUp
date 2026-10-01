@@ -4,7 +4,7 @@ import CUtility
 public extension SystemCall {
   @_alwaysEmitIntoClient @inlinable @inline(__always)
   static func unlink(_ path: borrowing some CString, relativeTo base: RelativeDirectory = .cwd, flags: AtFlags = []) throws(Errno) {
-    #if Xcode
+    #if Xcode && os(macOS)
     assert(flags.isSubset(of: [.removeDir, .noFollowAny]))
     #endif
     try SyscallUtilities.voidOrErrno {
